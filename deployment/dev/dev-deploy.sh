@@ -1,0 +1,4 @@
+#!/bin/bash
+# quad-web DEV deployment
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/../scripts/deploy.sh" dev "$@"

@@ -1,0 +1,190 @@
+# QUAD Agent Configuration - quad-web
+# =====================================
+# Next.js Web Application agent configuration
+#
+# Part of QUAD Framework
+# © 2026 A2Vibe Creators LLC
+
+version: "1.0"
+project: "quad-web"
+type: "web-frontend"
+
+# =============================================================================
+# DEFAULT SETTINGS
+# =============================================================================
+
+defaultTimeout: 60000
+defaultMode: HYBRID
+
+# =============================================================================
+# INVOCATION METHODS
+# =============================================================================
+
+invocation:
+  ide: true       # VS Code, Cursor
+  cli: true       # quad agent invoke ...
+  chat: true      # Claude, Copilot chat
+  auto: true      # CI/CD, git hooks
+  mcp: true       # Model Context Protocol
+
+# =============================================================================
+# PIPELINES
+# =============================================================================
+
+pipelines:
+  # ---------------------------------------------------------------------------
+  # UI Development Pipeline
+  # ---------------------------------------------------------------------------
+  ui-development:
+    description: "Develop and test UI components"
+    version: "1.0.0"
+    mode: SEQUENTIAL
+    steps:
+      - agentId: ui-dev-agent
+        requiredOutput: component_code
+        timeout: 60000
+      - agentId: ui-test-agent
+        requiredOutput: test_results
+        timeout: 30000
+      - agentId: a11y-scanner-agent
+        optional: true
+        timeout: 30000
+
+  # ---------------------------------------------------------------------------
+  # Page Development Pipeline
+  # ---------------------------------------------------------------------------
+  page-development:
+    description: "Develop Next.js pages with API integration"
+    version: "1.0.0"
+    mode: SEQUENTIAL
+    steps:
+      - agentId: page-dev-agent
+        requiredOutput: page_code
+        timeout: 60000
+      - agentId: api-integration-agent
+        requiredOutput: api_hooks
+        timeout: 30000
+      - agentId: ui-test-agent
+        requiredOutput: test_results
+        timeout: 30000
+
+  # ---------------------------------------------------------------------------
+  # Code Review Pipeline
+  # ---------------------------------------------------------------------------
+  code-review:
+    description: "Review UI code changes"
+    version: "1.0.0"
+    mode: SEQUENTIAL
+    steps:
+      - agentId: security-scanner-agent
+        optional: true
+      - agentId: ui-review-agent
+        requiredOutput: review_comments
+      - agentId: a11y-scanner-agent
+        optional: true
+
+# =============================================================================
+# PERMISSIONS
+# =============================================================================
+
+permissions:
+  # UI Development Agent
+  ui-dev-agent:
+    canRead:
+      - "src/**"
+      - "public/**"
+    canWrite:
+      - "src/components/**"
+      - "src/app/**"
+      - "src/styles/**"
+    cannotWrite:
+      - "src/lib/db/**"
+      - "prisma/**"
+    canInvoke:
+      - ui-test-agent
+      - a11y-scanner-agent
+
+  # Page Development Agent
+  page-dev-agent:
+    canRead:
+      - "src/**"
+    canWrite:
+      - "src/app/**"
+      - "src/components/**"
+    cannotWrite:
+      - "prisma/**"
+    canInvoke:
+      - api-integration-agent
+      - ui-test-agent
+
+  # API Integration Agent
+  api-integration-agent:
+    canRead:
+      - "src/**"
+    canWrite:
+      - "src/lib/**"
+      - "src/hooks/**"
+    cannotWrite:
+      - "prisma/**"
+    canInvoke:
+      - ui-test-agent
+
+  # Test Agents
+  ui-test-agent:
+    canRead:
+      - "src/**"
+      - "tests/**"
+    canWrite:
+      - "tests/**"
+      - "__tests__/**"
+    canInvoke: []
+
+  # Scanner Agents (read-only)
+  security-scanner-agent:
+    canRead:
+      - "src/**"
+    canWrite: []
+    canInvoke: []
+
+  a11y-scanner-agent:
+    canRead:
+      - "src/**"
+    canWrite: []
+    canInvoke: []
+
+  # Deploy Agent
+  deploy-agent-dev:
+    canInvoke: []
+    requiresApproval: false
+
+  deploy-agent-prod:
+    canInvoke: []
+    requiresApproval: true
+
+# =============================================================================
+# AUDIT SETTINGS
+# =============================================================================
+
+audit:
+  enabled: true
+  retentionDays: 90
+  sensitiveFields:
+    - password
+    - token
+    - secret
+    - apiKey
+    - authorization
+    - cookie
+
+# =============================================================================
+# TECHNOLOGY STACK (for agent context)
+# =============================================================================
+
+stack:
+  framework: "Next.js 15"
+  language: "TypeScript"
+  styling: "Tailwind CSS"
+  components: "shadcn/ui"
+  state: "React Query, Zustand"
+  testing: "Jest, Playwright"
+  orm: "Prisma"
