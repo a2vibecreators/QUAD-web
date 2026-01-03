@@ -2,14 +2,11 @@
  * GET /api/organizations - List user's organizations
  * POST /api/organizations - Create a new organization
  *
- * Multi-Org Support:
- * - User can be OWNER of their own org
- * - User can be MEMBER of other orgs (invited)
- * - Returns all orgs user belongs to with their role in each
+ * MIGRATED: Now uses Java backend API via java-backend.ts
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getOrganizations, createOrganization, getUserById } from '@/lib/java-backend';
 import { verifyToken } from '@/lib/auth';
 
 // Generate URL-friendly slug
@@ -21,7 +18,7 @@ function generateSlug(name: string): string {
     .substring(0, 50);
 }
 
-// GET: List all organizations user belongs to
+// GET: List all organizations
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -35,52 +32,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Get all org memberships for user
-    const memberships = await prisma.qUAD_org_members.findMany({
-      where: {
-        user_id: payload.userId,
-        is_active: true
-      },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            admin_email: true,
-            size: true,
-            is_active: true,
-            created_at: true,
-            _count: {
-              select: {
-                users: true,
-                domains: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: [
-        { is_primary: 'desc' }, // Primary org first
-        { joined_at: 'asc' }
-      ]
-    });
+    // Get all organizations from Java backend
+    const organizations = await getOrganizations();
 
-    // Transform to org list with user's role
-    const organizations = memberships.map(m => ({
-      ...m.organization,
-      role: m.role,
-      is_primary: m.is_primary,
-      joined_at: m.joined_at
-    }));
-
-    // Find current/active org (primary or first one)
-    const currentOrg = organizations.find(o => o.is_primary) || organizations[0];
+    // Filter to user's organization (for now, single org per user)
+    const userOrgs = organizations.filter((o: { id: string }) => o.id === payload.companyId);
 
     return NextResponse.json({
-      organizations,
-      current_organization: currentOrg,
-      total: organizations.length
+      organizations: userOrgs,
+      current_organization: userOrgs[0] || null,
+      total: userOrgs.length
     });
   } catch (error) {
     console.error('Get organizations error:', error);
@@ -116,42 +77,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's email for admin_email
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: payload.userId },
-      select: { email: true }
-    });
-
+    const user = await getUserById(payload.userId);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Generate unique slug
-    const baseSlug = generateSlug(name);
-    let slug = baseSlug;
-    let counter = 1;
-    while (await prisma.qUAD_organizations.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
+    // Generate slug
+    const slug = generateSlug(name);
 
-    // Create organization
-    const organization = await prisma.qUAD_organizations.create({
-      data: {
-        name,
-        slug,
-        admin_email: user.email,
-        size: size || 'medium'
-      }
-    });
-
-    // Add user as OWNER
-    await prisma.qUAD_org_members.create({
-      data: {
-        org_id: organization.id,
-        user_id: payload.userId,
-        role: 'OWNER',
-        is_primary: false // Not primary since they already have a primary org
-      }
+    // Create organization via Java backend
+    const organization = await createOrganization({
+      name,
+      slug,
+      adminEmail: user.email,
+      size: size || 'medium',
+      isActive: true
     });
 
     return NextResponse.json({

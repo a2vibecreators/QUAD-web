@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         openai_key_ref: null,
         anthropic_key_ref: null,
         gemini_key_ref: null,
-        current_month_spend: 0 as unknown as import('@prisma/client/runtime/library').Decimal,
+        current_month_spend: 0,
         requests_this_month: 0,
         last_reset_at: null,
         created_at: new Date(),

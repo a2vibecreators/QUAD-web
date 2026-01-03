@@ -1,13 +1,15 @@
 /**
- * GET /api/users - List users in company
+ * GET /api/users - List users in organization
  * POST /api/users - Create a new user (admin only)
+ *
+ * MIGRATED: Now uses Java backend API via java-backend.ts
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getUsers, getUserByEmail, createUser } from '@/lib/java-backend';
 import { verifyToken, hashPassword } from '@/lib/auth';
 
-// GET: List users in company
+// GET: List users in organization
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
@@ -22,49 +24,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Get query parameters
-    const { searchParams } = new URL(request.url);
-    const role = searchParams.get('role');
-    const isActive = searchParams.get('is_active');
-
-    // Build where clause
-    const where: Record<string, unknown> = {
-      org_id: payload.companyId
-    };
-
-    if (role) {
-      where.role = role;
-    }
-
-    if (isActive !== null) {
-      where.is_active = isActive === 'true';
-    }
-
-    const users = await prisma.qUAD_users.findMany({
-      where,
-      select: {
-        id: true,
-        email: true,
-        full_name: true,
-        role: true,
-        is_active: true,
-        email_verified: true,
-        created_at: true,
-        adoption_matrix: {
-          select: {
-            skill_level: true,
-            trust_level: true
-          }
-        },
-        _count: {
-          select: {
-            domain_members: true,
-            flows_assigned: true
-          }
-        }
-      },
-      orderBy: { created_at: 'desc' }
-    });
+    // Get users from Java backend filtered by org
+    const users = await getUsers(payload.companyId);
 
     return NextResponse.json({ users });
   } catch (error) {
@@ -108,40 +69,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user with email exists
-    const existing = await prisma.qUAD_users.findUnique({
-      where: { email }
-    });
-
-    if (existing) {
-      return NextResponse.json(
-        { error: 'User with this email already exists' },
-        { status: 409 }
-      );
+    try {
+      const existing = await getUserByEmail(email);
+      if (existing) {
+        return NextResponse.json(
+          { error: 'User with this email already exists' },
+          { status: 409 }
+        );
+      }
+    } catch {
+      // User not found - OK to create
     }
 
     // Hash password
     const password_hash = await hashPassword(password);
 
-    // Create user
-    const user = await prisma.qUAD_users.create({
-      data: {
-        org_id: payload.companyId,
-        email,
-        password_hash,
-        full_name,
-        role: role || 'DEVELOPER'
-      },
-      select: {
-        id: true,
-        email: true,
-        full_name: true,
-        role: true,
-        is_active: true,
-        created_at: true
-      }
+    // Create user via Java backend
+    const user = await createUser({
+      companyId: payload.companyId,
+      email,
+      passwordHash: password_hash,
+      fullName: full_name,
+      role: role || 'DEVELOPER',
+      isActive: true
     });
 
-    return NextResponse.json(user, { status: 201 });
+    return NextResponse.json({
+      id: user.id,
+      email: user.email,
+      full_name: user.fullName,
+      role: user.role,
+      is_active: user.isActive,
+      created_at: user.createdAt
+    }, { status: 201 });
   } catch (error) {
     console.error('Create user error:', error);
     return NextResponse.json(
