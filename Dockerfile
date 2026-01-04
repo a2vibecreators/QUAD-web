@@ -9,9 +9,6 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Generate Prisma client for Linux
-RUN npx prisma generate
-
 # Build Next.js app
 RUN npm run build
 
@@ -28,8 +25,6 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/src/generated ./src/generated
-COPY --from=builder /app/prisma ./prisma
 
 # Set environment
 ENV NODE_ENV=production
