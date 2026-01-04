@@ -571,6 +571,156 @@ export async function deleteCircle(id: string): Promise<void> {
 }
 
 // =============================================================================
+// Configuration Settings
+// =============================================================================
+
+export interface ConfigSetting {
+  id?: string;
+  orgId?: string;
+  domainId?: string;
+  userId?: string;
+  category: string;
+  settingKey: string;
+  valueString?: string;
+  valueBoolean?: boolean;
+  valueInteger?: number;
+  valueJson?: string;
+  description?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Get master default settings
+export async function getDefaultSettings(category?: string): Promise<ConfigSetting[]> {
+  const url = category
+    ? `${JAVA_API_URL}/config/defaults/${category}`
+    : `${JAVA_API_URL}/config/defaults`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to get default settings: ${response.statusText}`);
+  return response.json();
+}
+
+// Get organization settings
+export async function getOrgSettings(orgId: string, category?: string): Promise<ConfigSetting[]> {
+  const url = category
+    ? `${JAVA_API_URL}/config/org/${orgId}/${category}`
+    : `${JAVA_API_URL}/config/org/${orgId}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to get org settings: ${response.statusText}`);
+  return response.json();
+}
+
+// Set organization setting
+export async function setOrgSetting(orgId: string, setting: ConfigSetting): Promise<ConfigSetting> {
+  const response = await fetch(`${JAVA_API_URL}/config/org/${orgId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(setting),
+  });
+  if (!response.ok) throw new Error(`Failed to set org setting: ${response.statusText}`);
+  return response.json();
+}
+
+// Update organization setting
+export async function updateOrgSetting(
+  orgId: string,
+  category: string,
+  key: string,
+  setting: Partial<ConfigSetting>
+): Promise<ConfigSetting> {
+  const response = await fetch(`${JAVA_API_URL}/config/org/${orgId}/${category}/${key}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(setting),
+  });
+  if (!response.ok) throw new Error(`Failed to update org setting: ${response.statusText}`);
+  return response.json();
+}
+
+// Get domain settings
+export async function getDomainSettings(domainId: string, category?: string): Promise<ConfigSetting[]> {
+  const url = category
+    ? `${JAVA_API_URL}/config/domain/${domainId}/${category}`
+    : `${JAVA_API_URL}/config/domain/${domainId}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to get domain settings: ${response.statusText}`);
+  return response.json();
+}
+
+// Set domain setting
+export async function setDomainSetting(domainId: string, setting: ConfigSetting): Promise<ConfigSetting> {
+  const response = await fetch(`${JAVA_API_URL}/config/domain/${domainId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(setting),
+  });
+  if (!response.ok) throw new Error(`Failed to set domain setting: ${response.statusText}`);
+  return response.json();
+}
+
+// Get user settings
+export async function getUserSettings(userId: string, category?: string): Promise<ConfigSetting[]> {
+  const url = category
+    ? `${JAVA_API_URL}/config/user/${userId}/${category}`
+    : `${JAVA_API_URL}/config/user/${userId}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to get user settings: ${response.statusText}`);
+  return response.json();
+}
+
+// Set user setting
+export async function setUserSetting(userId: string, setting: ConfigSetting): Promise<ConfigSetting> {
+  const response = await fetch(`${JAVA_API_URL}/config/user/${userId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(setting),
+  });
+  if (!response.ok) throw new Error(`Failed to set user setting: ${response.statusText}`);
+  return response.json();
+}
+
+// Get effective setting (with inheritance: user > domain > org > default)
+export async function getEffectiveSetting(
+  category: string,
+  key: string,
+  options?: { orgId?: string; domainId?: string; userId?: string }
+): Promise<ConfigSetting | null> {
+  const params = new URLSearchParams({ category, key });
+  if (options?.orgId) params.set('orgId', options.orgId);
+  if (options?.domainId) params.set('domainId', options.domainId);
+  if (options?.userId) params.set('userId', options.userId);
+
+  const response = await fetch(`${JAVA_API_URL}/config/effective?${params.toString()}`);
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Failed to get effective setting: ${response.statusText}`);
+  return response.json();
+}
+
+// Check if feature is enabled
+export async function isFeatureEnabled(
+  category: string,
+  key: string,
+  options?: { orgId?: string; domainId?: string; userId?: string }
+): Promise<boolean> {
+  const params = new URLSearchParams({ category, key });
+  if (options?.orgId) params.set('orgId', options.orgId);
+  if (options?.domainId) params.set('domainId', options.domainId);
+  if (options?.userId) params.set('userId', options.userId);
+
+  const response = await fetch(`${JAVA_API_URL}/config/enabled?${params.toString()}`);
+  if (!response.ok) return false;
+  const data = await response.json();
+  return data.enabled === true;
+}
+
+// Delete config setting
+export async function deleteConfigSetting(id: string): Promise<void> {
+  const response = await fetch(`${JAVA_API_URL}/config/${id}`, { method: 'DELETE' });
+  if (!response.ok) throw new Error(`Failed to delete config setting: ${response.statusText}`);
+}
+
+// =============================================================================
 // Default Export
 // =============================================================================
 
@@ -638,4 +788,16 @@ export default {
   createCircle,
   updateCircle,
   deleteCircle,
+  // Config Settings
+  getDefaultSettings,
+  getOrgSettings,
+  setOrgSetting,
+  updateOrgSetting,
+  getDomainSettings,
+  setDomainSetting,
+  getUserSettings,
+  setUserSetting,
+  getEffectiveSetting,
+  isFeatureEnabled,
+  deleteConfigSetting,
 };
