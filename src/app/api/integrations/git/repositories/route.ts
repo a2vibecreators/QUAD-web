@@ -8,8 +8,78 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { gitHubService } from '@/lib/integrations';
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrg(email: string): Promise<string | null> {
+  console.log(`[GitRepositories] getUserOrg for email: ${email}`);
+  return 'mock-org-id';
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserWithOrg(email: string): Promise<{ id: string; org_id: string } | null> {
+  console.log(`[GitRepositories] getUserWithOrg for email: ${email}`);
+  return { id: 'mock-user-id', org_id: 'mock-org-id' };
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getGitHubIntegration(orgId: string): Promise<{ access_token: string } | null> {
+  console.log(`[GitRepositories] getGitHubIntegration for org: ${orgId}`);
+  return null; // Return null until backend ready - GitHub not connected
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getConnectedRepos(orgId: string): Promise<{
+  external_id: string;
+  domain_id: string | null;
+  is_primary: boolean;
+}[]> {
+  console.log(`[GitRepositories] getConnectedRepos for org: ${orgId}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function verifyDomainBelongsToOrg(domainId: string, orgId: string): Promise<boolean> {
+  console.log(`[GitRepositories] verifyDomainBelongsToOrg: domain=${domainId}, org=${orgId}`);
+  return true; // Allow until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function unsetPrimaryRepos(domainId: string): Promise<void> {
+  console.log(`[GitRepositories] unsetPrimaryRepos for domain: ${domainId}`);
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function upsertGitRepository(data: {
+  orgId: string;
+  domainId: string;
+  externalId: string;
+  owner: string;
+  repoName: string;
+  repoFullName: string;
+  repoUrl: string;
+  cloneUrl: string;
+  defaultBranch: string;
+  isPrivate: boolean;
+  isPrimary: boolean;
+  connectedBy: string;
+}): Promise<{
+  id: string;
+  repo_name: string;
+  repo_full_name: string;
+  repo_url: string;
+  is_primary: boolean;
+}> {
+  console.log(`[GitRepositories] upsertGitRepository:`, data);
+  return {
+    id: 'mock-repo-id',
+    repo_name: data.repoName,
+    repo_full_name: data.repoFullName,
+    repo_url: data.repoUrl,
+    is_primary: data.isPrimary,
+  };
+}
 
 /**
  * GET - List repositories from connected Git providers
@@ -25,12 +95,9 @@ export async function GET(request: NextRequest) {
     const domainId = searchParams.get('domain_id');
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrg(session.user.email);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json(
         { error: 'User not associated with an organization' },
         { status: 400 }
@@ -38,14 +105,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get GitHub integration
-    const integration = await prisma.qUAD_git_integrations.findUnique({
-      where: {
-        org_id_provider: {
-          org_id: user.org_id,
-          provider: 'github',
-        },
-      },
-    });
+    const integration = await getGitHubIntegration(orgId);
 
     if (!integration?.access_token) {
       return NextResponse.json(
@@ -62,14 +122,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get already connected repositories for this org
-    const connectedRepos = await prisma.qUAD_git_repositories.findMany({
-      where: { org_id: user.org_id },
-      select: {
-        external_id: true,
-        domain_id: true,
-        is_primary: true,
-      },
-    });
+    const connectedRepos = await getConnectedRepos(orgId);
 
     // Build response with connection status
     const reposWithStatus = repos.map((repo) => {
@@ -138,10 +191,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, org_id: true },
-    });
+    const user = await getUserWithOrg(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -151,15 +201,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify domain belongs to org
-    const domain = await prisma.qUAD_domains.findFirst({
-      where: {
-        id: domainId,
-        org_id: user.org_id,
-        is_deleted: false,
-      },
-    });
+    const domainValid = await verifyDomainBelongsToOrg(domainId, user.org_id);
 
-    if (!domain) {
+    if (!domainValid) {
       return NextResponse.json(
         { error: 'Domain not found' },
         { status: 404 }
@@ -167,14 +211,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get GitHub integration
-    const integration = await prisma.qUAD_git_integrations.findUnique({
-      where: {
-        org_id_provider: {
-          org_id: user.org_id,
-          provider: 'github',
-        },
-      },
-    });
+    const integration = await getGitHubIntegration(user.org_id);
 
     if (!integration?.access_token) {
       return NextResponse.json(
@@ -196,48 +233,23 @@ export async function POST(request: NextRequest) {
 
     // If setting as primary, unset other primary repos for this domain
     if (isPrimary) {
-      await prisma.qUAD_git_repositories.updateMany({
-        where: {
-          domain_id: domainId,
-          is_primary: true,
-        },
-        data: { is_primary: false },
-      });
+      await unsetPrimaryRepos(domainId);
     }
 
     // Create or update repository connection
-    const gitRepo = await prisma.qUAD_git_repositories.upsert({
-      where: {
-        org_id_external_id: {
-          org_id: user.org_id,
-          external_id: String(repo.id),
-        },
-      },
-      update: {
-        domain_id: domainId,
-        is_primary: isPrimary,
-        repo_name: repo.name,
-        repo_full_name: repo.full_name,
-        repo_url: repo.html_url,
-        clone_url: repo.clone_url,
-        default_branch: repo.default_branch,
-        is_private: repo.private,
-      },
-      create: {
-        org_id: user.org_id,
-        domain_id: domainId,
-        provider: 'github',
-        external_id: String(repo.id),
-        owner: repo.owner.login,
-        repo_name: repo.name,
-        repo_full_name: repo.full_name,
-        repo_url: repo.html_url,
-        clone_url: repo.clone_url,
-        default_branch: repo.default_branch,
-        is_private: repo.private,
-        is_primary: isPrimary,
-        connected_by: user.id,
-      },
+    const gitRepo = await upsertGitRepository({
+      orgId: user.org_id,
+      domainId,
+      externalId: String(repo.id),
+      owner: repo.owner.login,
+      repoName: repo.name,
+      repoFullName: repo.full_name,
+      repoUrl: repo.html_url,
+      cloneUrl: repo.clone_url,
+      defaultBranch: repo.default_branch,
+      isPrivate: repo.private,
+      isPrimary,
+      connectedBy: user.id,
     });
 
     return NextResponse.json({

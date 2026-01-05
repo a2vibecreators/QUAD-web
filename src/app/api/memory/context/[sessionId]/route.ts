@@ -9,8 +9,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { MemoryService } from '@/lib/services/memory-service';
+
+// Types
+interface ContextSession {
+  id: string;
+  session_type: string;
+  trigger_entity_type: string | null;
+  trigger_entity_id: string | null;
+  iteration_count: number;
+  initial_context_tokens: number;
+  total_context_tokens: number;
+  was_successful: boolean | null;
+  success_notes: string | null;
+  failure_notes: string | null;
+  created_at: Date;
+  completed_at: Date | null;
+  context_requests: ContextRequest[];
+}
+
+interface ContextRequest {
+  iteration_number: number;
+  request_type: string;
+  ai_request_text: string | null;
+  response_tokens: number;
+  was_sufficient: boolean | null;
+  missing_category: string | null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getContextSessionWithRequests(sessionId: string): Promise<ContextSession | null> {
+  console.log(`[ContextSession] getContextSessionWithRequests: ${sessionId}`);
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getContextSession(sessionId: string): Promise<Omit<ContextSession, 'context_requests'> | null> {
+  console.log(`[ContextSession] getContextSession: ${sessionId}`);
+  return null;
+}
 
 // GET - Get session details
 export async function GET(
@@ -24,14 +62,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const contextSession = await prisma.qUAD_context_sessions.findUnique({
-      where: { id: sessionId },
-      include: {
-        context_requests: {
-          orderBy: { created_at: 'asc' },
-        },
-      },
-    });
+    const contextSession = await getContextSessionWithRequests(sessionId);
 
     if (!contextSession) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
@@ -154,9 +185,7 @@ export async function PATCH(
     await MemoryService.completeSession(sessionId, was_successful, notes);
 
     // Get updated session stats
-    const contextSession = await prisma.qUAD_context_sessions.findUnique({
-      where: { id: sessionId },
-    });
+    const contextSession = await getContextSession(sessionId);
 
     return NextResponse.json({
       success: true,

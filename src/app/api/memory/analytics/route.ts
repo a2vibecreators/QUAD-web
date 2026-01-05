@@ -13,7 +13,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
+
+// Types
+interface ContextSessionStats {
+  id: string;
+  session_type: string;
+  iteration_count: number;
+  initial_context_tokens: number;
+  total_context_tokens: number;
+  was_successful: boolean | null;
+}
+
+interface HelpfulChunk {
+  id: string;
+  section_path: string;
+  times_retrieved: number;
+  times_helpful: number;
+  helpfulness_score: number;
+  document: { memory_level: string; title: string };
+}
+
+interface MissingCategoryGroup {
+  missing_category: string | null;
+  _count: { id: number };
+}
+
+interface SessionTypeGroup {
+  session_type: string;
+  _count: { id: number };
+  _avg: { iteration_count: number | null; total_context_tokens: number | null };
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getContextSessions(orgId: string, sinceDate: Date): Promise<ContextSessionStats[]> {
+  console.log(`[MemoryAnalytics] getContextSessions for org: ${orgId}, since: ${sinceDate.toISOString()}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getHelpfulChunks(orgId: string, limit: number): Promise<HelpfulChunk[]> {
+  console.log(`[MemoryAnalytics] getHelpfulChunks for org: ${orgId}, limit: ${limit}`);
+  return [];
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getMissingCategoriesGrouped(orgId: string, sinceDate: Date): Promise<MissingCategoryGroup[]> {
+  console.log(`[MemoryAnalytics] getMissingCategoriesGrouped for org: ${orgId}`);
+  return [];
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getSessionTypeStats(orgId: string, sinceDate: Date): Promise<SessionTypeGroup[]> {
+  console.log(`[MemoryAnalytics] getSessionTypeStats for org: ${orgId}`);
+  return [];
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,20 +88,7 @@ export async function GET(request: NextRequest) {
     sinceDate.setDate(sinceDate.getDate() - days);
 
     // Get session stats
-    const sessions = await prisma.qUAD_context_sessions.findMany({
-      where: {
-        org_id: orgId,
-        created_at: { gte: sinceDate },
-      },
-      select: {
-        id: true,
-        session_type: true,
-        iteration_count: true,
-        initial_context_tokens: true,
-        total_context_tokens: true,
-        was_successful: true,
-      },
-    });
+    const sessions = await getContextSessions(orgId, sinceDate);
 
     // Calculate aggregates
     const totalSessions = sessions.length;
@@ -58,47 +99,13 @@ export async function GET(request: NextRequest) {
     const totalContextTokens = sessions.reduce((sum, s) => sum + s.total_context_tokens, 0);
 
     // Get most helpful chunks
-    const helpfulChunks = await prisma.qUAD_memory_chunks.findMany({
-      where: {
-        document: { org_id: orgId },
-        times_retrieved: { gt: 0 },
-      },
-      orderBy: { helpfulness_score: 'desc' },
-      take: 10,
-      select: {
-        id: true,
-        section_path: true,
-        times_retrieved: true,
-        times_helpful: true,
-        helpfulness_score: true,
-        document: {
-          select: { memory_level: true, title: true },
-        },
-      },
-    });
+    const helpfulChunks = await getHelpfulChunks(orgId, 10);
 
     // Get common missing categories
-    const missingCategories = await prisma.qUAD_context_requests.groupBy({
-      by: ['missing_category'],
-      where: {
-        session: { org_id: orgId },
-        missing_category: { not: null },
-        created_at: { gte: sinceDate },
-      },
-      _count: { id: true },
-      orderBy: { _count: { id: 'desc' } },
-    });
+    const missingCategories = await getMissingCategoriesGrouped(orgId, sinceDate);
 
     // Get session type breakdown
-    const bySessionType = await prisma.qUAD_context_sessions.groupBy({
-      by: ['session_type'],
-      where: {
-        org_id: orgId,
-        created_at: { gte: sinceDate },
-      },
-      _count: { id: true },
-      _avg: { iteration_count: true, total_context_tokens: true },
-    });
+    const bySessionType = await getSessionTypeStats(orgId, sinceDate);
 
     // Calculate efficiency metrics
     // Estimate: Without smart context, we'd send ~10K tokens per session

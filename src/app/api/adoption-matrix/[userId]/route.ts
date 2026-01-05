@@ -3,12 +3,54 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken, calculateSafetyBuffer, getZoneName } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface AdoptionMatrix {
+  id: string;
+  user_id: string;
+  skill_level: number;
+  trust_level: number;
+  previous_skill_level: number | null;
+  previous_trust_level: number | null;
+  level_changed_at: Date | null;
+  notes: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface UserWithAdoptionMatrix {
+  id: string;
+  org_id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  adoption_matrix: AdoptionMatrix | null;
+}
 
 interface RouteParams {
   params: Promise<{ userId: string }>;
 }
+
+// ============================================================================
+// Stub Functions
+// ============================================================================
+
+async function findUserByIdWithMatrix(userId: string): Promise<UserWithAdoptionMatrix | null> {
+  console.log('[STUB] findUserByIdWithMatrix called with:', userId);
+  // TODO: Implement via Java backend GET /users/{id}?include=adoption_matrix
+  return null;
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 // GET: Get adoption matrix for a specific user
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -28,17 +70,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get user with adoption matrix
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        org_id: true,
-        email: true,
-        full_name: true,
-        role: true,
-        adoption_matrix: true
-      }
-    });
+    const user = await findUserByIdWithMatrix(userId);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

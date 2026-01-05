@@ -16,11 +16,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { routeToContext, compactConversation, Message, ContextCategory } from '@/lib/ai/context-categories';
 import { getCodebaseIndex, formatIndexForAI } from '@/lib/ai/codebase-indexer';
 import { callAI, AIMessage } from '@/lib/ai/providers';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
 
 // Environment check for AI providers
 const USE_REAL_AI = process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY;
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getAIConfig(orgId: string): Promise<{
+  anthropic_key_ref?: string | null;
+  openai_key_ref?: string | null;
+} | null> {
+  console.log(`[AIChat] getAIConfig for org: ${orgId}`);
+  return null; // Return null until backend ready
+}
 
 // Schema definitions for context injection
 const SCHEMA_DEFINITIONS: Record<string, string> = {
@@ -260,9 +269,8 @@ ${compacted.summary ? `## Previous Conversation Summary:\n${compacted.summary}\n
 `;
 
     // Step 6: Get AI configuration for this org
-    const aiConfig = await prisma.qUAD_ai_configs.findUnique({
-      where: { org_id: user.companyId },
-    });
+    // TODO: Implement via Java backend when endpoints are ready
+    const aiConfig = await getAIConfig(user.companyId);
 
     // Check if org has custom API keys configured (BYOK)
     // Keys are stored as vault references: openai_key_ref, anthropic_key_ref, etc.

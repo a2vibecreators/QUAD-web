@@ -4,8 +4,84 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface RankingConfig {
+  id: string;
+  org_id: string;
+  weight_delivery: number;
+  weight_quality: number;
+  weight_collaboration: number;
+  weight_learning: number;
+  weight_ai_adoption: number;
+  delivery_factors: Record<string, number>;
+  quality_factors: Record<string, number>;
+  collaboration_factors: Record<string, number>;
+  learning_factors: Record<string, number>;
+  ai_factors: Record<string, number>;
+  calculation_period: string;
+  show_rankings_to_team: boolean;
+  anonymize_rankings: boolean;
+  created_at: Date;
+  updated_at: Date;
+  updated_by: string | null;
+}
+
+interface RankingPreset {
+  name: string;
+  delivery: number;
+  quality: number;
+  collaboration: number;
+  learning: number;
+  ai: number;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function findRankingConfig(orgId: string): Promise<RankingConfig | null> {
+  console.log('[STUB] findRankingConfig called:', { orgId });
+  return null;
+}
+
+async function upsertRankingConfig(
+  orgId: string,
+  data: Partial<RankingConfig>
+): Promise<RankingConfig> {
+  console.log('[STUB] upsertRankingConfig called:', { orgId, data });
+  return {
+    id: 'stub-id',
+    org_id: orgId,
+    weight_delivery: data.weight_delivery || 35,
+    weight_quality: data.weight_quality || 25,
+    weight_collaboration: data.weight_collaboration || 20,
+    weight_learning: data.weight_learning || 15,
+    weight_ai_adoption: data.weight_ai_adoption || 5,
+    delivery_factors: data.delivery_factors || { completion_rate: 40, story_points: 30, on_time: 30 },
+    quality_factors: data.quality_factors || { defect_rate: 40, rework_rate: 30, review_score: 30 },
+    collaboration_factors: data.collaboration_factors || { peer_recognition: 40, help_given: 30, communication: 30 },
+    learning_factors: data.learning_factors || { skill_acquisition: 40, knowledge_sharing: 30, challenge_acceptance: 30 },
+    ai_factors: data.ai_factors || { tool_usage: 50, efficiency_gain: 50 },
+    calculation_period: data.calculation_period || 'monthly',
+    show_rankings_to_team: data.show_rankings_to_team ?? true,
+    anonymize_rankings: data.anonymize_rankings ?? false,
+    created_at: new Date(),
+    updated_at: new Date(),
+    updated_by: data.updated_by || null
+  };
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 // GET: Get ranking config
 export async function GET(request: NextRequest) {
@@ -21,9 +97,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    let config = await prisma.qUAD_ranking_configs.findUnique({
-      where: { org_id: payload.companyId }
-    });
+    let config = await findRankingConfig(payload.companyId);
 
     if (!config) {
       // Return defaults
@@ -50,7 +124,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Define presets
-    const presets = [
+    const presets: RankingPreset[] = [
       { name: 'Balanced', delivery: 35, quality: 25, collaboration: 20, learning: 15, ai: 5 },
       { name: 'Speed-Focused', delivery: 50, quality: 20, collaboration: 15, learning: 10, ai: 5 },
       { name: 'Quality-First', delivery: 25, quality: 40, collaboration: 20, learning: 10, ai: 5 },
@@ -112,33 +186,21 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const config = await prisma.qUAD_ranking_configs.upsert({
-      where: { org_id: payload.companyId },
-      update: {
-        weight_delivery,
-        weight_quality,
-        weight_collaboration,
-        weight_learning,
-        weight_ai_adoption,
-        ...(delivery_factors && { delivery_factors }),
-        ...(quality_factors && { quality_factors }),
-        ...(collaboration_factors && { collaboration_factors }),
-        ...(learning_factors && { learning_factors }),
-        ...(ai_factors && { ai_factors }),
-        ...(calculation_period && { calculation_period }),
-        ...(show_rankings_to_team !== undefined && { show_rankings_to_team }),
-        ...(anonymize_rankings !== undefined && { anonymize_rankings }),
-        updated_by: payload.userId
-      },
-      create: {
-        org_id: payload.companyId,
-        weight_delivery: weight_delivery || 35,
-        weight_quality: weight_quality || 25,
-        weight_collaboration: weight_collaboration || 20,
-        weight_learning: weight_learning || 15,
-        weight_ai_adoption: weight_ai_adoption || 5,
-        updated_by: payload.userId
-      }
+    const config = await upsertRankingConfig(payload.companyId, {
+      weight_delivery,
+      weight_quality,
+      weight_collaboration,
+      weight_learning,
+      weight_ai_adoption,
+      delivery_factors,
+      quality_factors,
+      collaboration_factors,
+      learning_factors,
+      ai_factors,
+      calculation_period,
+      show_rankings_to_team,
+      anonymize_rankings,
+      updated_by: payload.userId
     });
 
     return NextResponse.json({ config });

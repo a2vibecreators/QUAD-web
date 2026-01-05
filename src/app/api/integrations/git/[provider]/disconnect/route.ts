@@ -8,10 +8,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import { gitHubService } from '@/lib/integrations';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 
 interface RouteContext {
   params: Promise<{ provider: string }>;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserWithOrg(email: string): Promise<{ id: string; org_id: string } | null> {
+  console.log(`[GitDisconnect] getUserWithOrg for email: ${email}`);
+  return { id: 'mock-user-id', org_id: 'mock-org-id' };
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
@@ -24,10 +30,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { provider } = await context.params;
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, org_id: true },
-    });
+    const user = await getUserWithOrg(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(

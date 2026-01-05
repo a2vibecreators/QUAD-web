@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import {
   getProviderConfig,
   isOAuthProvider,
@@ -19,6 +19,12 @@ import {
 
 interface RouteContext {
   params: Promise<{ provider: string }>;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrg(userId: string): Promise<string | null> {
+  console.log(`[MeetingConnect] getUserOrg for user: ${userId}`);
+  return 'mock-org-id';
 }
 
 export async function POST(
@@ -44,12 +50,9 @@ export async function POST(
     }
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrg(session.user.id);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json(
         { error: 'Organization not found' },
         { status: 404 }
@@ -58,14 +61,14 @@ export async function POST(
 
     // Handle OAuth providers
     if (isOAuthProvider(provider as MeetingProvider)) {
-      return handleOAuthConnect(provider as MeetingProvider, user.org_id, session.user.id);
+      return handleOAuthConnect(provider as MeetingProvider, orgId, session.user.id);
     }
 
     // Handle API key providers (Cal.com)
     const body = await request.json().catch(() => ({}));
     return handleApiKeyConnect(
       provider as MeetingProvider,
-      user.org_id,
+      orgId,
       session.user.id,
       body.apiKey
     );

@@ -5,8 +5,78 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface AdoptionMatrix {
+  skill_level: number;
+  trust_level: number;
+}
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  org_id: string;
+  adoption_matrix: AdoptionMatrix | null;
+}
+
+interface CircleMember {
+  user: Pick<User, 'id' | 'email' | 'full_name' | 'role' | 'adoption_matrix'>;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface Circle {
+  id: string;
+  domain_id: string;
+  circle_number: number;
+  circle_name: string;
+  description: string | null;
+  lead_user_id: string | null;
+  is_active: boolean;
+  domain: Domain;
+  lead: Pick<User, 'id' | 'email' | 'full_name' | 'adoption_matrix'> | null;
+  members: CircleMember[];
+}
+
+interface CircleWithOrgId {
+  id: string;
+  domain: { org_id: string };
+}
+
+// Stub functions
+async function stubFindCircleById(id: string): Promise<Circle | null> {
+  console.log(`[STUB] Finding circle by ID: ${id}`);
+  return null;
+}
+
+async function stubFindCircleWithOrgId(id: string): Promise<CircleWithOrgId | null> {
+  console.log(`[STUB] Finding circle with org ID: ${id}`);
+  return null;
+}
+
+async function stubFindUserById(userId: string): Promise<User | null> {
+  console.log(`[STUB] Finding user by ID: ${userId}`);
+  return null;
+}
+
+async function stubUpdateCircle(id: string, data: Partial<Circle>): Promise<Circle | null> {
+  console.log(`[STUB] Updating circle ${id} with data:`, data);
+  return null;
+}
+
+async function stubDeleteCircle(id: string): Promise<void> {
+  console.log(`[STUB] Deleting circle: ${id}`);
+}
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -29,39 +99,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const circle = await prisma.qUAD_circles.findUnique({
-      where: { id },
-      include: {
-        domain: {
-          select: { id: true, name: true, org_id: true }
-        },
-        lead: {
-          select: {
-            id: true,
-            email: true,
-            full_name: true,
-            adoption_matrix: {
-              select: { skill_level: true, trust_level: true }
-            }
-          }
-        },
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                email: true,
-                full_name: true,
-                role: true,
-                adoption_matrix: {
-                  select: { skill_level: true, trust_level: true }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
+    const circle = await stubFindCircleById(id);
 
     if (!circle) {
       return NextResponse.json({ error: 'Circle not found' }, { status: 404 });
@@ -104,10 +142,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const existing = await prisma.qUAD_circles.findUnique({
-      where: { id },
-      include: { domain: { select: { org_id: true } } }
-    });
+    const existing = await stubFindCircleWithOrgId(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Circle not found' }, { status: 404 });
@@ -122,26 +157,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // If changing lead, verify they're in same company
     if (lead_user_id !== undefined && lead_user_id !== null) {
-      const leadUser = await prisma.qUAD_users.findUnique({
-        where: { id: lead_user_id }
-      });
+      const leadUser = await stubFindUserById(lead_user_id);
       if (!leadUser || leadUser.org_id !== payload.companyId) {
         return NextResponse.json({ error: 'Lead user not found' }, { status: 404 });
       }
     }
 
-    const circle = await prisma.qUAD_circles.update({
-      where: { id },
-      data: {
-        ...(circle_name !== undefined && { circle_name }),
-        ...(description !== undefined && { description }),
-        ...(lead_user_id !== undefined && { lead_user_id }),
-        ...(is_active !== undefined && { is_active })
-      },
-      include: {
-        domain: { select: { id: true, name: true } },
-        lead: { select: { id: true, email: true, full_name: true } }
-      }
+    const circle = await stubUpdateCircle(id, {
+      ...(circle_name !== undefined && { circle_name }),
+      ...(description !== undefined && { description }),
+      ...(lead_user_id !== undefined && { lead_user_id }),
+      ...(is_active !== undefined && { is_active })
     });
 
     return NextResponse.json(circle);
@@ -176,10 +202,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const existing = await prisma.qUAD_circles.findUnique({
-      where: { id },
-      include: { domain: { select: { org_id: true } } }
-    });
+    const existing = await stubFindCircleWithOrgId(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Circle not found' }, { status: 404 });
@@ -189,9 +212,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await prisma.qUAD_circles.delete({
-      where: { id }
-    });
+    await stubDeleteCircle(id);
 
     return NextResponse.json({ message: 'Circle deleted successfully' });
   } catch (error) {

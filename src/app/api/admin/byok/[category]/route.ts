@@ -8,13 +8,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import {
   getBYOKProvidersByCategory,
   BYOK_CATEGORY_NAMES,
   BYOK_CATEGORY_DESCRIPTIONS,
   type BYOKCategory,
 } from '@/lib/integrations/byok-matrix';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+async function getUserWithRole(_email: string): Promise<{ org_id: string | null; role: string | null } | null> {
+  console.log('[BYOKCategory] getUserWithRole - stub');
+  return null;
+}
+
+async function getOrgSettings(_orgId: string): Promise<{ [key: string]: boolean } | null> {
+  console.log(`[BYOKCategory] getOrgSettings: ${_orgId}`);
+  return null;
+}
+
+async function getConfiguredProviders(_orgId: string, _category: string): Promise<{ provider: string; use_byok: boolean; byok_client_id: string | null }[]> {
+  console.log(`[BYOKCategory] getConfiguredProviders: ${_category}`);
+  return [];
+}
+
+async function upsertOrgSettings(_orgId: string, _data: object): Promise<void> {
+  console.log(`[BYOKCategory] upsertOrgSettings: ${_orgId}`);
+}
 
 interface RouteParams {
   params: Promise<{ category: string }>;
@@ -41,10 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true, role: true },
-    });
+    const user = await getUserWithRole(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -57,24 +75,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const providers = getBYOKProvidersByCategory(category as BYOKCategory);
 
     // Get org settings
-    const orgSettings = await prisma.qUAD_org_settings.findUnique({
-      where: { org_id: user.org_id },
-    });
+    const orgSettings = await getOrgSettings(user.org_id);
 
     // Get configured integrations based on category
-    let configuredProviders: { provider: string; use_byok: boolean; byok_client_id: string | null }[] = [];
-
-    if (category === 'git') {
-      configuredProviders = await prisma.qUAD_git_integrations.findMany({
-        where: { org_id: user.org_id },
-        select: { provider: true, use_byok: true, byok_client_id: true },
-      });
-    } else if (category === 'calendar') {
-      configuredProviders = await prisma.qUAD_meeting_integrations.findMany({
-        where: { org_id: user.org_id },
-        select: { provider: true, use_byok: true, byok_client_id: true },
-      });
-    }
+    const configuredProviders = await getConfiguredProviders(user.org_id, category);
     // AI and Communication would have their own integration tables
 
     // Build provider status map
@@ -136,10 +140,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true, role: true },
-    });
+    const user = await getUserWithRole(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -177,14 +178,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const fieldName = fieldMap[category as BYOKCategory];
 
     // Update org settings
-    await prisma.qUAD_org_settings.upsert({
-      where: { org_id: user.org_id },
-      update: { [fieldName]: enabled },
-      create: {
-        org_id: user.org_id,
-        [fieldName]: enabled,
-      },
-    });
+    await upsertOrgSettings(user.org_id, { [fieldName]: enabled });
 
     return NextResponse.json({
       success: true,

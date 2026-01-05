@@ -8,8 +8,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { MemoryService } from '@/lib/services/memory-service';
+
+// Types
+interface MemoryDocument {
+  id: string;
+  memory_level: string;
+  level_entity_id: string | null;
+  document_key: string;
+  title: string;
+  version: number;
+  word_count: number;
+  token_estimate: number;
+  sections: string[];
+  auto_update_enabled: boolean;
+  auto_update_sources: string[];
+  last_auto_update_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getMemoryDocuments(orgId: string, level?: string | null, entityId?: string | null): Promise<MemoryDocument[]> {
+  console.log(`[MemoryDocuments] getMemoryDocuments for org: ${orgId}, level: ${level}, entity: ${entityId}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getMemoryDocument(documentId: string): Promise<MemoryDocument | null> {
+  console.log(`[MemoryDocuments] getMemoryDocument: ${documentId}`);
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function countMemoryChunks(documentId: string): Promise<number> {
+  console.log(`[MemoryDocuments] countMemoryChunks: ${documentId}`);
+  return 0;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,37 +63,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'org_id is required' }, { status: 400 });
     }
 
-    const where: Record<string, unknown> = {
-      org_id: orgId,
-      is_active: true,
-    };
-
-    if (level) where.memory_level = level;
-    if (entityId) where.level_entity_id = entityId;
-
-    const documents = await prisma.qUAD_memory_documents.findMany({
-      where,
-      select: {
-        id: true,
-        memory_level: true,
-        level_entity_id: true,
-        document_key: true,
-        title: true,
-        version: true,
-        word_count: true,
-        token_estimate: true,
-        sections: true,
-        auto_update_enabled: true,
-        auto_update_sources: true,
-        last_auto_update_at: true,
-        created_at: true,
-        updated_at: true,
-      },
-      orderBy: [
-        { memory_level: 'asc' },
-        { title: 'asc' },
-      ],
-    });
+    const documents = await getMemoryDocuments(orgId, level, entityId);
 
     // Group by level for easier viewing
     const byLevel: Record<string, typeof documents> = {};
@@ -144,25 +150,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the created/updated document
-    const document = await prisma.qUAD_memory_documents.findUnique({
-      where: { id: documentId },
-      select: {
-        id: true,
-        document_key: true,
-        title: true,
-        memory_level: true,
-        version: true,
-        word_count: true,
-        token_estimate: true,
-        sections: true,
-        updated_at: true,
-      },
-    });
+    const document = await getMemoryDocument(documentId);
 
     // Count chunks created
-    const chunkCount = await prisma.qUAD_memory_chunks.count({
-      where: { document_id: documentId },
-    });
+    const chunkCount = await countMemoryChunks(documentId);
 
     return NextResponse.json({
       success: true,

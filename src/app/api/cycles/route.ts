@@ -7,8 +7,92 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface Domain {
+  id: string;
+  name: string;
+  ticket_prefix: string;
+  org_id: string;
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+}
+
+interface Ticket {
+  id: string;
+  ticket_number: string;
+  title: string;
+  status: string;
+  story_points: number | null;
+  assigned_to: string | null;
+}
+
+interface Cycle {
+  id: string;
+  domain_id: string;
+  milestone_id: string | null;
+  cycle_number: number;
+  name: string;
+  goal: string | null;
+  start_date: Date;
+  end_date: Date;
+  status: string;
+  capacity: number | null;
+  domain?: Partial<Domain>;
+  milestone?: Partial<Milestone> | null;
+  tickets: Ticket[];
+  _count?: { tickets: number };
+}
+
+// Stub functions for database operations
+async function findManyDomains(where: Record<string, unknown>): Promise<{ id: string }[]> {
+  console.log('[STUB] findManyDomains called with:', where);
+  return [];
+}
+
+async function findManyCycles(where: Record<string, unknown>, include?: Record<string, unknown>, orderBy?: unknown[]): Promise<Cycle[]> {
+  console.log('[STUB] findManyCycles called with:', { where, include, orderBy });
+  return [];
+}
+
+async function findUniqueDomain(id: string): Promise<Domain | null> {
+  console.log('[STUB] findUniqueDomain called with id:', id);
+  return null;
+}
+
+async function findUniqueMilestone(id: string): Promise<{ id: string; domain_id: string } | null> {
+  console.log('[STUB] findUniqueMilestone called with id:', id);
+  return null;
+}
+
+async function findFirstCycle(where: Record<string, unknown>, orderBy?: Record<string, unknown>): Promise<{ cycle_number: number } | null> {
+  console.log('[STUB] findFirstCycle called with:', { where, orderBy });
+  return null;
+}
+
+async function createCycle(data: Record<string, unknown>, include?: Record<string, unknown>): Promise<Cycle> {
+  console.log('[STUB] createCycle called with:', { data, include });
+  return {
+    id: 'stub-cycle-id',
+    domain_id: data.domain_id as string,
+    milestone_id: data.milestone_id as string | null,
+    cycle_number: data.cycle_number as number,
+    name: data.name as string,
+    goal: data.goal as string | null,
+    start_date: data.start_date as Date,
+    end_date: data.end_date as Date,
+    status: data.status as string,
+    capacity: data.capacity as number | null,
+    tickets: []
+  };
+}
 
 // GET: List Cycles with filtering
 export async function GET(request: NextRequest) {
@@ -33,10 +117,7 @@ export async function GET(request: NextRequest) {
     const active = searchParams.get('active'); // Get current active Cycle
 
     // Get organization Domains
-    const orgDomains = await prisma.qUAD_domains.findMany({
-      where: { org_id: payload.companyId },
-      select: { id: true }
-    });
+    const orgDomains = await findManyDomains({ org_id: payload.companyId });
     const domainIds = orgDomains.map(d => d.id);
 
     // Build where clause
@@ -48,9 +129,9 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
     if (active === 'true') where.status = 'active';
 
-    const cycles = await prisma.qUAD_cycles.findMany({
+    const cycles = await findManyCycles(
       where,
-      include: {
+      {
         domain: {
           select: { id: true, name: true, ticket_prefix: true }
         },
@@ -71,11 +152,11 @@ export async function GET(request: NextRequest) {
           select: { tickets: true }
         }
       },
-      orderBy: [
+      [
         { status: 'asc' }, // active first
         { cycle_number: 'desc' }
       ]
-    });
+    );
 
     // Calculate Cycle metrics
     const cyclesWithMetrics = cycles.map(cycle => {
@@ -170,9 +251,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify Domain exists and belongs to user's company
-    const domain = await prisma.qUAD_domains.findUnique({
-      where: { id: domain_id }
-    });
+    const domain = await findUniqueDomain(domain_id);
 
     if (!domain || domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
@@ -180,24 +259,22 @@ export async function POST(request: NextRequest) {
 
     // If milestone_id provided, verify it exists
     if (milestone_id) {
-      const milestone = await prisma.qUAD_milestones.findUnique({
-        where: { id: milestone_id }
-      });
+      const milestone = await findUniqueMilestone(milestone_id);
       if (!milestone || milestone.domain_id !== domain_id) {
         return NextResponse.json({ error: 'Milestone not found' }, { status: 404 });
       }
     }
 
     // Get next Cycle number for this Domain
-    const lastCycle = await prisma.qUAD_cycles.findFirst({
-      where: { domain_id },
-      orderBy: { cycle_number: 'desc' }
-    });
+    const lastCycle = await findFirstCycle(
+      { domain_id },
+      { cycle_number: 'desc' }
+    );
     const cycleNumber = (lastCycle?.cycle_number || 0) + 1;
 
     // Create Cycle
-    const cycle = await prisma.qUAD_cycles.create({
-      data: {
+    const cycle = await createCycle(
+      {
         domain_id,
         milestone_id,
         cycle_number: cycleNumber,
@@ -208,7 +285,7 @@ export async function POST(request: NextRequest) {
         status: 'planned',
         capacity
       },
-      include: {
+      {
         domain: {
           select: { id: true, name: true }
         },
@@ -216,7 +293,7 @@ export async function POST(request: NextRequest) {
           select: { id: true, title: true }
         }
       }
-    });
+    );
 
     return NextResponse.json(cycle, { status: 201 });
   } catch (error) {

@@ -8,7 +8,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
+
+// Types
+interface UserSkill {
+  id: string;
+  user_id: string;
+  skill_id: string | null;
+  skill_name: string;
+  skill_category: string | null;
+  proficiency_level: number;
+  source: string;
+  confidence: number;
+  tickets_completed: number;
+  tickets_declined: number;
+  last_assessed: Date | null;
+  skill?: { skill_code: string; category: string } | null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrgId(userId: string): Promise<string | null> {
+  console.log(`[UserSkills] getUserOrgId for: ${userId}`);
+  return 'mock-org-id'; // Return mock until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserSkills(userId: string): Promise<UserSkill[]> {
+  console.log(`[UserSkills] getUserSkills for: ${userId}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function findUserSkill(userId: string, skillName: string): Promise<UserSkill | null> {
+  console.log(`[UserSkills] findUserSkill: ${userId}, ${skillName}`);
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function updateUserSkill(id: string, data: Partial<UserSkill>): Promise<UserSkill> {
+  console.log(`[UserSkills] updateUserSkill: ${id}`, data);
+  return { id, user_id: '', skill_id: null, skill_name: '', skill_category: null, proficiency_level: 1, source: '', confidence: 0, tickets_completed: 0, tickets_declined: 0, last_assessed: null };
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createUserSkill(data: Partial<UserSkill>): Promise<UserSkill> {
+  console.log(`[UserSkills] createUserSkill:`, data);
+  return { id: 'mock-id', user_id: data.user_id || '', skill_id: null, skill_name: data.skill_name || '', skill_category: data.skill_category || null, proficiency_level: data.proficiency_level || 1, source: data.source || '', confidence: data.confidence || 0, tickets_completed: 0, tickets_declined: 0, last_assessed: null };
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,23 +66,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('user_id') || session.user.id;
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrgId(session.user.id);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 });
     }
 
     // Get user's skills with skill details
-    const userSkills = await prisma.qUAD_user_skills.findMany({
-      where: { user_id: userId },
-      include: {
-        skill: true,
-      },
-      orderBy: [{ proficiency_level: 'desc' }, { skill_name: 'asc' }],
-    });
+    const userSkills = await getUserSkills(userId);
 
     // Group by category
     const skillsByCategory = userSkills.reduce((acc, us) => {
@@ -86,12 +123,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrgId(session.user.id);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 });
     }
 
@@ -116,35 +150,27 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if user already has this skill
-      const existing = await prisma.qUAD_user_skills.findFirst({
-        where: { user_id: targetUserId, skill_name },
-      });
+      const existing = await findUserSkill(targetUserId, skill_name);
 
       if (existing) {
         // Update proficiency
-        const updated = await prisma.qUAD_user_skills.update({
-          where: { id: existing.id },
-          data: {
-            proficiency_level,
-            skill_id: skill_id || existing.skill_id,
-            source: 'self_declared',
-            last_assessed: new Date(),
-          },
+        const updated = await updateUserSkill(existing.id, {
+          proficiency_level,
+          skill_id: skill_id || existing.skill_id,
+          source: 'self_declared',
+          last_assessed: new Date(),
         });
         results.push({ action: 'updated', skill: updated });
       } else {
         // Create new skill entry
-        const created = await prisma.qUAD_user_skills.create({
-          data: {
-            user_id: targetUserId,
-            org_id: user.org_id,
-            skill_name,
-            skill_id,
-            skill_category: skill_category || 'technical',
-            proficiency_level,
-            source: 'self_declared',
-            confidence: 0.8, // High confidence for self-declared
-          },
+        const created = await createUserSkill({
+          user_id: targetUserId,
+          skill_name,
+          skill_id,
+          skill_category: skill_category || 'technical',
+          proficiency_level,
+          source: 'self_declared',
+          confidence: 0.8, // High confidence for self-declared
         });
         results.push({ action: 'created', skill: created });
       }

@@ -1,7 +1,110 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface InfraConfig {
+  sandbox_strategy: string;
+  sandbox_pool_size: number;
+  sandbox_dedicated_timeout_hours: number;
+  cloud_provider: string;
+}
+
+interface SandboxCount {
+  mode: string;
+  status: string;
+  count: number;
+}
+
+interface IdleCandidate {
+  id: string;
+  mode: string;
+  status: string;
+  idle_hours: number;
+  cloud_instance_id: string | null;
+  assigned_user_email: string | null;
+}
+
+interface ResourceMetrics {
+  avg_cpu: number;
+  max_cpu: number;
+  avg_memory: number;
+  max_memory: number;
+  total_api_calls: number;
+  total_cost: number;
+}
+
+interface TerminationCandidate {
+  sandbox_id: string;
+  termination_reason: string;
+}
+
+interface User {
+  id: string;
+  company_id: string | null;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function getUserCompanyId(userId: string): Promise<string | null> {
+  console.log(`[InfraUsage] getUserCompanyId stub called: ${userId}`);
+  return 'mock-company-id';
+}
+
+async function getInfraConfig(orgId: string): Promise<InfraConfig> {
+  console.log(`[InfraUsage] getInfraConfig stub called: ${orgId}`);
+  return {
+    sandbox_strategy: 'shared',
+    sandbox_pool_size: 2,
+    sandbox_dedicated_timeout_hours: 24,
+    cloud_provider: 'gcp',
+  };
+}
+
+async function getSandboxCounts(orgId: string): Promise<SandboxCount[]> {
+  console.log(`[InfraUsage] getSandboxCounts stub called: ${orgId}`);
+  return [];
+}
+
+async function getIdleCandidates(orgId: string): Promise<IdleCandidate[]> {
+  console.log(`[InfraUsage] getIdleCandidates stub called: ${orgId}`);
+  return [];
+}
+
+async function getResourceMetrics(orgId: string): Promise<ResourceMetrics | null> {
+  console.log(`[InfraUsage] getResourceMetrics stub called: ${orgId}`);
+  return null;
+}
+
+async function getUserById(userId: string): Promise<User | null> {
+  console.log(`[InfraUsage] getUserById stub called: ${userId}`);
+  return { id: userId, company_id: 'mock-company-id' };
+}
+
+async function getSandboxesToTerminate(orgId: string): Promise<TerminationCandidate[]> {
+  console.log(`[InfraUsage] getSandboxesToTerminate stub called: ${orgId}`);
+  return [];
+}
+
+async function markSandboxesForTermination(
+  sandboxIds: string[],
+  orgId: string,
+  terminatedBy: string
+): Promise<void> {
+  console.log(`[InfraUsage] markSandboxesForTermination stub called:`, { sandboxIds, orgId, terminatedBy });
+}
+
+// ============================================================================
+// API Routes
+// ============================================================================
 
 /**
  * GET /api/infrastructure/usage
@@ -27,64 +130,22 @@ export async function GET(request: NextRequest) {
     const includeMetrics = searchParams.get('include_metrics') === 'true';
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { company_id: true },
-    });
+    const companyId = await getUserCompanyId(session.user.id);
 
-    if (!user?.company_id) {
+    if (!companyId) {
       return NextResponse.json({ error: 'No organization found' }, { status: 404 });
     }
 
-    const orgId = searchParams.get('org_id') || user.company_id;
+    const orgId = searchParams.get('org_id') || companyId;
 
     // Get infrastructure config
-    const config = await prisma.$queryRaw<any[]>`
-      SELECT
-        sandbox_strategy,
-        sandbox_pool_size,
-        sandbox_dedicated_timeout_hours,
-        cloud_provider,
-        monthly_budget_usd
-      FROM QUAD_infrastructure_config
-      WHERE org_id = ${orgId}::uuid
-    `;
-
-    const infraConfig = config[0] || {
-      sandbox_strategy: 'shared',
-      sandbox_pool_size: 2,
-      sandbox_dedicated_timeout_hours: 24,
-      cloud_provider: 'gcp',
-    };
+    const infraConfig = await getInfraConfig(orgId);
 
     // Get sandbox counts by mode and status
-    const sandboxCounts = await prisma.$queryRaw<any[]>`
-      SELECT
-        mode,
-        status,
-        COUNT(*)::integer as count
-      FROM QUAD_sandbox_instances
-      WHERE org_id = ${orgId}::uuid
-      GROUP BY mode, status
-      ORDER BY mode, status
-    `;
+    const sandboxCounts = await getSandboxCounts(orgId);
 
     // Get idle sandboxes eligible for termination
-    const idleCandidates = await prisma.$queryRaw<any[]>`
-      SELECT
-        id,
-        mode,
-        status,
-        EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - idle_since)) / 3600 as idle_hours,
-        cloud_instance_id,
-        assigned_user_email
-      FROM QUAD_sandbox_instances
-      WHERE org_id = ${orgId}::uuid
-        AND status = 'idle'
-        AND idle_since IS NOT NULL
-      ORDER BY idle_since ASC
-      LIMIT 10
-    `;
+    const idleCandidates = await getIdleCandidates(orgId);
 
     // Calculate summary
     const summary = {
@@ -111,21 +172,9 @@ export async function GET(request: NextRequest) {
     const scaleDownCount = canScaleDown ? Math.min(summary.shared.idle, currentSharedTotal - minPool) : 0;
 
     // Get recent resource metrics if requested
-    let resourceMetrics = null;
+    let resourceMetrics: ResourceMetrics | null = null;
     if (includeMetrics) {
-      const metrics = await prisma.$queryRaw<any[]>`
-        SELECT
-          AVG(cpu_percent)::decimal(5,2) as avg_cpu,
-          MAX(cpu_percent)::decimal(5,2) as max_cpu,
-          AVG(memory_percent)::decimal(5,2) as avg_memory,
-          MAX(memory_percent)::decimal(5,2) as max_memory,
-          SUM(api_calls)::integer as total_api_calls,
-          SUM(period_cost_usd)::decimal(10,4) as total_cost
-        FROM QUAD_sandbox_usage
-        WHERE org_id = ${orgId}::uuid
-          AND recorded_at > CURRENT_TIMESTAMP - INTERVAL '1 hour'
-      `;
-      resourceMetrics = metrics[0];
+      resourceMetrics = await getResourceMetrics(orgId);
     }
 
     const response = {
@@ -194,10 +243,7 @@ export async function POST(request: NextRequest) {
     const { sandbox_ids, auto } = body;
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { company_id: true },
-    });
+    const user = await getUserById(session.user.id);
 
     if (!user?.company_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 404 });
@@ -206,13 +252,8 @@ export async function POST(request: NextRequest) {
     let terminatedIds: string[] = [];
 
     if (auto) {
-      // Auto-select sandboxes to terminate using the database function
-      const candidates = await prisma.$queryRaw<any[]>`
-        SELECT sandbox_id, termination_reason
-        FROM get_sandboxes_to_terminate(${user.company_id}::uuid)
-        LIMIT 10
-      `;
-
+      // Auto-select sandboxes to terminate using the stub function
+      const candidates = await getSandboxesToTerminate(user.company_id);
       terminatedIds = candidates.map((c) => c.sandbox_id);
     } else if (sandbox_ids && Array.isArray(sandbox_ids)) {
       terminatedIds = sandbox_ids;
@@ -226,16 +267,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark sandboxes as terminating
-    await prisma.$executeRaw`
-      UPDATE QUAD_sandbox_instances
-      SET status = 'terminating',
-          terminated_at = CURRENT_TIMESTAMP,
-          terminated_by = ${session.user.id}::uuid,
-          termination_reason = 'scale_down'
-      WHERE id = ANY(${terminatedIds}::uuid[])
-        AND org_id = ${user.company_id}::uuid
-        AND status IN ('running', 'idle')
-    `;
+    await markSandboxesForTermination(terminatedIds, user.company_id, session.user.id);
 
     // TODO: Trigger actual cloud resource termination via queue/job
 

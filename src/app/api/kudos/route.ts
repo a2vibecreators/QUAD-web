@@ -4,8 +4,90 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface Kudos {
+  id: string;
+  from_user_id: string;
+  to_user_id: string;
+  org_id: string;
+  kudos_type: string;
+  message: string | null;
+  ticket_id: string | null;
+  domain_id: string | null;
+  created_at: Date;
+}
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+  org_id?: string;
+}
+
+interface KudosGroupByResult {
+  to_user_id: string;
+  _count: { id: number };
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function getKudosLeaderboard(orgId: string, startDate: Date): Promise<KudosGroupByResult[]> {
+  console.log('[STUB] getKudosLeaderboard called:', { orgId, startDate });
+  return [];
+}
+
+async function findUsersByIds(userIds: string[]): Promise<User[]> {
+  console.log('[STUB] findUsersByIds called:', { userIds });
+  return [];
+}
+
+async function findKudosByUser(
+  userId: string,
+  orgId: string,
+  view: 'received' | 'given',
+  limit: number
+): Promise<Kudos[]> {
+  console.log('[STUB] findKudosByUser called:', { userId, orgId, view, limit });
+  return [];
+}
+
+async function countKudosReceived(userId: string, orgId: string): Promise<number> {
+  console.log('[STUB] countKudosReceived called:', { userId, orgId });
+  return 0;
+}
+
+async function countKudosGiven(userId: string, orgId: string): Promise<number> {
+  console.log('[STUB] countKudosGiven called:', { userId, orgId });
+  return 0;
+}
+
+async function findUserByIdAndOrg(userId: string, orgId: string): Promise<User | null> {
+  console.log('[STUB] findUserByIdAndOrg called:', { userId, orgId });
+  return null;
+}
+
+async function createKudos(data: Omit<Kudos, 'id' | 'created_at'>): Promise<Kudos> {
+  console.log('[STUB] createKudos called:', data);
+  return {
+    id: 'stub-id',
+    ...data,
+    created_at: new Date()
+  };
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 // GET: Get kudos
 export async function GET(request: NextRequest) {
@@ -30,22 +112,10 @@ export async function GET(request: NextRequest) {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const kudosCounts = await prisma.qUAD_kudos.groupBy({
-        by: ['to_user_id'],
-        where: {
-          org_id: payload.companyId,
-          created_at: { gte: monthStart }
-        },
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 10
-      });
+      const kudosCounts = await getKudosLeaderboard(payload.companyId, monthStart);
 
       const userIds = kudosCounts.map(k => k.to_user_id);
-      const users = await prisma.qUAD_users.findMany({
-        where: { id: { in: userIds } },
-        select: { id: true, full_name: true, email: true }
-      });
+      const users = await findUsersByIds(userIds);
 
       const userMap = new Map(users.map(u => [u.id, u]));
 
@@ -62,15 +132,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get kudos received or given
-    const whereClause = view === 'received'
-      ? { to_user_id: payload.userId, org_id: payload.companyId }
-      : { from_user_id: payload.userId, org_id: payload.companyId };
-
-    const kudos = await prisma.qUAD_kudos.findMany({
-      where: whereClause,
-      orderBy: { created_at: 'desc' },
-      take: limit
-    });
+    const kudos = await findKudosByUser(
+      payload.userId,
+      payload.companyId,
+      view as 'received' | 'given',
+      limit
+    );
 
     // Get user details
     const userIds = [...new Set([
@@ -78,10 +145,7 @@ export async function GET(request: NextRequest) {
       ...kudos.map(k => k.to_user_id)
     ])];
 
-    const users = await prisma.qUAD_users.findMany({
-      where: { id: { in: userIds } },
-      select: { id: true, full_name: true, email: true }
-    });
+    const users = await findUsersByIds(userIds);
 
     const userMap = new Map(users.map(u => [u.id, u]));
 
@@ -92,13 +156,8 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get summary stats
-    const totalReceived = await prisma.qUAD_kudos.count({
-      where: { to_user_id: payload.userId, org_id: payload.companyId }
-    });
-
-    const totalGiven = await prisma.qUAD_kudos.count({
-      where: { from_user_id: payload.userId, org_id: payload.companyId }
-    });
+    const totalReceived = await countKudosReceived(payload.userId, payload.companyId);
+    const totalGiven = await countKudosGiven(payload.userId, payload.companyId);
 
     return NextResponse.json({
       view,
@@ -157,24 +216,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify recipient exists in org
-    const recipient = await prisma.qUAD_users.findFirst({
-      where: { id: to_user_id, org_id: payload.companyId }
-    });
+    const recipient = await findUserByIdAndOrg(to_user_id, payload.companyId);
 
     if (!recipient) {
       return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
     }
 
-    const kudos = await prisma.qUAD_kudos.create({
-      data: {
-        from_user_id: payload.userId,
-        to_user_id,
-        org_id: payload.companyId,
-        kudos_type,
-        message,
-        ticket_id,
-        domain_id
-      }
+    const kudos = await createKudos({
+      from_user_id: payload.userId,
+      to_user_id,
+      org_id: payload.companyId,
+      kudos_type,
+      message,
+      ticket_id,
+      domain_id
     });
 
     return NextResponse.json({

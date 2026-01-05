@@ -11,8 +11,89 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface TicketWithDomain {
+  id: string;
+  domain_id: string;
+  ticket_number: string;
+  title: string;
+  description: string | null;
+  ticket_type: string;
+  acceptance_criteria: string | null;
+  domain: {
+    id: string;
+    org_id: string;
+  };
+}
+
+interface AIOperation {
+  id: string;
+  domain_id: string;
+  operation_type: string;
+  input_summary: string;
+  model_used: string;
+  status: string;
+  triggered_by: string;
+  started_at: Date;
+  output_summary?: string;
+  confidence?: number;
+  completed_at?: Date;
+  error_message?: string;
+}
+
+interface UpdatedTicket {
+  id: string;
+  ai_implementation_plan: string | null;
+  ai_suggested_files: string[] | null;
+  ai_confidence: number | null;
+  ai_estimate_hours: number | null;
+  acceptance_criteria: string | null;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function stubFindTicketById(ticketId: string): Promise<TicketWithDomain | null> {
+  console.log('[STUB] prisma.qUAD_tickets.findUnique called with id:', ticketId);
+  return null;
+}
+
+async function stubCreateAIOperation(data: Omit<AIOperation, 'id' | 'output_summary' | 'confidence' | 'completed_at' | 'error_message'>): Promise<AIOperation> {
+  console.log('[STUB] prisma.qUAD_ai_operations.create called with data:', JSON.stringify(data));
+  return {
+    id: 'stub-ai-operation-id',
+    ...data,
+  };
+}
+
+async function stubUpdateTicketWithAI(ticketId: string, data: Record<string, unknown>): Promise<UpdatedTicket> {
+  console.log('[STUB] prisma.qUAD_tickets.update called with id:', ticketId, 'data:', JSON.stringify(data));
+  return {
+    id: ticketId,
+    ai_implementation_plan: (data.ai_implementation_plan as string) || null,
+    ai_suggested_files: (data.ai_suggested_files as string[]) || null,
+    ai_confidence: (data.ai_confidence as number) || null,
+    ai_estimate_hours: (data.ai_estimate_hours as number) || null,
+    acceptance_criteria: (data.acceptance_criteria as string) || null,
+  };
+}
+
+async function stubUpdateAIOperation(operationId: string, data: Record<string, unknown>): Promise<void> {
+  console.log('[STUB] prisma.qUAD_ai_operations.update called with id:', operationId, 'data:', JSON.stringify(data));
+}
+
+async function stubCreateComment(data: { ticket_id: string; user_id: string; content: string; is_ai: boolean }): Promise<void> {
+  console.log('[STUB] prisma.qUAD_ticket_comments.create called with data:', JSON.stringify(data));
+}
 
 // Simulated Claude Haiku analysis (replace with actual Anthropic API call)
 async function analyzeTicketWithAI(
@@ -158,6 +239,10 @@ async function analyzeTicketWithAI(
 - [ ] Documentation updated if needed`;
   }
 
+  // Suppress unused variable warnings
+  void description;
+  void ticketType;
+
   return {
     implementation_plan: plan,
     suggested_files: suggestedFiles,
@@ -189,12 +274,7 @@ export async function POST(
     }
 
     // Fetch ticket
-    const ticket = await prisma.qUAD_tickets.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { id: true, org_id: true } }
-      }
-    });
+    const ticket = await stubFindTicketById(id);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
@@ -205,16 +285,14 @@ export async function POST(
     }
 
     // Track AI operation
-    const aiOperation = await prisma.qUAD_ai_operations.create({
-      data: {
-        domain_id: ticket.domain_id,
-        operation_type: 'generate_plan',
-        input_summary: `Analyzing ticket: ${ticket.ticket_number} - ${ticket.title}`,
-        model_used: 'claude-3-haiku-20240307', // Haiku for cost efficiency
-        status: 'processing',
-        triggered_by: payload.userId,
-        started_at: new Date()
-      }
+    const aiOperation = await stubCreateAIOperation({
+      domain_id: ticket.domain_id,
+      operation_type: 'generate_plan',
+      input_summary: `Analyzing ticket: ${ticket.ticket_number} - ${ticket.title}`,
+      model_used: 'claude-3-haiku-20240307', // Haiku for cost efficiency
+      status: 'processing',
+      triggered_by: payload.userId,
+      started_at: new Date()
     });
 
     try {
@@ -227,37 +305,30 @@ export async function POST(
       );
 
       // Update ticket with AI suggestions (pending human review)
-      const updatedTicket = await prisma.qUAD_tickets.update({
-        where: { id },
-        data: {
-          ai_implementation_plan: analysis.implementation_plan,
-          ai_suggested_files: analysis.suggested_files,
-          ai_confidence: analysis.ai_confidence,
-          ai_estimate_hours: analysis.estimated_hours,
-          // Only update acceptance criteria if empty and AI generated one
-          ...(analysis.generated_acceptance_criteria && !ticket.acceptance_criteria
-            ? { acceptance_criteria: analysis.generated_acceptance_criteria }
-            : {})
-        }
+      const updatedTicket = await stubUpdateTicketWithAI(id, {
+        ai_implementation_plan: analysis.implementation_plan,
+        ai_suggested_files: analysis.suggested_files,
+        ai_confidence: analysis.ai_confidence,
+        ai_estimate_hours: analysis.estimated_hours,
+        // Only update acceptance criteria if empty and AI generated one
+        ...(analysis.generated_acceptance_criteria && !ticket.acceptance_criteria
+          ? { acceptance_criteria: analysis.generated_acceptance_criteria }
+          : {})
       });
 
       // Update AI operation as completed
-      await prisma.qUAD_ai_operations.update({
-        where: { id: aiOperation.id },
-        data: {
-          status: 'completed',
-          output_summary: `Generated plan with ${analysis.suggested_files.length} suggested files. Complexity: ${analysis.complexity_score}/5`,
-          confidence: analysis.ai_confidence,
-          completed_at: new Date()
-        }
+      await stubUpdateAIOperation(aiOperation.id, {
+        status: 'completed',
+        output_summary: `Generated plan with ${analysis.suggested_files.length} suggested files. Complexity: ${analysis.complexity_score}/5`,
+        confidence: analysis.ai_confidence,
+        completed_at: new Date()
       });
 
       // Add AI comment about the analysis
-      await prisma.qUAD_ticket_comments.create({
-        data: {
-          ticket_id: id,
-          user_id: payload.userId,
-          content: `🤖 **AI Analysis Complete** (using Claude Haiku)
+      await stubCreateComment({
+        ticket_id: id,
+        user_id: payload.userId,
+        content: `**AI Analysis Complete** (using Claude Haiku)
 
 **Complexity Score:** ${analysis.complexity_score}/5
 **Estimated Hours:** ${analysis.estimated_hours}h
@@ -266,9 +337,8 @@ export async function POST(
 **Suggested Files:**
 ${analysis.suggested_files.map(f => `- \`${f}\``).join('\n')}
 
-⚠️ *This is an AI suggestion. Please review before implementation.*`,
-          is_ai: true
-        }
+*This is an AI suggestion. Please review before implementation.*`,
+        is_ai: true
       });
 
       return NextResponse.json({
@@ -286,13 +356,10 @@ ${analysis.suggested_files.map(f => `- \`${f}\``).join('\n')}
 
     } catch (analysisError) {
       // Update AI operation as failed
-      await prisma.qUAD_ai_operations.update({
-        where: { id: aiOperation.id },
-        data: {
-          status: 'failed',
-          error_message: analysisError instanceof Error ? analysisError.message : 'Unknown error',
-          completed_at: new Date()
-        }
+      await stubUpdateAIOperation(aiOperation.id, {
+        status: 'failed',
+        error_message: analysisError instanceof Error ? analysisError.message : 'Unknown error',
+        completed_at: new Date()
       });
 
       throw analysisError;

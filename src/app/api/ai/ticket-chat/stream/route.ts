@@ -17,9 +17,83 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { streamAI, AIMessage } from '@/lib/ai/providers';
 import { hasCredits, deductCredits } from '@/lib/ai/credit-service';
+
+// Conversation types
+interface AIConversation {
+  id: string;
+  org_id: string;
+  user_id: string;
+  scope_type: string;
+  scope_id: string;
+  title: string;
+  status: string;
+  total_messages: number;
+  total_tokens_used: number;
+  primary_provider: string;
+}
+
+interface AIMessage_DB {
+  id: string;
+  conversation_id: string;
+  role: string;
+  content: string;
+  content_type: string;
+  tokens_used: number;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function findConversation(orgId: string, scopeType: string, scopeId: string): Promise<AIConversation | null> {
+  console.log(`[TicketChatStream] findConversation for org: ${orgId}, scope: ${scopeType}/${scopeId}`);
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createConversation(data: Partial<AIConversation>): Promise<AIConversation> {
+  console.log(`[TicketChatStream] createConversation:`, data);
+  return {
+    id: 'mock-conv-id',
+    org_id: data.org_id || '',
+    user_id: data.user_id || '',
+    scope_type: data.scope_type || 'ticket',
+    scope_id: data.scope_id || '',
+    title: data.title || 'Chat',
+    status: 'active',
+    total_messages: 0,
+    total_tokens_used: 0,
+    primary_provider: 'claude',
+  };
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createMessage(data: Partial<AIMessage_DB>): Promise<AIMessage_DB> {
+  console.log(`[TicketChatStream] createMessage:`, data);
+  return {
+    id: 'mock-msg-id',
+    conversation_id: data.conversation_id || '',
+    role: data.role || 'user',
+    content: data.content || '',
+    content_type: data.content_type || 'text',
+    tokens_used: data.tokens_used || 0,
+  };
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function updateConversation(_id: string, _data: object): Promise<void> {
+  // Stub
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getActivityRouting(_orgId: string, _activityType: string): Promise<{ provider?: string; model_id?: string } | null> {
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getTicketNumber(_ticketId: string): Promise<string | null> {
+  return null;
+}
 
 // Build context string for ticket-scoped questions
 function buildTicketContext(ticket: {
@@ -87,50 +161,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Find or create conversation for this ticket
-    let conversation = await prisma.qUAD_ai_conversations.findFirst({
-      where: {
-        org_id: orgId,
-        scope_type: 'ticket',
-        scope_id: ticketId,
-        status: 'active',
-      },
-    });
+    let conversation = await findConversation(orgId, 'ticket', ticketId);
 
     if (!conversation) {
-      conversation = await prisma.qUAD_ai_conversations.create({
-        data: {
-          org_id: orgId,
-          user_id: userId,
-          scope_type: 'ticket',
-          scope_id: ticketId,
-          title: ticketContext?.title
-            ? `Chat: ${ticketContext.title.substring(0, 50)}`
-            : 'Ticket Chat',
-          status: 'active',
-          primary_provider: 'claude',
-        },
+      conversation = await createConversation({
+        org_id: orgId,
+        user_id: userId,
+        scope_type: 'ticket',
+        scope_id: ticketId,
+        title: ticketContext?.title
+          ? `Chat: ${ticketContext.title.substring(0, 50)}`
+          : 'Ticket Chat',
+        status: 'active',
+        primary_provider: 'claude',
       });
     }
 
     // Save user message first
-    const userMessage = await prisma.qUAD_ai_messages.create({
-      data: {
-        conversation_id: conversation.id,
-        role: 'user',
-        content: message,
-        content_type: 'text',
-        tokens_used: Math.ceil(message.length / 4),
-      },
+    const userMessage = await createMessage({
+      conversation_id: conversation.id,
+      role: 'user',
+      content: message,
+      content_type: 'text',
+      tokens_used: Math.ceil(message.length / 4),
     });
 
     // Get activity routing
-    const routing = await prisma.qUAD_ai_activity_routing.findFirst({
-      where: {
-        org_id: orgId,
-        activity_type: 'ticket_question',
-        is_active: true,
-      },
-    });
+    const routing = await getActivityRouting(orgId, 'ticket_question');
 
     // Build system prompt
     const ticketPromptContext = buildTicketContext(ticketContext || {});
@@ -206,36 +263,23 @@ ${ticketPromptContext}
                 const modelUsed = routing?.model_id || 'claude-3-5-haiku-20241022';
                 const providerUsed = routing?.provider || 'claude';
 
-                const assistantMessage = await prisma.qUAD_ai_messages.create({
-                  data: {
-                    conversation_id: conversationId,
-                    role: 'assistant',
-                    content: accumulatedContent,
-                    content_type: accumulatedContent.includes('```') ? 'code' : 'text',
-                    tokens_used: totalOutputTokens || Math.ceil(accumulatedContent.length / 4),
-                    provider: providerUsed,
-                    model_id: modelUsed,
-                    latency_ms: latencyMs,
-                  },
+                const assistantMessage = await createMessage({
+                  conversation_id: conversationId,
+                  role: 'assistant',
+                  content: accumulatedContent,
+                  content_type: accumulatedContent.includes('```') ? 'code' : 'text',
+                  tokens_used: totalOutputTokens || Math.ceil(accumulatedContent.length / 4),
                 });
 
                 // Update conversation stats
-                await prisma.qUAD_ai_conversations.update({
-                  where: { id: conversationId },
-                  data: {
-                    total_messages: { increment: 2 },
-                    total_tokens_used: {
-                      increment: userMessage.tokens_used + (totalOutputTokens || Math.ceil(accumulatedContent.length / 4)),
-                    },
-                  },
+                await updateConversation(conversationId, {
+                  total_messages: 2, // Will need proper increment logic in Java backend
+                  total_tokens_used: userMessage.tokens_used + (totalOutputTokens || Math.ceil(accumulatedContent.length / 4)),
                 });
 
                 // Deduct credits from org pool (shared by all users)
                 // This tracks per-ticket cost for transparency
-                const ticketInfo = await prisma.qUAD_tickets.findUnique({
-                  where: { id: ticketId },
-                  select: { ticket_number: true },
-                });
+                const ticketNumber = await getTicketNumber(ticketId);
 
                 await deductCredits(
                   orgId,
@@ -250,7 +294,7 @@ ${ticketPromptContext}
                     conversationId: conversationId,
                     messageId: assistantMessage.id,
                     ticketId: ticketId,
-                    ticketNumber: ticketInfo?.ticket_number || undefined,
+                    ticketNumber: ticketNumber || undefined,
                   }
                 );
               }

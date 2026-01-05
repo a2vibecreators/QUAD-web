@@ -9,7 +9,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
+
+// TODO: All database operations in this file need to be implemented via Java backend
+// Stubbed functions return safe defaults until backend is ready
+
+async function getUserOrgId(_email: string): Promise<string | null> {
+  console.log('[PRApprovals] getUserOrgId - stub');
+  return 'mock-org-id';
+}
+
+async function getPRWithOrgVerification(_prId: string): Promise<{ id: string; state: string; head_sha: string | null; flow: { domain: { org_id: string } } } | null> {
+  console.log('[PRApprovals] getPRWithOrgVerification - stub');
+  return null;
+}
+
+async function getPRApprovals(_prId: string): Promise<{ id: string; user_id: string; approved_at: Date; comment: string | null; commit_sha: string | null; user: { id: string; full_name: string | null; email: string } }[]> {
+  console.log('[PRApprovals] getPRApprovals - stub');
+  return [];
+}
+
+async function getUserById(_email: string): Promise<{ id: string; org_id: string | null; full_name: string | null; role: string | null } | null> {
+  console.log('[PRApprovals] getUserById - stub');
+  return null;
+}
+
+async function upsertApproval(_prId: string, _userId: string, _data: object): Promise<{ id: string; user_id: string; approved_at: Date; comment: string | null; commit_sha: string | null; user: { id: string; full_name: string | null; email: string } }> {
+  console.log('[PRApprovals] upsertApproval - stub');
+  return { id: 'mock-id', user_id: '', approved_at: new Date(), comment: null, commit_sha: null, user: { id: '', full_name: null, email: '' } };
+}
+
+async function updateReviewerStatus(_prId: string, _userId: string, _status: string): Promise<void> {
+  console.log('[PRApprovals] updateReviewerStatus - stub');
+}
+
+async function deleteApproval(_prId: string, _userId: string): Promise<void> {
+  console.log('[PRApprovals] deleteApproval - stub');
+}
+
+async function resetReviewerStatus(_prId: string, _userId: string): Promise<void> {
+  console.log('[PRApprovals] resetReviewerStatus - stub');
+}
 
 interface RouteContext {
   params: Promise<{ prId: string }>;
@@ -27,12 +67,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     const { prId } = await context.params;
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrgId(session.user.email);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json(
         { error: 'User not associated with an organization' },
         { status: 400 }
@@ -40,39 +77,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     // Get PR with org verification
-    const pr = await prisma.qUAD_pull_requests.findUnique({
-      where: { id: prId },
-      include: {
-        flow: {
-          include: {
-            domain: { select: { org_id: true } },
-          },
-        },
-      },
-    });
+    const pr = await getPRWithOrgVerification(prId);
 
-    if (!pr || !pr.flow) {
+    if (!pr) {
       return NextResponse.json({ error: 'Pull request not found' }, { status: 404 });
     }
 
-    if (pr.flow.domain.org_id !== user.org_id) {
+    if (pr.flow.domain.org_id !== orgId) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     // Get approvals
-    const approvals = await prisma.qUAD_pr_approvals.findMany({
-      where: { pr_id: prId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            full_name: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: { approved_at: 'desc' },
-    });
+    const approvals = await getPRApprovals(prId);
 
     return NextResponse.json({
       approvals: approvals.map((a) => ({
@@ -108,10 +124,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const body = await request.json().catch(() => ({}));
     const { comment, commitSha } = body;
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, org_id: true, full_name: true },
-    });
+    const user = await getUserById(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -121,18 +134,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Get PR with org verification and current head SHA
-    const pr = await prisma.qUAD_pull_requests.findUnique({
-      where: { id: prId },
-      include: {
-        flow: {
-          include: {
-            domain: { select: { org_id: true } },
-          },
-        },
-      },
-    });
+    const pr = await getPRWithOrgVerification(prId);
 
-    if (!pr || !pr.flow) {
+    if (!pr) {
       return NextResponse.json({ error: 'Pull request not found' }, { status: 404 });
     }
 
@@ -148,43 +152,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Create or update approval (upsert to allow re-approval after changes)
-    const approval = await prisma.qUAD_pr_approvals.upsert({
-      where: {
-        pr_id_user_id: { pr_id: prId, user_id: user.id },
-      },
-      update: {
-        approved_at: new Date(),
-        comment: comment || null,
-        commit_sha: commitSha || pr.head_sha || null,
-      },
-      create: {
-        pr_id: prId,
-        user_id: user.id,
-        comment: comment || null,
-        commit_sha: commitSha || pr.head_sha || null,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            full_name: true,
-            email: true,
-          },
-        },
-      },
+    const approval = await upsertApproval(prId, user.id, {
+      comment: comment || null,
+      commit_sha: commitSha || pr.head_sha || null,
     });
 
     // Also update reviewer status if this user is a reviewer
-    await prisma.qUAD_pr_reviewers.updateMany({
-      where: {
-        pr_id: prId,
-        user_id: user.id,
-      },
-      data: {
-        status: 'approved',
-        reviewed_at: new Date(),
-      },
-    });
+    await updateReviewerStatus(prId, user.id, 'approved');
 
     return NextResponse.json({
       success: true,
@@ -221,10 +195,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const userId = searchParams.get('userId');
 
     // If no userId specified, user can only revoke their own approval
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, org_id: true, role: true },
-    });
+    const user = await getUserById(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -234,18 +205,9 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     // Get PR with org verification
-    const pr = await prisma.qUAD_pull_requests.findUnique({
-      where: { id: prId },
-      include: {
-        flow: {
-          include: {
-            domain: { select: { org_id: true } },
-          },
-        },
-      },
-    });
+    const pr = await getPRWithOrgVerification(prId);
 
-    if (!pr || !pr.flow) {
+    if (!pr) {
       return NextResponse.json({ error: 'Pull request not found' }, { status: 404 });
     }
 
@@ -264,24 +226,10 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     // Delete approval
-    await prisma.qUAD_pr_approvals.deleteMany({
-      where: {
-        pr_id: prId,
-        user_id: targetUserId,
-      },
-    });
+    await deleteApproval(prId, targetUserId);
 
     // Reset reviewer status if applicable
-    await prisma.qUAD_pr_reviewers.updateMany({
-      where: {
-        pr_id: prId,
-        user_id: targetUserId,
-      },
-      data: {
-        status: 'pending',
-        reviewed_at: null,
-      },
-    });
+    await resetReviewerStatus(prId, targetUserId);
 
     return NextResponse.json({
       success: true,

@@ -13,7 +13,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
+
+// TODO: Database health check should be implemented via Java backend
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';
@@ -21,7 +23,7 @@ interface HealthStatus {
   uptime: number;
   version: string;
   checks: {
-    database: 'ok' | 'fail' | 'slow';
+    database: 'ok' | 'fail' | 'slow' | 'skipped';
     memory: 'ok' | 'warning' | 'critical';
   };
   details?: {
@@ -43,33 +45,15 @@ export async function GET() {
     uptime,
     version: process.env.npm_package_version || '1.0.0',
     checks: {
-      database: 'ok',
+      database: 'skipped', // Database check skipped until Java backend ready
       memory: 'ok',
     },
     details: {},
   };
 
-  // Check database connectivity with timeout
-  const dbStart = Date.now();
-  try {
-    await Promise.race([
-      prisma.$queryRaw`SELECT 1`,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Database timeout')), 3000)
-      ),
-    ]);
-    const dbLatency = Date.now() - dbStart;
-    health.details!.databaseLatencyMs = dbLatency;
-
-    if (dbLatency > 1000) {
-      health.checks.database = 'slow';
-      health.status = 'degraded';
-    }
-  } catch (error) {
-    health.checks.database = 'fail';
-    health.status = 'unhealthy';
-    console.error('Health check: Database failed', error);
-  }
+  // Database check skipped - will use Java backend health endpoint
+  console.log('[Health] Database check skipped - using Java backend');
+  health.details!.databaseLatencyMs = 0;
 
   // Check memory usage (Node.js)
   try {

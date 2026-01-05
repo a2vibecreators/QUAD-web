@@ -8,8 +8,91 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { gitHubService } from '@/lib/integrations';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+interface Flow {
+  id: string;
+  title: string;
+  description: string | null;
+  acceptance_criteria: string | null;
+  domain_id: string;
+  domain: { id: string; org_id: string };
+}
+
+interface GitRepo {
+  id: string;
+  repo_name: string;
+  repo_full_name: string;
+  repo_url: string;
+  default_branch: string | null;
+}
+
+interface FlowBranch {
+  id: string;
+  branch_name: string;
+  repository: GitRepo;
+}
+
+interface PRData {
+  id: string;
+  pr_number: number;
+  title: string;
+  description: string | null;
+  pr_url: string;
+  state: string;
+  is_draft: boolean;
+  is_merged: boolean;
+  merged_at: Date | null;
+  head_branch: string;
+  base_branch: string;
+  created_at: Date;
+  branch: { id: string; branch_name: string; branch_type: string } | null;
+  repository: GitRepo;
+  pr_reviewers: { id: string; user_id: string; status: string; assigned_at: Date; reviewed_at: Date | null; user: { id: string; full_name: string | null; email: string } }[];
+  pr_approvals: { id: string; user_id: string; approved_at: Date; comment: string | null; commit_sha: string | null; user: { id: string; full_name: string | null; email: string } }[];
+}
+
+async function getUserById(_email: string): Promise<{ id: string; org_id: string | null } | null> {
+  console.log('[FlowPR] getUserById - stub');
+  return null;
+}
+
+async function getFlowWithDomain(_flowId: string): Promise<Flow | null> {
+  console.log(`[FlowPR] getFlowWithDomain: ${_flowId}`);
+  return null;
+}
+
+async function getGitIntegration(_orgId: string): Promise<{ access_token: string | null } | null> {
+  console.log(`[FlowPR] getGitIntegration: ${_orgId}`);
+  return null;
+}
+
+async function getFlowBranch(_branchId: string | null, _flowId: string): Promise<(FlowBranch & { repository: GitRepo }) | null> {
+  console.log('[FlowPR] getFlowBranch - stub');
+  return null;
+}
+
+async function getExistingPR(_branchId: string): Promise<PRData | null> {
+  console.log('[FlowPR] getExistingPR - stub');
+  return null;
+}
+
+async function createPullRequestRecord(_data: object): Promise<PRData> {
+  console.log('[FlowPR] createPullRequestRecord - stub');
+  return { id: 'mock-id', pr_number: 0, title: '', description: null, pr_url: '', state: 'open', is_draft: false, is_merged: false, merged_at: null, head_branch: '', base_branch: 'main', created_at: new Date(), branch: null, repository: { id: '', repo_name: '', repo_full_name: '', repo_url: '', default_branch: 'main' }, pr_reviewers: [], pr_approvals: [] };
+}
+
+async function updateFlowWithPR(_flowId: string, _prId: string, _prUrl: string): Promise<void> {
+  console.log(`[FlowPR] updateFlowWithPR: ${_flowId}`);
+}
+
+async function getFlowPullRequests(_flowId: string): Promise<PRData[]> {
+  console.log(`[FlowPR] getFlowPullRequests: ${_flowId}`);
+  return [];
+}
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -36,10 +119,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     } = body;
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, org_id: true },
-    });
+    const user = await getUserById(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -49,12 +129,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Get the Flow with domain info
-    const flow = await prisma.qUAD_flows.findUnique({
-      where: { id: flowId },
-      include: {
-        domain: true,
-      },
-    });
+    const flow = await getFlowWithDomain(flowId);
 
     if (!flow) {
       return NextResponse.json({ error: 'Flow not found' }, { status: 404 });
@@ -66,14 +141,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Get GitHub integration
-    const integration = await prisma.qUAD_git_integrations.findUnique({
-      where: {
-        org_id_provider: {
-          org_id: user.org_id,
-          provider: 'github',
-        },
-      },
-    });
+    const integration = await getGitIntegration(user.org_id);
 
     if (!integration?.access_token) {
       return NextResponse.json(
@@ -83,22 +151,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Get the branch - either specified or most recent active for Flow
-    let flowBranch;
-    if (branchId) {
-      flowBranch = await prisma.qUAD_flow_branches.findUnique({
-        where: { id: branchId },
-        include: { repository: true },
-      });
-    } else {
-      flowBranch = await prisma.qUAD_flow_branches.findFirst({
-        where: {
-          flow_id: flowId,
-          is_active: true,
-        },
-        include: { repository: true },
-        orderBy: { created_at: 'desc' },
-      });
-    }
+    const flowBranch = await getFlowBranch(branchId || null, flowId);
 
     if (!flowBranch) {
       return NextResponse.json(
@@ -108,12 +161,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Check if PR already exists for this branch
-    const existingPR = await prisma.qUAD_pull_requests.findFirst({
-      where: {
-        branch_id: flowBranch.id,
-        state: 'open',
-      },
-    });
+    const existingPR = await getExistingPR(flowBranch.id);
 
     if (existingPR) {
       return NextResponse.json({
@@ -154,33 +202,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     // Save PR record
-    const pullRequest = await prisma.qUAD_pull_requests.create({
-      data: {
-        flow_id: flowId,
-        branch_id: flowBranch.id,
-        repository_id: flowBranch.repository.id,
-        pr_number: pr.number,
-        external_id: String(pr.id),
-        title: pr.title,
-        description: pr.body,
-        pr_url: pr.html_url,
-        head_branch: pr.head.ref,
-        base_branch: pr.base.ref,
-        head_sha: pr.head.sha,
-        state: pr.state,
-        is_draft: draft,
-        created_by: user.id,
-      },
+    const pullRequest = await createPullRequestRecord({
+      flow_id: flowId,
+      branch_id: flowBranch.id,
+      repository_id: flowBranch.repository.id,
+      pr_number: pr.number,
+      external_id: String(pr.id),
+      title: pr.title,
+      description: pr.body,
+      pr_url: pr.html_url,
+      head_branch: pr.head.ref,
+      base_branch: pr.base.ref,
+      head_sha: pr.head.sha,
+      state: pr.state,
+      is_draft: draft,
+      created_by: user.id,
     });
 
     // Update Flow with PR info
-    await prisma.qUAD_flows.update({
-      where: { id: flowId },
-      data: {
-        git_pull_request_id: pullRequest.id,
-        git_pull_request_url: pr.html_url,
-      },
-    });
+    await updateFlowWithPR(flowId, pullRequest.id, pr.html_url);
 
     return NextResponse.json({
       success: true,
@@ -220,10 +260,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const { id: flowId } = await context.params;
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true },
-    });
+    const user = await getUserById(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -233,51 +270,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     // Get PRs for this Flow with reviewers and approvals
-    const pullRequests = await prisma.qUAD_pull_requests.findMany({
-      where: { flow_id: flowId },
-      include: {
-        branch: {
-          select: {
-            id: true,
-            branch_name: true,
-            branch_type: true,
-          },
-        },
-        repository: {
-          select: {
-            id: true,
-            repo_name: true,
-            repo_full_name: true,
-            repo_url: true,
-          },
-        },
-        pr_reviewers: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                full_name: true,
-                email: true,
-              },
-            },
-          },
-          orderBy: { assigned_at: 'asc' },
-        },
-        pr_approvals: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                full_name: true,
-                email: true,
-              },
-            },
-          },
-          orderBy: { approved_at: 'desc' },
-        },
-      },
-      orderBy: { created_at: 'desc' },
-    });
+    const pullRequests = await getFlowPullRequests(flowId);
 
     return NextResponse.json({
       pullRequests: pullRequests.map((pr) => ({

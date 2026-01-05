@@ -4,8 +4,91 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface TrainingContent {
+  id: string;
+  org_id: string;
+  title: string;
+  description: string | null;
+  content_type: string;
+  skill_category: string | null;
+  difficulty: string;
+  duration_mins: number | null;
+  content_url: string | null;
+  external_provider: string | null;
+  is_required: boolean;
+  is_active: boolean;
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface TrainingCompletion {
+  id: string;
+  user_id: string;
+  content_id: string;
+  status: string;
+  progress_percent: number;
+  started_at: Date | null;
+  completed_at: Date | null;
+  quiz_score: number | null;
+  certificate_url: string | null;
+}
+
+interface TrainingContentWithProgress extends TrainingContent {
+  user_progress: {
+    status: string;
+    progress_percent: number;
+    started_at: Date | null;
+    completed_at: Date | null;
+    quiz_score: number | null;
+  } | null;
+}
+
+// Stub functions for database operations
+async function findTrainingContent(
+  orgId: string,
+  filters: {
+    category?: string | null;
+    contentType?: string | null;
+    difficulty?: string | null;
+    isRequired?: boolean;
+  }
+): Promise<TrainingContent[]> {
+  console.log('[STUB] findTrainingContent called with orgId:', orgId, 'filters:', filters);
+  return [];
+}
+
+async function findTrainingCompletionsByUserId(userId: string): Promise<TrainingCompletion[]> {
+  console.log('[STUB] findTrainingCompletionsByUserId called with userId:', userId);
+  return [];
+}
+
+async function createTrainingContent(data: Partial<TrainingContent>): Promise<TrainingContent> {
+  console.log('[STUB] createTrainingContent called with data:', data);
+  return {
+    id: 'stub-training-id',
+    org_id: data.org_id || '',
+    title: data.title || '',
+    description: data.description || null,
+    content_type: data.content_type || 'document',
+    skill_category: data.skill_category || null,
+    difficulty: data.difficulty || 'beginner',
+    duration_mins: data.duration_mins || null,
+    content_url: data.content_url || null,
+    external_provider: data.external_provider || null,
+    is_required: data.is_required || false,
+    is_active: true,
+    created_by: data.created_by || '',
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+}
 
 // GET: Get training content
 export async function GET(request: NextRequest) {
@@ -28,26 +111,19 @@ export async function GET(request: NextRequest) {
     const view = searchParams.get('view') || 'all'; // all, my_progress, required
 
     // Get all training content
-    const content = await prisma.qUAD_training_content.findMany({
-      where: {
-        org_id: payload.companyId,
-        is_active: true,
-        ...(category && { skill_category: category }),
-        ...(contentType && { content_type: contentType }),
-        ...(difficulty && { difficulty }),
-        ...(view === 'required' && { is_required: true })
-      },
-      orderBy: [{ is_required: 'desc' }, { created_at: 'desc' }]
+    const content = await findTrainingContent(payload.companyId, {
+      category,
+      contentType,
+      difficulty,
+      isRequired: view === 'required' ? true : undefined,
     });
 
     // Get user's completions
-    const completions = await prisma.qUAD_training_completions.findMany({
-      where: { user_id: payload.userId }
-    });
+    const completions = await findTrainingCompletionsByUserId(payload.userId);
     const completionMap = new Map(completions.map(c => [c.content_id, c]));
 
     // Enrich content with user progress
-    const enrichedContent = content.map(c => {
+    const enrichedContent: TrainingContentWithProgress[] = content.map(c => {
       const completion = completionMap.get(c.id);
       return {
         ...c,
@@ -148,20 +224,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const content = await prisma.qUAD_training_content.create({
-      data: {
-        org_id: payload.companyId,
-        title,
-        description,
-        content_type,
-        skill_category,
-        difficulty: difficulty || 'beginner',
-        duration_mins,
-        content_url,
-        external_provider,
-        is_required: is_required || false,
-        created_by: payload.userId
-      }
+    const content = await createTrainingContent({
+      org_id: payload.companyId,
+      title,
+      description,
+      content_type,
+      skill_category,
+      difficulty: difficulty || 'beginner',
+      duration_mins,
+      content_url,
+      external_provider,
+      is_required: is_required || false,
+      created_by: payload.userId
     });
 
     return NextResponse.json({ content }, { status: 201 });

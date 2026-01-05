@@ -3,9 +3,9 @@
  *
  * Handles OAuth flow and Calendar API operations for Google Calendar.
  * Supports both "QUAD-provided" and "BYOK" (Bring Your Own Key) modes.
+ *
+ * NOTE: Database operations stubbed out - will implement via Java backend when ready.
  */
-
-import { prisma } from '@/lib/prisma';
 
 // Google OAuth endpoints
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -290,6 +290,7 @@ export class GoogleCalendarService {
 
   /**
    * Save integration to database
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async saveIntegration(
     orgId: string,
@@ -297,134 +298,29 @@ export class GoogleCalendarService {
     tokens: GoogleTokens,
     userInfo: GoogleUserInfo
   ): Promise<void> {
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-
-    await prisma.qUAD_meeting_integrations.upsert({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'google_calendar',
-        },
-      },
-      update: {
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token || undefined,
-        token_expires_at: expiresAt,
-        account_email: userInfo.email,
-        is_configured: true,
-        is_enabled: true,
-        setup_completed_at: new Date(),
-        setup_completed_by: userId,
-        sync_status: 'success',
-        last_sync_at: new Date(),
-      },
-      create: {
-        org_id: orgId,
-        provider: 'google_calendar',
-        provider_name: 'Google Calendar',
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        token_expires_at: expiresAt,
-        account_email: userInfo.email,
-        is_configured: true,
-        is_enabled: true,
-        setup_completed_at: new Date(),
-        setup_completed_by: userId,
-        sync_status: 'success',
-        last_sync_at: new Date(),
-      },
-    });
-
-    // Update org setup status
-    await prisma.qUAD_org_setup_status.upsert({
-      where: { org_id: orgId },
-      update: {
-        meeting_provider_configured: true,
-        calendar_connected: true,
-      },
-      create: {
-        org_id: orgId,
-        meeting_provider_configured: true,
-        calendar_connected: true,
-      },
-    });
+    console.log(`[GoogleCalendar] saveIntegration for org: ${orgId}, user: ${userId}, email: ${userInfo.email}`);
+    // TODO: Call Java backend to save integration tokens
+    // For now, just log
   }
 
   /**
    * Get valid access token (refresh if needed)
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async getValidAccessToken(orgId: string): Promise<string | null> {
-    const integration = await prisma.qUAD_meeting_integrations.findUnique({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'google_calendar',
-        },
-      },
-    });
-
-    if (!integration?.access_token) {
-      return null;
-    }
-
-    // Check if token is expired (with 5 min buffer)
-    const isExpired =
-      integration.token_expires_at &&
-      new Date(integration.token_expires_at).getTime() < Date.now() + 5 * 60 * 1000;
-
-    if (isExpired && integration.refresh_token) {
-      try {
-        const newTokens = await this.refreshAccessToken(integration.refresh_token);
-
-        // Update tokens in database
-        await prisma.qUAD_meeting_integrations.update({
-          where: { id: integration.id },
-          data: {
-            access_token: newTokens.access_token,
-            token_expires_at: new Date(Date.now() + newTokens.expires_in * 1000),
-            last_sync_at: new Date(),
-            sync_status: 'success',
-          },
-        });
-
-        return newTokens.access_token;
-      } catch {
-        // Refresh failed - mark as needing re-auth
-        await prisma.qUAD_meeting_integrations.update({
-          where: { id: integration.id },
-          data: {
-            sync_status: 'failed',
-            is_configured: false,
-          },
-        });
-        return null;
-      }
-    }
-
-    return integration.access_token;
+    console.log(`[GoogleCalendar] getValidAccessToken for org: ${orgId}`);
+    // TODO: Call Java backend to get stored tokens
+    // For now, return null (not configured)
+    return null;
   }
 
   /**
    * Disconnect integration
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async disconnect(orgId: string): Promise<void> {
-    await prisma.qUAD_meeting_integrations.delete({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'google_calendar',
-        },
-      },
-    });
-
-    // Update setup status
-    await prisma.qUAD_org_setup_status.update({
-      where: { org_id: orgId },
-      data: {
-        meeting_provider_configured: false,
-        calendar_connected: false,
-      },
-    });
+    console.log(`[GoogleCalendar] disconnect for org: ${orgId}`);
+    // TODO: Call Java backend to delete integration
   }
 }
 

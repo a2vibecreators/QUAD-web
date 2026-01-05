@@ -4,8 +4,76 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+interface AIConfig {
+  id: string;
+  org_id: string;
+  primary_provider: string;
+  fallback_provider: string | null;
+  ai_usage_mode: string;
+  classification_mode: string;
+  enable_code_generation: boolean;
+  enable_code_review: boolean;
+  enable_estimation: boolean;
+  enable_ticket_generation: boolean;
+  enable_meeting_summaries: boolean;
+  enable_rag_chatbot: boolean;
+  require_approval_code_commit: boolean;
+  require_approval_deployment: boolean;
+  require_approval_db_ops: boolean;
+  monthly_budget_usd: number | null;
+  daily_request_limit: number | null;
+  max_tokens_per_request: number | null;
+  openai_key_ref: string | null;
+  anthropic_key_ref: string | null;
+  gemini_key_ref: string | null;
+  current_month_spend: number;
+  requests_this_month: number;
+  last_reset_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+async function getAIConfig(_orgId: string): Promise<AIConfig | null> {
+  console.log(`[AIConfig] getAIConfig: ${_orgId}`);
+  return null;
+}
+
+async function upsertAIConfig(_orgId: string, _data: Partial<AIConfig>): Promise<AIConfig> {
+  console.log(`[AIConfig] upsertAIConfig: ${_orgId}`);
+  return {
+    id: 'mock-id',
+    org_id: _orgId,
+    primary_provider: _data.primary_provider || 'gemini',
+    fallback_provider: _data.fallback_provider || null,
+    ai_usage_mode: _data.ai_usage_mode || 'conservative',
+    classification_mode: 'hybrid',
+    enable_code_generation: true,
+    enable_code_review: true,
+    enable_estimation: true,
+    enable_ticket_generation: true,
+    enable_meeting_summaries: true,
+    enable_rag_chatbot: true,
+    require_approval_code_commit: true,
+    require_approval_deployment: true,
+    require_approval_db_ops: true,
+    monthly_budget_usd: null,
+    daily_request_limit: null,
+    max_tokens_per_request: null,
+    openai_key_ref: null,
+    anthropic_key_ref: null,
+    gemini_key_ref: null,
+    current_month_spend: 0,
+    requests_this_month: 0,
+    last_reset_at: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+}
 
 // GET: Get AI config
 export async function GET(request: NextRequest) {
@@ -21,9 +89,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    let config = await prisma.qUAD_ai_configs.findUnique({
-      where: { org_id: payload.companyId }
-    });
+    let config = await getAIConfig(payload.companyId);
 
     if (!config) {
       // Return defaults
@@ -171,30 +237,22 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const config = await prisma.qUAD_ai_configs.upsert({
-      where: { org_id: payload.companyId },
-      update: {
-        ...(primary_provider && { primary_provider }),
-        ...(fallback_provider !== undefined && { fallback_provider }),
-        ...(ai_usage_mode && { ai_usage_mode }),
-        ...(enable_code_generation !== undefined && { enable_code_generation }),
-        ...(enable_code_review !== undefined && { enable_code_review }),
-        ...(enable_estimation !== undefined && { enable_estimation }),
-        ...(enable_ticket_generation !== undefined && { enable_ticket_generation }),
-        ...(enable_meeting_summaries !== undefined && { enable_meeting_summaries }),
-        ...(enable_rag_chatbot !== undefined && { enable_rag_chatbot }),
-        ...(require_approval_code_commit !== undefined && { require_approval_code_commit }),
-        ...(require_approval_deployment !== undefined && { require_approval_deployment }),
-        ...(require_approval_db_ops !== undefined && { require_approval_db_ops }),
-        ...(monthly_budget_usd !== undefined && { monthly_budget_usd }),
-        ...(daily_request_limit !== undefined && { daily_request_limit }),
-        ...(max_tokens_per_request !== undefined && { max_tokens_per_request })
-      },
-      create: {
-        org_id: payload.companyId,
-        primary_provider: primary_provider || 'gemini',
-        ai_usage_mode: ai_usage_mode || 'conservative'
-      }
+    const config = await upsertAIConfig(payload.companyId, {
+      primary_provider,
+      fallback_provider,
+      ai_usage_mode,
+      enable_code_generation,
+      enable_code_review,
+      enable_estimation,
+      enable_ticket_generation,
+      enable_meeting_summaries,
+      enable_rag_chatbot,
+      require_approval_code_commit,
+      require_approval_deployment,
+      require_approval_db_ops,
+      monthly_budget_usd,
+      daily_request_limit,
+      max_tokens_per_request
     });
 
     return NextResponse.json({

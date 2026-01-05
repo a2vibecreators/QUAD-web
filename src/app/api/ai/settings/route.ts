@@ -8,7 +8,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
+
+// AI Config type
+interface AIConfig {
+  id: string;
+  org_id: string;
+  primary_provider: string;
+  fallback_provider: string | null;
+  ai_usage_mode: string;
+  classification_mode: string;
+  enable_code_generation: boolean;
+  enable_code_review: boolean;
+  enable_estimation: boolean;
+  enable_ticket_generation: boolean;
+  enable_meeting_summaries: boolean;
+  enable_rag_chatbot: boolean;
+  require_approval_code_commit: boolean;
+  require_approval_deployment: boolean;
+  require_approval_db_ops: boolean;
+  monthly_budget_usd: number | null;
+  current_month_spend: number;
+  daily_request_limit: number;
+  requests_this_month: number;
+  max_tokens_per_request: number;
+  updated_at: Date;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getAIConfig(orgId: string): Promise<AIConfig | null> {
+  console.log(`[AISettings] getAIConfig for org: ${orgId}`);
+  return null; // Return null until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function upsertAIConfig(orgId: string, data: Partial<AIConfig>): Promise<AIConfig> {
+  console.log(`[AISettings] upsertAIConfig for org: ${orgId}`, data);
+  return {
+    id: 'mock-config-id',
+    org_id: orgId,
+    primary_provider: 'gemini',
+    fallback_provider: null,
+    ai_usage_mode: 'conservative',
+    classification_mode: 'hybrid',
+    enable_code_generation: true,
+    enable_code_review: true,
+    enable_estimation: true,
+    enable_ticket_generation: true,
+    enable_meeting_summaries: true,
+    enable_rag_chatbot: false,
+    require_approval_code_commit: true,
+    require_approval_deployment: true,
+    require_approval_db_ops: true,
+    monthly_budget_usd: null,
+    current_month_spend: 0,
+    daily_request_limit: 100,
+    requests_this_month: 0,
+    max_tokens_per_request: 4000,
+    updated_at: new Date(),
+    ...data,
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,9 +84,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'org_id is required' }, { status: 400 });
     }
 
-    const config = await prisma.qUAD_ai_configs.findUnique({
-      where: { org_id: orgId },
-    });
+    const config = await getAIConfig(orgId);
 
     if (!config) {
       return NextResponse.json({
@@ -164,14 +222,7 @@ export async function PATCH(request: NextRequest) {
     if (updates.max_tokens_per_request !== undefined) updateData.max_tokens_per_request = updates.max_tokens_per_request;
 
     // Upsert the config
-    const config = await prisma.qUAD_ai_configs.upsert({
-      where: { org_id },
-      create: {
-        org_id,
-        ...updateData,
-      },
-      update: updateData,
-    });
+    const config = await upsertAIConfig(org_id, updateData as Partial<AIConfig>);
 
     return NextResponse.json({
       success: true,

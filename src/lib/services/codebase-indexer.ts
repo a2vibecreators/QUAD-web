@@ -12,7 +12,7 @@
  * - Send only RELEVANT tables (10-20) = 1-2K tokens (97% savings)
  */
 
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import crypto from 'crypto';
 
 // =============================================================================
@@ -420,12 +420,12 @@ function mergeResults(keywordResults: SearchResult[], ragResults: SearchResult[]
 
 /**
  * Build codebase index for an org's custom tables
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function buildOrgCodebaseIndex(orgId: string): Promise<void> {
   // Get org's custom tables from schema (if they have DB access)
   // For now, we use the pre-defined QUAD index
 
-  // Store in QUAD_codebase_indexes
   const indexData = {
     tables: QUAD_TABLE_INDEX.length,
     categories: [...new Set(QUAD_TABLE_INDEX.map(t => t.category))],
@@ -433,30 +433,8 @@ export async function buildOrgCodebaseIndex(orgId: string): Promise<void> {
     lastUpdated: new Date().toISOString(),
   };
 
-  await prisma.qUAD_codebase_indexes.upsert({
-    where: {
-      org_id_repo_name_branch: {
-        org_id: orgId,
-        repo_name: 'quadframework',
-        branch: 'main'
-      }
-    },
-    create: {
-      org_id: orgId,
-      repo_name: 'quadframework',
-      branch: 'main',
-      tables_summary: JSON.parse(JSON.stringify(indexData)),
-      total_tokens: indexData.totalTokens,
-      last_synced_at: new Date(),
-      sync_status: 'synced',
-    },
-    update: {
-      tables_summary: JSON.parse(JSON.stringify(indexData)),
-      total_tokens: indexData.totalTokens,
-      last_synced_at: new Date(),
-      sync_status: 'synced',
-    },
-  });
+  // TODO: Call Java backend to store codebase index
+  console.log(`[CodebaseIndexer] buildOrgCodebaseIndex for org: ${orgId}`, indexData);
 }
 
 /**

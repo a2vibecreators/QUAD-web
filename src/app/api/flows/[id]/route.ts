@@ -5,11 +5,132 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+// TypeScript interfaces for data types
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  adoption_matrix?: { skill_level: number; trust_level: number }[];
+}
+
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface FlowStageHistory {
+  id: string;
+  flow_id: string;
+  from_stage: string | null;
+  to_stage: string;
+  from_status: string | null;
+  to_status: string;
+  changed_by: string;
+  change_reason: string | null;
+  created_at: Date;
+}
+
+interface Flow {
+  id: string;
+  domain_id: string;
+  title: string;
+  description: string | null;
+  flow_type: string;
+  quad_stage: string;
+  stage_status: string | null;
+  question_started_at: Date | null;
+  question_completed_at: Date | null;
+  understand_started_at: Date | null;
+  understand_completed_at: Date | null;
+  allocate_started_at: Date | null;
+  allocate_completed_at: Date | null;
+  deliver_started_at: Date | null;
+  deliver_completed_at: Date | null;
+  assigned_to: string | null;
+  circle_number: number | null;
+  priority: string;
+  ai_estimate_hours: number | null;
+  buffer_pct: number | null;
+  actual_hours: number | null;
+  external_id: string | null;
+  external_url: string | null;
+  created_by: string;
+  created_at: Date;
+  domain?: Domain;
+  assignee?: User | null;
+  creator?: User | null;
+  stage_history?: FlowStageHistory[];
+}
+
+interface FlowStageHistoryCreateInput {
+  flow_id: string;
+  from_stage?: string;
+  to_stage: string;
+  from_status?: string;
+  to_status: string;
+  changed_by: string;
+  change_reason: string;
+}
+
+// Stub functions - replace with Java backend calls
+async function findFlowById(id: string): Promise<Flow | null> {
+  console.log(`[Flow] findFlowById: ${id} - stub`);
+  return null;
+}
+
+async function findFlowWithDomain(id: string): Promise<(Flow & { domain: { org_id: string } }) | null> {
+  console.log(`[Flow] findFlowWithDomain: ${id} - stub`);
+  return null;
+}
+
+async function updateFlow(id: string, _data: Record<string, unknown>): Promise<Flow> {
+  console.log(`[Flow] updateFlow: ${id} - stub`);
+  const now = new Date();
+  return {
+    id,
+    domain_id: 'mock-domain-id',
+    title: 'Mock Flow',
+    description: null,
+    flow_type: 'feature',
+    quad_stage: 'Q',
+    stage_status: 'pending',
+    question_started_at: now,
+    question_completed_at: null,
+    understand_started_at: null,
+    understand_completed_at: null,
+    allocate_started_at: null,
+    allocate_completed_at: null,
+    deliver_started_at: null,
+    deliver_completed_at: null,
+    assigned_to: null,
+    circle_number: null,
+    priority: 'medium',
+    ai_estimate_hours: null,
+    buffer_pct: null,
+    actual_hours: null,
+    external_id: null,
+    external_url: null,
+    created_by: 'mock-user-id',
+    created_at: now,
+  };
+}
+
+async function createFlowStageHistory(_data: FlowStageHistoryCreateInput): Promise<void> {
+  console.log(`[Flow] createFlowStageHistory: flow=${_data.flow_id}, stage=${_data.to_stage} - stub`);
+}
+
+async function deleteFlow(id: string): Promise<void> {
+  console.log(`[Flow] deleteFlow: ${id} - stub`);
 }
 
 // GET: Get flow by ID with full details
@@ -29,38 +150,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const flow = await prisma.qUAD_flows.findUnique({
-      where: { id },
-      include: {
-        domain: {
-          select: { id: true, name: true, org_id: true }
-        },
-        assignee: {
-          select: {
-            id: true,
-            email: true,
-            full_name: true,
-            adoption_matrix: {
-              select: { skill_level: true, trust_level: true }
-            }
-          }
-        },
-        creator: {
-          select: { id: true, email: true, full_name: true }
-        },
-        stage_history: {
-          orderBy: { created_at: 'desc' },
-          take: 20
-        }
-      }
-    });
+    const flow = await findFlowById(id);
 
     if (!flow) {
       return NextResponse.json({ error: 'Flow not found' }, { status: 404 });
     }
 
     // Verify flow belongs to user's organization
-    if (flow.domain.org_id !== payload.companyId) {
+    if (flow.domain?.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -111,12 +208,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get existing flow
-    const existing = await prisma.qUAD_flows.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true } }
-      }
-    });
+    const existing = await findFlowWithDomain(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Flow not found' }, { status: 404 });
@@ -178,42 +270,31 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       updateData.stage_status = stage_status || 'pending';
 
       // Record stage history
-      await prisma.qUAD_flow_stage_history.create({
-        data: {
-          flow_id: id,
-          from_stage: existing.quad_stage,
-          to_stage: quad_stage,
-          from_status: existing.stage_status || undefined,
-          to_status: stage_status || 'pending',
-          changed_by: payload.userId,
-          change_reason: change_reason || `Moved from ${existing.quad_stage} to ${quad_stage}`
-        }
+      await createFlowStageHistory({
+        flow_id: id,
+        from_stage: existing.quad_stage,
+        to_stage: quad_stage,
+        from_status: existing.stage_status || undefined,
+        to_status: stage_status || 'pending',
+        changed_by: payload.userId,
+        change_reason: change_reason || `Moved from ${existing.quad_stage} to ${quad_stage}`
       });
     } else if (stage_status && stage_status !== existing.stage_status) {
       // Just status change within same stage
       updateData.stage_status = stage_status;
 
-      await prisma.qUAD_flow_stage_history.create({
-        data: {
-          flow_id: id,
-          from_stage: existing.quad_stage,
-          to_stage: existing.quad_stage,
-          from_status: existing.stage_status || undefined,
-          to_status: stage_status,
-          changed_by: payload.userId,
-          change_reason: change_reason || `Status changed to ${stage_status}`
-        }
+      await createFlowStageHistory({
+        flow_id: id,
+        from_stage: existing.quad_stage,
+        to_stage: existing.quad_stage,
+        from_status: existing.stage_status || undefined,
+        to_status: stage_status,
+        changed_by: payload.userId,
+        change_reason: change_reason || `Status changed to ${stage_status}`
       });
     }
 
-    const flow = await prisma.qUAD_flows.update({
-      where: { id },
-      data: updateData,
-      include: {
-        domain: { select: { id: true, name: true } },
-        assignee: { select: { id: true, email: true, full_name: true } }
-      }
-    });
+    const flow = await updateFlow(id, updateData);
 
     return NextResponse.json(flow);
   } catch (error) {
@@ -247,12 +328,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const existing = await prisma.qUAD_flows.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true } }
-      }
-    });
+    const existing = await findFlowWithDomain(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Flow not found' }, { status: 404 });
@@ -262,9 +338,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await prisma.qUAD_flows.delete({
-      where: { id }
-    });
+    await deleteFlow(id);
 
     return NextResponse.json({ message: 'Flow deleted successfully' });
   } catch (error) {

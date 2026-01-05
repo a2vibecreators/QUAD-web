@@ -7,8 +7,32 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { getAllGitProviders } from '@/lib/integrations';
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrg(email: string): Promise<string | null> {
+  console.log(`[GitStatus] getUserOrg for email: ${email}`);
+  return 'mock-org-id';
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getOrgGitIntegrations(orgId: string): Promise<{
+  id: string;
+  provider: string;
+  provider_name: string;
+  account_login: string | null;
+  account_type: string | null;
+  is_configured: boolean;
+  is_enabled: boolean;
+  scope: string | null;
+  setup_completed_at: Date | null;
+  last_sync_at: Date | null;
+  sync_status: string | null;
+}[]> {
+  console.log(`[GitStatus] getOrgGitIntegrations for org: ${orgId}`);
+  return []; // Return empty until backend ready
+}
 
 export async function GET() {
   try {
@@ -18,12 +42,9 @@ export async function GET() {
     }
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrg(session.user.email);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json(
         { error: 'User not associated with an organization' },
         { status: 400 }
@@ -31,22 +52,7 @@ export async function GET() {
     }
 
     // Get all Git integrations for the org
-    const integrations = await prisma.qUAD_git_integrations.findMany({
-      where: { org_id: user.org_id },
-      select: {
-        id: true,
-        provider: true,
-        provider_name: true,
-        account_login: true,
-        account_type: true,
-        is_configured: true,
-        is_enabled: true,
-        scope: true,
-        setup_completed_at: true,
-        last_sync_at: true,
-        sync_status: true,
-      },
-    });
+    const integrations = await getOrgGitIntegrations(orgId);
 
     // Get all available providers
     const providers = getAllGitProviders();

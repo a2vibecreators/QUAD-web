@@ -12,7 +12,7 @@
  * - Response caching for repeated queries
  */
 
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { TaskClassifier, ClassificationResult, ClassificationContext } from './task-classifier';
 import { MemoryService } from './memory-service';
 
@@ -284,61 +284,24 @@ async function mockModelCall(model: ModelConfig, prompt: string): Promise<string
 
 /**
  * Check if org has budget for this request
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function checkBudget(
   orgId: string,
   modelKey: string
 ): Promise<{ allowed: boolean; reason?: string }> {
-  const config = await prisma.qUAD_ai_configs.findUnique({
-    where: { org_id: orgId },
-    select: {
-      monthly_budget_usd: true,
-      current_month_spend: true,
-      daily_request_limit: true,
-      requests_this_month: true,
-    },
-  });
-
-  if (!config) {
-    return { allowed: true }; // No config = no limits
-  }
-
-  // Check monthly budget
-  if (config.monthly_budget_usd) {
-    const budget = Number(config.monthly_budget_usd);
-    const spent = Number(config.current_month_spend);
-    if (spent >= budget) {
-      return { allowed: false, reason: `Monthly budget of $${budget} exceeded` };
-    }
-  }
-
-  // Check daily request limit
-  if (config.daily_request_limit && config.requests_this_month) {
-    // Simplified: assume 30 days, check if over daily average
-    const avgDailyAllowed = config.daily_request_limit;
-    const dayOfMonth = new Date().getDate();
-    const expectedMax = avgDailyAllowed * dayOfMonth;
-    if (config.requests_this_month >= expectedMax) {
-      return { allowed: false, reason: `Daily request limit of ${avgDailyAllowed} exceeded` };
-    }
-  }
-
-  return { allowed: true };
+  // TODO: Call Java backend to check AI budget/limits
+  console.log(`[AIRouter] checkBudget for org: ${orgId}, model: ${modelKey}`);
+  return { allowed: true }; // Default: allow all requests until backend ready
 }
 
 /**
  * Record usage for billing and analytics
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function recordUsage(orgId: string, response: AIResponse): Promise<void> {
-  await prisma.qUAD_ai_configs.update({
-    where: { org_id: orgId },
-    data: {
-      current_month_spend: { increment: response.cost.usd },
-      requests_this_month: { increment: 1 },
-    },
-  });
-
-  // TODO: Also record in detailed usage log table
+  // TODO: Call Java backend to record AI usage
+  console.log(`[AIRouter] recordUsage for org: ${orgId}, cost: $${response.cost.usd}, tokens: ${response.tokensUsed.total}`);
 }
 
 /**

@@ -4,8 +4,87 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  status: string;
+  sequence_order: number;
+}
+
+interface Requirement {
+  id: string;
+  domain_id: string;
+  title: string;
+  description: string | null;
+  source_type: string;
+  source_file_url: string | null;
+  source_file_name: string | null;
+  status: string;
+  created_by: string;
+  created_at: Date;
+  domain?: { id: string; name: string };
+  milestones?: Milestone[];
+  _count?: { milestones: number };
+}
+
+// ============================================================================
+// Stub Functions
+// ============================================================================
+
+async function stubFindManyDomains(orgId: string): Promise<{ id: string }[]> {
+  console.log('[STUB] findManyDomains called with orgId:', orgId);
+  return [];
+}
+
+async function stubFindManyRequirements(
+  _where: Record<string, unknown>
+): Promise<Requirement[]> {
+  console.log('[STUB] findManyRequirements called');
+  return [];
+}
+
+async function stubFindUniqueDomain(domainId: string): Promise<Domain | null> {
+  console.log('[STUB] findUniqueDomain called with id:', domainId);
+  return null;
+}
+
+async function stubCreateRequirement(
+  data: Record<string, unknown>
+): Promise<Requirement> {
+  console.log('[STUB] createRequirement called with data:', data);
+  return {
+    id: 'stub-requirement-id',
+    domain_id: data.domain_id as string,
+    title: data.title as string,
+    description: data.description as string | null,
+    source_type: data.source_type as string,
+    source_file_url: data.source_file_url as string | null,
+    source_file_name: data.source_file_name as string | null,
+    status: 'draft',
+    created_by: data.created_by as string,
+    created_at: new Date(),
+    domain: { id: data.domain_id as string, name: 'Stub Domain' }
+  };
+}
+
+// ============================================================================
+// API Handlers
+// ============================================================================
 
 // GET: List requirements with filtering
 export async function GET(request: NextRequest) {
@@ -30,10 +109,7 @@ export async function GET(request: NextRequest) {
     const aiProcessed = searchParams.get('ai_processed');
 
     // Get organization domains
-    const orgDomains = await prisma.qUAD_domains.findMany({
-      where: { org_id: payload.companyId },
-      select: { id: true }
-    });
+    const orgDomains = await stubFindManyDomains(payload.companyId);
     const domainIds = orgDomains.map(d => d.id);
 
     // Build where clause
@@ -45,27 +121,7 @@ export async function GET(request: NextRequest) {
     if (sourceType) where.source_type = sourceType;
     if (aiProcessed !== null) where.ai_processed = aiProcessed === 'true';
 
-    const requirements = await prisma.qUAD_requirements.findMany({
-      where,
-      include: {
-        domain: {
-          select: { id: true, name: true }
-        },
-        milestones: {
-          select: {
-            id: true,
-            title: true,
-            status: true,
-            sequence_order: true
-          },
-          orderBy: { sequence_order: 'asc' }
-        },
-        _count: {
-          select: { milestones: true }
-        }
-      },
-      orderBy: { created_at: 'desc' }
-    });
+    const requirements = await stubFindManyRequirements(where);
 
     // Group by status
     const byStatus = {
@@ -130,31 +186,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify domain exists and belongs to user's company
-    const domain = await prisma.qUAD_domains.findUnique({
-      where: { id: domain_id }
-    });
+    const domain = await stubFindUniqueDomain(domain_id);
 
     if (!domain || domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
     // Create requirement
-    const requirement = await prisma.qUAD_requirements.create({
-      data: {
-        domain_id,
-        title,
-        description,
-        source_type,
-        source_file_url,
-        source_file_name,
-        status: 'draft',
-        created_by: payload.userId
-      },
-      include: {
-        domain: {
-          select: { id: true, name: true }
-        }
-      }
+    const requirement = await stubCreateRequirement({
+      domain_id,
+      title,
+      description,
+      source_type,
+      source_file_url,
+      source_file_name,
+      status: 'draft',
+      created_by: payload.userId
     });
 
     return NextResponse.json(requirement, { status: 201 });

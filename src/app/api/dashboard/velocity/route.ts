@@ -8,8 +8,31 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface Domain {
+  id: string;
+}
+
+interface Ticket {
+  id: string;
+  story_points: number | null;
+  status: string;
+}
+
+interface Cycle {
+  id: string;
+  name: string;
+  cycle_number: number;
+  start_date: Date;
+  end_date: Date;
+  domain: { name: string };
+  tickets: Ticket[];
+}
 
 interface CycleVelocity {
   cycle_id: string;
@@ -23,6 +46,17 @@ interface CycleVelocity {
   completion_rate: number;
   ticket_count: number;
   completed_tickets: number;
+}
+
+// Stub functions for database operations
+async function stubFindDomains(orgId: string): Promise<Domain[]> {
+  console.log(`[STUB] findDomains called with orgId: ${orgId}`);
+  return [];
+}
+
+async function stubFindCompletedCycles(domainIds: string[], limit: number): Promise<Cycle[]> {
+  console.log(`[STUB] findCompletedCycles called with domainIds: ${domainIds}, limit: ${limit}`);
+  return [];
 }
 
 // GET: Velocity metrics
@@ -46,34 +80,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
 
     // Get all domains in organization
-    const orgDomains = await prisma.qUAD_domains.findMany({
-      where: {
-        org_id: payload.companyId,
-        is_deleted: false
-      },
-      select: { id: true }
-    });
+    const orgDomains = await stubFindDomains(payload.companyId);
     const domainIds = domainId ? [domainId] : orgDomains.map(d => d.id);
 
     // Fetch completed cycles with tickets
-    const cycles = await prisma.qUAD_cycles.findMany({
-      where: {
-        domain_id: { in: domainIds },
-        status: { in: ['completed', 'closed'] }
-      },
-      include: {
-        domain: { select: { name: true } },
-        tickets: {
-          select: {
-            id: true,
-            story_points: true,
-            status: true
-          }
-        }
-      },
-      orderBy: { end_date: 'desc' },
-      take: limit
-    });
+    const cycles = await stubFindCompletedCycles(domainIds, limit);
 
     // Calculate velocity for each cycle
     const velocityData: CycleVelocity[] = cycles.map(c => {

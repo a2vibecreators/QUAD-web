@@ -9,8 +9,64 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { createUser, generateToken, createSession } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  org_id: string;
+}
+
+interface Invitation {
+  id: string;
+  org_id: string;
+  email: string;
+  role: string;
+  expires_at: Date;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+async function findUserByEmail(_email: string): Promise<User | null> {
+  console.log('[Register] findUserByEmail - stub');
+  return null;
+}
+
+async function findInvitation(_token: string): Promise<Invitation | null> {
+  console.log('[Register] findInvitation - stub');
+  return null;
+}
+
+async function acceptInvitation(_id: string): Promise<void> {
+  console.log('[Register] acceptInvitation - stub');
+}
+
+async function findOrgBySlug(_slug: string): Promise<Organization | null> {
+  console.log('[Register] findOrgBySlug - stub');
+  return null;
+}
+
+async function createOrganization(_data: { name: string; slug: string; admin_email: string }): Promise<Organization> {
+  console.log('[Register] createOrganization - stub');
+  return { id: 'mock-org-id', name: _data.name, slug: _data.slug };
+}
+
+async function addOrgMember(_data: { org_id: string; user_id: string; role: string; is_primary: boolean }): Promise<void> {
+  console.log('[Register] addOrgMember - stub');
+}
+
+async function findOrgById(_id: string): Promise<Organization | null> {
+  console.log('[Register] findOrgById - stub');
+  return null;
+}
 
 // Generate URL-friendly slug from org name
 function generateSlug(name: string): string {
@@ -43,9 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email already exists
-    const existingUser = await prisma.qUAD_users.findUnique({
-      where: { email },
-    });
+    const existingUser = await findUserByEmail(email);
 
     if (existingUser) {
       return NextResponse.json(
@@ -60,9 +114,7 @@ export async function POST(request: NextRequest) {
 
     // FLOW 1: Accept invitation
     if (inviteToken) {
-      const invitation = await prisma.qUAD_org_invitations.findUnique({
-        where: { invite_token: inviteToken }
-      });
+      const invitation = await findInvitation(inviteToken);
 
       if (!invitation) {
         return NextResponse.json(
@@ -89,10 +141,7 @@ export async function POST(request: NextRequest) {
       userRole = invitation.role;
 
       // Mark invitation as accepted
-      await prisma.qUAD_org_invitations.update({
-        where: { id: invitation.id },
-        data: { accepted_at: new Date() }
-      });
+      await acceptInvitation(invitation.id);
     }
     // FLOW 2: Create new organization
     else if (orgName || companyName) {
@@ -102,18 +151,16 @@ export async function POST(request: NextRequest) {
       // Ensure unique slug
       let slug = baseSlug;
       let counter = 1;
-      while (await prisma.qUAD_organizations.findUnique({ where: { slug } })) {
+      while (await findOrgBySlug(slug)) {
         slug = `${baseSlug}-${counter}`;
         counter++;
       }
 
       // Create new organization
-      const organization = await prisma.qUAD_organizations.create({
-        data: {
-          name: organizationName,
-          slug,
-          admin_email: email,
-        },
+      const organization = await createOrganization({
+        name: organizationName,
+        slug,
+        admin_email: email,
       });
       targetOrgId = organization.id;
       userRole = 'OWNER';
@@ -141,13 +188,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Add to org_members table (new multi-org tracking)
-    await prisma.qUAD_org_members.create({
-      data: {
-        org_id: targetOrgId,
-        user_id: user.id,
-        role: userRole,
-        is_primary: true, // This is their primary/home org
-      }
+    await addOrgMember({
+      org_id: targetOrgId,
+      user_id: user.id,
+      role: userRole,
+      is_primary: true, // This is their primary/home org
     });
 
     // Generate JWT token
@@ -159,10 +204,7 @@ export async function POST(request: NextRequest) {
     await createSession(user.id, token, ipAddress, userAgent);
 
     // Get organization details
-    const organization = await prisma.qUAD_organizations.findUnique({
-      where: { id: targetOrgId },
-      select: { id: true, name: true, slug: true }
-    });
+    const organization = await findOrgById(targetOrgId);
 
     // Return token and user info
     return NextResponse.json({

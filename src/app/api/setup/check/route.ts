@@ -3,51 +3,38 @@
  *
  * Quick check if setup is complete. Used by middleware.
  * Returns minimal data for performance.
+ *
+ * NOTE: Simplified to not use Prisma - uses session data from JWT instead.
+ * Full setup validation will be added when Java backend has config endpoints.
  */
 
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
-import { isSetupComplete, getNextRequiredStep } from '@/lib/integrations';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      // Not logged in - no setup required
+      // Not logged in - no setup required (let NextAuth handle redirect)
       return NextResponse.json({ setupComplete: true });
     }
 
-    // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
-
-    if (!user?.org_id) {
-      // No org - redirect to org creation
+    // Check if user has an organization (companyId is set in JWT callback from Java backend)
+    if (!session.user.companyId) {
+      // No org - redirect to onboarding
       return NextResponse.json({
         setupComplete: false,
         redirectTo: '/onboarding',
       });
     }
 
-    // Quick check if setup is complete
-    const complete = await isSetupComplete(user.org_id);
+    // For now, if user has org, consider setup complete
+    // TODO: Add proper setup validation when Java backend has config endpoints
+    // This could check: AI tier selected, meeting provider connected, etc.
+    return NextResponse.json({ setupComplete: true });
 
-    if (complete) {
-      return NextResponse.json({ setupComplete: true });
-    }
-
-    // Get redirect URL for next step
-    const nextStep = await getNextRequiredStep(user.org_id);
-
-    return NextResponse.json({
-      setupComplete: false,
-      redirectTo: nextStep?.url || '/setup',
-    });
   } catch (error) {
     console.error('Error checking setup status:', error);
     // On error, allow access (don't block)

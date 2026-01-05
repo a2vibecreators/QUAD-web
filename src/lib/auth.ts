@@ -1,13 +1,33 @@
 /**
- * Authentication Utilities for QUAD Platform
- * Uses Prisma ORM for database operations
- * Handles JWT tokens, password hashing, and session management
+ * Authentication Utilities for QUAD Platform - LEGACY
+ *
+ * ⚠️ DEPRECATED: This file uses the old Prisma-based architecture.
+ * NEW CODE SHOULD USE:
+ * - authOptions.ts (NextAuth OAuth SSO)
+ * - java-backend.ts (API calls to quad-services)
+ *
+ * This file is kept for backward compatibility with existing API routes.
+ * Migration tracked in: .claude/rules/SESSION_HISTORY.md
+ *
+ * TODO: Migrate 97 API routes from auth.ts to java-backend.ts
  */
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from './db';
-import type { QUAD_users } from '@/generated/prisma';
+
+// Local type definition (replaces broken @/generated/prisma import)
+interface QUAD_users {
+  id: string;
+  org_id: string;
+  email: string;
+  password_hash?: string;
+  role: string;
+  full_name: string | null;
+  is_active: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+}
 
 // JWT configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'quad-platform-secret-change-in-production';

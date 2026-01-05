@@ -11,10 +11,129 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
 
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface DatabaseApproval {
+  id: string;
+  operation_id: string;
+  approver_role: string;
+  approver_id: string;
+  decision: string;
+  comments: string | null;
+  decided_at: Date | null;
+}
+
+interface DatabaseOperation {
+  id: string;
+  domain_id: string;
+  operation_type: string;
+  source_env: string | null;
+  target_env: string | null;
+  tables_included: string[];
+  anonymize_pii: boolean;
+  pii_fields_masked: string[];
+  sample_config: Record<string, unknown> | null;
+  status: string;
+  requires_approval: boolean;
+  required_approvers: string[];
+  initiated_by: string;
+  created_at: Date;
+  approvals?: DatabaseApproval[];
+}
+
+interface AnonymizationRule {
+  id: string;
+  domain_id: string;
+  table_name: string;
+  column_name: string;
+  is_active: boolean;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function findDomainById(domainId: string): Promise<Domain | null> {
+  console.log(`[DatabaseOperations] findDomainById stub called: ${domainId}`);
+  return null;
+}
+
+async function findDatabaseOperations(
+  where: Record<string, unknown>
+): Promise<(DatabaseOperation & { approvals: DatabaseApproval[] })[]> {
+  console.log(`[DatabaseOperations] findDatabaseOperations stub called:`, where);
+  return [];
+}
+
+async function findAnonymizationRules(
+  domainId: string,
+  tableNames: string[]
+): Promise<AnonymizationRule[]> {
+  console.log(`[DatabaseOperations] findAnonymizationRules stub called: ${domainId}`, tableNames);
+  return [];
+}
+
+async function createDatabaseOperation(
+  data: Omit<DatabaseOperation, 'id' | 'created_at'>
+): Promise<DatabaseOperation> {
+  console.log(`[DatabaseOperations] createDatabaseOperation stub called:`, data);
+  return {
+    id: 'mock-operation-id',
+    domain_id: data.domain_id,
+    operation_type: data.operation_type,
+    source_env: data.source_env || null,
+    target_env: data.target_env || null,
+    tables_included: data.tables_included,
+    anonymize_pii: data.anonymize_pii,
+    pii_fields_masked: data.pii_fields_masked,
+    sample_config: data.sample_config || null,
+    status: data.status,
+    requires_approval: data.requires_approval,
+    required_approvers: data.required_approvers,
+    initiated_by: data.initiated_by,
+    created_at: new Date(),
+  };
+}
+
+async function createDatabaseApproval(
+  data: Omit<DatabaseApproval, 'id' | 'comments' | 'decided_at'>
+): Promise<DatabaseApproval> {
+  console.log(`[DatabaseOperations] createDatabaseApproval stub called:`, data);
+  return {
+    id: 'mock-approval-id',
+    operation_id: data.operation_id,
+    approver_role: data.approver_role,
+    approver_id: data.approver_id,
+    decision: data.decision,
+    comments: null,
+    decided_at: null,
+  };
+}
+
+async function findDatabaseOperationById(
+  operationId: string
+): Promise<(DatabaseOperation & { approvals: DatabaseApproval[] }) | null> {
+  console.log(`[DatabaseOperations] findDatabaseOperationById stub called: ${operationId}`);
+  return null;
+}
+
+// ============================================================================
 // Common PII fields to anonymize
+// ============================================================================
+
 const DEFAULT_PII_FIELDS: Record<string, string[]> = {
   users: ['email', 'full_name', 'phone', 'address', 'ssn'],
   customers: ['email', 'name', 'phone', 'address', 'date_of_birth'],
@@ -47,9 +166,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify domain belongs to user's org
-    const domain = await prisma.qUAD_domains.findUnique({
-      where: { id: domainId }
-    });
+    const domain = await findDomainById(domainId);
 
     if (!domain || domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
@@ -60,19 +177,7 @@ export async function GET(request: NextRequest) {
     if (operationType) where.operation_type = operationType;
     if (status) where.status = status;
 
-    const operations = await prisma.qUAD_database_operations.findMany({
-      where,
-      include: {
-        approvals: {
-          select: {
-            approver_role: true,
-            decision: true,
-            decided_at: true
-          }
-        }
-      },
-      orderBy: { created_at: 'desc' }
-    });
+    const operations = await findDatabaseOperations(where);
 
     return NextResponse.json({ operations });
   } catch (error) {
@@ -130,9 +235,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify domain belongs to user's org
-    const domain = await prisma.qUAD_domains.findUnique({
-      where: { id: domain_id }
-    });
+    const domain = await findDomainById(domain_id);
 
     if (!domain || domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
@@ -176,13 +279,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Also get custom anonymization rules for this domain
-      const customRules = await prisma.qUAD_anonymization_rules.findMany({
-        where: {
-          domain_id,
-          table_name: { in: tables_included },
-          is_active: true
-        }
-      });
+      const customRules = await findAnonymizationRules(domain_id, tables_included);
 
       for (const rule of customRules) {
         const fieldPath = `${rule.table_name}.${rule.column_name}`;
@@ -197,47 +294,38 @@ export async function POST(request: NextRequest) {
     const initialStatus = needsApproval ? 'pending_approval' : 'pending';
 
     // Create the operation
-    const operation = await prisma.qUAD_database_operations.create({
-      data: {
-        domain_id,
-        operation_type,
-        source_env,
-        target_env,
-        tables_included: tables_included || [],
-        anonymize_pii: anonymize_pii || false,
-        pii_fields_masked: piiFieldsToMask,
-        sample_config: sample_config || undefined,
-        status: initialStatus,
-        requires_approval: needsApproval,
-        required_approvers: required_approvers || [],
-        initiated_by: payload.userId
-      }
+    const operation = await createDatabaseOperation({
+      domain_id,
+      operation_type,
+      source_env,
+      target_env,
+      tables_included: tables_included || [],
+      anonymize_pii: anonymize_pii || false,
+      pii_fields_masked: piiFieldsToMask,
+      sample_config: sample_config || null,
+      status: initialStatus,
+      requires_approval: needsApproval,
+      required_approvers: required_approvers || [],
+      initiated_by: payload.userId
     });
 
     // If approval needed, create approval records for each approver role
     if (needsApproval && required_approvers) {
       for (const role of required_approvers) {
-        await prisma.qUAD_database_approvals.create({
-          data: {
-            operation_id: operation.id,
-            approver_role: role,
-            approver_id: payload.userId, // Placeholder, will be updated when someone approves
-            decision: 'pending'
-          }
+        await createDatabaseApproval({
+          operation_id: operation.id,
+          approver_role: role,
+          approver_id: payload.userId, // Placeholder, will be updated when someone approves
+          decision: 'pending'
         });
       }
     }
 
     // Fetch the created operation with approvals
-    const result = await prisma.qUAD_database_operations.findUnique({
-      where: { id: operation.id },
-      include: {
-        approvals: true
-      }
-    });
+    const result = await findDatabaseOperationById(operation.id);
 
     return NextResponse.json({
-      operation: result,
+      operation: result || operation,
       message: needsApproval
         ? `Operation created. Waiting for approval from: ${required_approvers.join(', ')}`
         : 'Operation created and ready to execute'

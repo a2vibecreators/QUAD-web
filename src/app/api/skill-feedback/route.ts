@@ -13,8 +13,62 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { recordSkillFeedback } from '@/lib/services/assignment-service';
+
+// Types
+interface SkillFeedback {
+  id: string;
+  user_id: string;
+  skill_name: string | null;
+  feedback_type: string;
+  proficiency_delta: number;
+  feedback_notes: string | null;
+  is_processed: boolean;
+  created_at: Date;
+}
+
+interface UserSkill {
+  id: string;
+  user_id: string;
+  skill_name: string;
+  confidence: number;
+  positive_feedback: number;
+  negative_feedback: number;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getSkillFeedback(userId: string, skillName?: string | null, limit?: number): Promise<SkillFeedback[]> {
+  console.log(`[SkillFeedback] getSkillFeedback for: ${userId}, skill: ${skillName}, limit: ${limit}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrgId(userId: string): Promise<string | null> {
+  console.log(`[SkillFeedback] getUserOrgId for: ${userId}`);
+  return 'mock-org-id';
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createSkillFeedback(data: Partial<SkillFeedback>): Promise<void> {
+  console.log(`[SkillFeedback] createSkillFeedback:`, data);
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function findUserSkillByName(userId: string, skillName: string): Promise<UserSkill | null> {
+  console.log(`[SkillFeedback] findUserSkillByName: ${userId}, ${skillName}`);
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function updateUserSkillFeedback(id: string, data: { positive_feedback?: number; negative_feedback?: number; confidence?: number; last_assessed?: Date }): Promise<void> {
+  console.log(`[SkillFeedback] updateUserSkillFeedback: ${id}`, data);
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createUserSkill(data: { user_id: string; org_id: string; skill_name: string; skill_category: string; proficiency_level: number; source: string; confidence: number; negative_feedback: number }): Promise<void> {
+  console.log(`[SkillFeedback] createUserSkill:`, data);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,16 +82,7 @@ export async function GET(request: NextRequest) {
     const skillName = searchParams.get('skill_name');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    const where: Record<string, unknown> = { user_id: userId };
-    if (skillName) {
-      where.skill_name = { equals: skillName, mode: 'insensitive' };
-    }
-
-    const feedback = await prisma.qUAD_skill_feedback.findMany({
-      where,
-      orderBy: { created_at: 'desc' },
-      take: limit,
-    });
+    const feedback = await getSkillFeedback(userId, skillName, limit);
 
     // Summarize feedback by skill
     const skillSummary: Record<string, { positive: number; negative: number; neutral: number }> = {};
@@ -133,58 +178,46 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'user_id and skill_name are required' }, { status: 400 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true }
-    });
+    const orgId = await getUserOrgId(session.user.id);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 });
     }
 
     // Record scrum feedback
     const delta = knows === true ? 1 : knows === false ? -1 : 0;
 
-    await prisma.qUAD_skill_feedback.create({
-      data: {
-        user_id,
-        skill_name,
-        feedback_type: 'scrum_feedback',
-        proficiency_delta: delta,
-        feedback_notes: notes || (knows ? 'Demonstrated knowledge in scrum' : 'Mentioned lack of knowledge in scrum'),
-        is_processed: false
-      }
+    await createSkillFeedback({
+      user_id,
+      skill_name,
+      feedback_type: 'scrum_feedback',
+      proficiency_delta: delta,
+      feedback_notes: notes || (knows ? 'Demonstrated knowledge in scrum' : 'Mentioned lack of knowledge in scrum'),
+      is_processed: false
     });
 
     // Update user skill if exists
-    const userSkill = await prisma.qUAD_user_skills.findFirst({
-      where: { user_id, skill_name: { equals: skill_name, mode: 'insensitive' } }
-    });
+    const userSkill = await findUserSkillByName(user_id, skill_name);
 
     if (userSkill) {
-      await prisma.qUAD_user_skills.update({
-        where: { id: userSkill.id },
-        data: {
-          positive_feedback: delta > 0 ? { increment: 1 } : undefined,
-          negative_feedback: delta < 0 ? { increment: 1 } : undefined,
-          // Adjust confidence based on feedback
-          confidence: delta < 0 ? Math.max(0.1, Number(userSkill.confidence) - 0.1) : Number(userSkill.confidence),
-          last_assessed: new Date()
-        }
+      await updateUserSkillFeedback(userSkill.id, {
+        positive_feedback: delta > 0 ? userSkill.positive_feedback + 1 : undefined,
+        negative_feedback: delta < 0 ? userSkill.negative_feedback + 1 : undefined,
+        // Adjust confidence based on feedback
+        confidence: delta < 0 ? Math.max(0.1, Number(userSkill.confidence) - 0.1) : Number(userSkill.confidence),
+        last_assessed: new Date()
       });
     } else if (!knows) {
       // Create a new skill entry with low proficiency if they don't know it
-      await prisma.qUAD_user_skills.create({
-        data: {
-          user_id,
-          org_id: user.org_id,
-          skill_name,
-          skill_category: 'technical',
-          proficiency_level: 1, // Beginner
-          source: 'scrum_feedback',
-          confidence: 0.6,
-          negative_feedback: 1
-        }
+      await createUserSkill({
+        user_id,
+        org_id: orgId,
+        skill_name,
+        skill_category: 'technical',
+        proficiency_level: 1, // Beginner
+        source: 'scrum_feedback',
+        confidence: 0.6,
+        negative_feedback: 1
       });
     }
 

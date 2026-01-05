@@ -8,8 +8,105 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface Comment {
+  id: string;
+  content: string;
+  created_at: Date;
+}
+
+interface TimeLog {
+  hours: number;
+  logged_date: Date;
+}
+
+interface Subtask {
+  id: string;
+  title: string;
+  status: string;
+}
+
+interface Ticket {
+  id: string;
+  ticket_number: string;
+  title: string;
+  status: string;
+  story_points: number | null;
+  assigned_to: string | null;
+  priority: string;
+  comments?: Comment[];
+  time_logs?: TimeLog[];
+  subtasks?: Subtask[];
+}
+
+interface Domain {
+  id: string;
+  name: string;
+  ticket_prefix: string;
+  org_id: string;
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  status: string;
+}
+
+interface Cycle {
+  id: string;
+  domain_id: string;
+  milestone_id: string | null;
+  cycle_number: number;
+  name: string;
+  goal: string | null;
+  start_date: Date;
+  end_date: Date;
+  status: string;
+  capacity: number | null;
+  velocity?: number | null;
+  domain: Domain;
+  milestone?: Milestone | null;
+  tickets: Ticket[];
+  _count?: { tickets: number };
+}
+
+// Stub functions for database operations
+async function findUniqueCycle(id: string, include?: Record<string, unknown>): Promise<Cycle | null> {
+  console.log('[STUB] findUniqueCycle called with:', { id, include });
+  return null;
+}
+
+async function updateCycle(id: string, data: Record<string, unknown>, include?: Record<string, unknown>): Promise<Cycle> {
+  console.log('[STUB] updateCycle called with:', { id, data, include });
+  return {
+    id,
+    domain_id: 'stub-domain-id',
+    milestone_id: null,
+    cycle_number: 1,
+    name: 'Stub Cycle',
+    goal: null,
+    start_date: new Date(),
+    end_date: new Date(),
+    status: 'planned',
+    capacity: null,
+    domain: { id: 'stub-domain-id', name: 'Stub Domain', ticket_prefix: 'STB', org_id: 'stub-org-id' },
+    tickets: []
+  };
+}
+
+async function updateManyTickets(where: Record<string, unknown>, data: Record<string, unknown>): Promise<{ count: number }> {
+  console.log('[STUB] updateManyTickets called with:', { where, data });
+  return { count: 0 };
+}
+
+async function deleteCycle(id: string): Promise<void> {
+  console.log('[STUB] deleteCycle called with id:', id);
+}
 
 // GET: Get single Cycle with full details
 export async function GET(
@@ -31,45 +128,42 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const cycle = await prisma.qUAD_cycles.findUnique({
-      where: { id },
-      include: {
-        domain: {
-          select: {
-            id: true,
-            name: true,
-            ticket_prefix: true,
-            org_id: true
-          }
-        },
-        milestone: {
-          select: { id: true, title: true, status: true }
-        },
-        tickets: {
-          include: {
-            comments: {
-              take: 3,
-              orderBy: { created_at: 'desc' }
-            },
-            time_logs: {
-              select: {
-                hours: true,
-                logged_date: true
-              }
-            },
-            subtasks: {
-              select: {
-                id: true,
-                title: true,
-                status: true
-              }
+    const cycle = await findUniqueCycle(id, {
+      domain: {
+        select: {
+          id: true,
+          name: true,
+          ticket_prefix: true,
+          org_id: true
+        }
+      },
+      milestone: {
+        select: { id: true, title: true, status: true }
+      },
+      tickets: {
+        include: {
+          comments: {
+            take: 3,
+            orderBy: { created_at: 'desc' }
+          },
+          time_logs: {
+            select: {
+              hours: true,
+              logged_date: true
             }
           },
-          orderBy: [
-            { status: 'asc' },
-            { priority: 'asc' }
-          ]
-        }
+          subtasks: {
+            select: {
+              id: true,
+              title: true,
+              status: true
+            }
+          }
+        },
+        orderBy: [
+          { status: 'asc' },
+          { priority: 'asc' }
+        ]
       }
     });
 
@@ -151,12 +245,9 @@ export async function PUT(
     }
 
     // Fetch existing Cycle
-    const existing = await prisma.qUAD_cycles.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true } },
-        tickets: { select: { id: true, status: true, story_points: true } }
-      }
+    const existing = await findUniqueCycle(id, {
+      domain: { select: { org_id: true } },
+      tickets: { select: { id: true, status: true, story_points: true } }
     });
 
     if (!existing) {
@@ -214,19 +305,15 @@ export async function PUT(
       }
     }
 
-    const cycle = await prisma.qUAD_cycles.update({
-      where: { id },
-      data: updateData,
-      include: {
-        domain: {
-          select: { id: true, name: true }
-        },
-        milestone: {
-          select: { id: true, title: true }
-        },
-        _count: {
-          select: { tickets: true }
-        }
+    const cycle = await updateCycle(id, updateData, {
+      domain: {
+        select: { id: true, name: true }
+      },
+      milestone: {
+        select: { id: true, title: true }
+      },
+      _count: {
+        select: { tickets: true }
       }
     });
 
@@ -269,12 +356,9 @@ export async function DELETE(
     }
 
     // Fetch existing Cycle
-    const existing = await prisma.qUAD_cycles.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true } },
-        tickets: { select: { id: true } }
-      }
+    const existing = await findUniqueCycle(id, {
+      domain: { select: { org_id: true } },
+      tickets: { select: { id: true } }
     });
 
     if (!existing) {
@@ -295,15 +379,13 @@ export async function DELETE(
 
     // If Cycle has Flows, move them back to backlog (unassign from Cycle)
     if (existing.tickets.length > 0) {
-      await prisma.qUAD_tickets.updateMany({
-        where: { cycle_id: id },
-        data: { cycle_id: null }
-      });
+      await updateManyTickets(
+        { cycle_id: id },
+        { cycle_id: null }
+      );
     }
 
-    await prisma.qUAD_cycles.delete({
-      where: { id }
-    });
+    await deleteCycle(id);
 
     return NextResponse.json({ message: 'Cycle deleted' });
   } catch (error) {

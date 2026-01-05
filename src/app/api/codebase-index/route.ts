@@ -11,12 +11,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import {
   getCodebaseIndex,
   formatIndexForAI,
   generateCodebaseIndex
 } from '@/lib/ai/codebase-indexer';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+interface IndexMetadata {
+  total_tokens: number;
+  token_savings_percent: number;
+  file_count: number;
+  table_count: number;
+  api_count: number;
+  loc_count: number;
+  last_synced_at: Date | null;
+  commit_hash: string | null;
+}
+
+async function getIndexMetadata(_orgId: string, _repoName: string): Promise<IndexMetadata | null> {
+  console.log(`[CodebaseIndex] getIndexMetadata: ${_repoName}`);
+  return null;
+}
 
 /**
  * GET - Fetch codebase index for AI context
@@ -45,25 +63,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get metadata
-    const record = await prisma.qUAD_codebase_indexes.findUnique({
-      where: {
-        org_id_repo_name_branch: {
-          org_id: orgId,
-          repo_name: repoName,
-          branch: 'main'
-        }
-      },
-      select: {
-        total_tokens: true,
-        token_savings_percent: true,
-        file_count: true,
-        table_count: true,
-        api_count: true,
-        loc_count: true,
-        last_synced_at: true,
-        commit_hash: true
-      }
-    });
+    const record = await getIndexMetadata(orgId, repoName);
 
     if (format === 'text') {
       // Return formatted text for direct AI injection

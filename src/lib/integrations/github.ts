@@ -7,9 +7,9 @@
  * BYOK (Bring Your Own Key) Support:
  * Organizations can use their own GitHub OAuth App credentials instead of QUAD's.
  * Use GitHubService.forOrg(orgId) to automatically resolve the right credentials.
+ *
+ * NOTE: Database operations stubbed out - will implement via Java backend when ready.
  */
-
-import { prisma } from '@/lib/prisma';
 
 // GitHub OAuth endpoints
 const GITHUB_AUTH_URL = 'https://github.com/login/oauth/authorize';
@@ -121,35 +121,13 @@ export class GitHubService {
    *
    * This is the PREFERRED way to get a GitHubService instance.
    * It automatically checks if the org has BYOK enabled and uses their credentials.
+   *
+   * TODO: Implement via Java backend when endpoints are ready
    */
   static async forOrg(orgId: string): Promise<GitHubService> {
-    // Check if org has BYOK enabled for Git
-    const integration = await prisma.qUAD_git_integrations.findUnique({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'github',
-        },
-      },
-      select: {
-        use_byok: true,
-        byok_client_id: true,
-        byok_client_secret: true,
-        byok_redirect_uri: true,
-      },
-    });
-
-    // If BYOK is enabled and credentials are configured, use them
-    if (integration?.use_byok && integration.byok_client_id && integration.byok_client_secret) {
-      return new GitHubService({
-        clientId: integration.byok_client_id,
-        clientSecret: integration.byok_client_secret,
-        redirectUri: integration.byok_redirect_uri || DEFAULT_REDIRECT_URI_PATTERN,
-        isByok: true,
-      });
-    }
-
-    // Otherwise, use QUAD Platform credentials (default)
+    console.log(`[GitHub] forOrg: ${orgId} - returning default service (BYOK not implemented yet)`);
+    // TODO: Call Java backend to check if org has BYOK enabled
+    // For now, return default service
     return new GitHubService();
   }
 
@@ -374,6 +352,7 @@ export class GitHubService {
 
   /**
    * Save integration to database
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async saveIntegration(
     orgId: string,
@@ -381,95 +360,32 @@ export class GitHubService {
     tokens: GitHubTokens,
     user: GitHubUser
   ): Promise<void> {
-    await prisma.qUAD_git_integrations.upsert({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'github',
-        },
-      },
-      update: {
-        access_token: tokens.access_token,
-        account_login: user.login,
-        account_id: String(user.id),
-        account_type: user.type,
-        scope: tokens.scope,
-        is_configured: true,
-        is_enabled: true,
-        setup_completed_at: new Date(),
-        setup_completed_by: userId,
-        sync_status: 'success',
-        last_sync_at: new Date(),
-      },
-      create: {
-        org_id: orgId,
-        provider: 'github',
-        provider_name: 'GitHub',
-        access_token: tokens.access_token,
-        account_login: user.login,
-        account_id: String(user.id),
-        account_type: user.type,
-        scope: tokens.scope,
-        is_configured: true,
-        is_enabled: true,
-        setup_completed_at: new Date(),
-        setup_completed_by: userId,
-        sync_status: 'success',
-        last_sync_at: new Date(),
-      },
-    });
-
-    // Update org setup status
-    await prisma.qUAD_org_setup_status.upsert({
-      where: { org_id: orgId },
-      update: { git_provider_connected: true },
-      create: {
-        org_id: orgId,
-        git_provider_connected: true,
-      },
-    });
+    console.log(`[GitHub] saveIntegration for org: ${orgId}, user: ${userId}, login: ${user.login}`);
+    // TODO: Call Java backend to save integration
   }
 
   /**
    * Get valid access token for org
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async getAccessToken(orgId: string): Promise<string | null> {
-    const integration = await prisma.qUAD_git_integrations.findUnique({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'github',
-        },
-      },
-    });
-
-    return integration?.access_token || null;
+    console.log(`[GitHub] getAccessToken for org: ${orgId}`);
+    // TODO: Call Java backend to get stored token
+    return null;
   }
 
   /**
    * Disconnect integration
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async disconnect(orgId: string): Promise<void> {
-    await prisma.qUAD_git_integrations.delete({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'github',
-        },
-      },
-    });
-
-    // Update setup status
-    await prisma.qUAD_org_setup_status.update({
-      where: { org_id: orgId },
-      data: { git_provider_connected: false },
-    });
+    console.log(`[GitHub] disconnect for org: ${orgId}`);
+    // TODO: Call Java backend to delete integration
   }
 
   /**
    * Save BYOK credentials for an organization
-   *
-   * Allows organizations to use their own GitHub OAuth App credentials.
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async saveBYOKCredentials(
     orgId: string,
@@ -479,80 +395,34 @@ export class GitHubService {
       redirectUri?: string;
     }
   ): Promise<void> {
-    await prisma.qUAD_git_integrations.upsert({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'github',
-        },
-      },
-      update: {
-        use_byok: true,
-        byok_client_id: credentials.clientId,
-        byok_client_secret: credentials.clientSecret,
-        byok_redirect_uri: credentials.redirectUri || null,
-      },
-      create: {
-        org_id: orgId,
-        provider: 'github',
-        provider_name: 'GitHub',
-        use_byok: true,
-        byok_client_id: credentials.clientId,
-        byok_client_secret: credentials.clientSecret,
-        byok_redirect_uri: credentials.redirectUri || null,
-        is_configured: false, // Not connected yet, just BYOK credentials saved
-        is_enabled: false,
-      },
-    });
+    console.log(`[GitHub] saveBYOKCredentials for org: ${orgId}, clientId: ${credentials.clientId.substring(0, 8)}...`);
+    // TODO: Call Java backend to save BYOK credentials
   }
 
   /**
    * Disable BYOK and revert to QUAD Platform credentials
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async disableBYOK(orgId: string): Promise<void> {
-    await prisma.qUAD_git_integrations.update({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'github',
-        },
-      },
-      data: {
-        use_byok: false,
-        byok_client_id: null,
-        byok_client_secret: null,
-        byok_redirect_uri: null,
-      },
-    });
+    console.log(`[GitHub] disableBYOK for org: ${orgId}`);
+    // TODO: Call Java backend to disable BYOK
   }
 
   /**
    * Get BYOK status for an organization
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async getBYOKStatus(orgId: string): Promise<{
     enabled: boolean;
     hasCredentials: boolean;
     clientIdPreview: string | null;
   }> {
-    const integration = await prisma.qUAD_git_integrations.findUnique({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'github',
-        },
-      },
-      select: {
-        use_byok: true,
-        byok_client_id: true,
-      },
-    });
-
+    console.log(`[GitHub] getBYOKStatus for org: ${orgId}`);
+    // TODO: Call Java backend to get BYOK status
     return {
-      enabled: integration?.use_byok || false,
-      hasCredentials: !!(integration?.byok_client_id),
-      clientIdPreview: integration?.byok_client_id
-        ? integration.byok_client_id.substring(0, 8) + '...'
-        : null,
+      enabled: false,
+      hasCredentials: false,
+      clientIdPreview: null,
     };
   }
 

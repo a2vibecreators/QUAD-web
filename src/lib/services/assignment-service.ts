@@ -19,7 +19,7 @@
  * - Experience-based (role seniority)
  */
 
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 
 interface AssignmentCandidate {
   user_id: string;
@@ -44,104 +44,35 @@ interface AssignmentResult {
 
 /**
  * Get developers in Circle 2 (Development) for a domain
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function getCircleDevelopers(domainId: string): Promise<string[]> {
-  // Circle 2 is Development circle
-  const circle = await prisma.qUAD_circles.findFirst({
-    where: { domain_id: domainId, circle_number: 2, is_active: true },
-    include: {
-      members: {
-        where: { role: { in: ['member', 'lead'] } },
-        select: { user_id: true },
-      },
-    },
-  });
-
-  if (circle?.members.length) {
-    return circle.members.map(m => m.user_id);
-  }
-
-  // Fallback: get all active users in domain
-  const domainMembers = await prisma.qUAD_domain_members.findMany({
-    where: { domain_id: domainId },
-    select: { user_id: true },
-  });
-
-  return domainMembers.map(m => m.user_id);
+  // TODO: Call Java backend to get circle developers
+  console.log(`[AssignmentService] getCircleDevelopers for domain: ${domainId}`);
+  return []; // Return empty until backend ready
 }
 
 /**
  * Analyze ticket to determine required skills
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function analyzeTicketSkills(
   ticketId: string,
   _orgId: string
 ): Promise<{ skill_name: string; importance: string; min_proficiency: number }[]> {
-  // First check if ticket already has skills assigned
-  const existingSkills = await prisma.qUAD_ticket_skills.findMany({
-    where: { ticket_id: ticketId },
-    include: { skill: true },
-  });
-
-  if (existingSkills.length > 0) {
-    return existingSkills.map(ts => ({
-      skill_name: ts.skill.skill_name,
-      importance: ts.importance,
-      min_proficiency: ts.min_proficiency,
-    }));
-  }
-
-  // If no skills assigned, infer from ticket title/description
-  const ticket = await prisma.qUAD_tickets.findUnique({
-    where: { id: ticketId },
-    select: { title: true, description: true },
-  });
-
-  if (!ticket) return [];
-
-  const text = (ticket.title + ' ' + (ticket.description || '')).toLowerCase();
-
-  // Simple keyword matching (AI can improve this later)
-  const skillKeywords: Record<string, string[]> = {
-    'react': ['react', 'component', 'jsx', 'tsx', 'hooks', 'useState', 'useEffect'],
-    'typescript': ['typescript', 'types', 'interface', 'ts', '.tsx'],
-    'nextjs': ['next.js', 'nextjs', 'next', 'app router', 'pages'],
-    'nodejs': ['node', 'express', 'api', 'backend', 'server'],
-    'postgresql': ['postgres', 'sql', 'database', 'prisma', 'query'],
-    'docker': ['docker', 'container', 'dockerfile', 'compose'],
-    'swift': ['ios', 'swift', 'swiftui', 'xcode', 'apple'],
-    'kotlin': ['android', 'kotlin', 'jetpack'],
-    'python': ['python', 'django', 'flask', 'pandas'],
-    'testing': ['test', 'jest', 'cypress', 'e2e', 'unit test'],
-  };
-
-  const inferredSkills: { skill_name: string; importance: string; min_proficiency: number }[] = [];
-
-  for (const [skill, keywords] of Object.entries(skillKeywords)) {
-    if (keywords.some(kw => text.includes(kw))) {
-      inferredSkills.push({
-        skill_name: skill,
-        importance: 'preferred',
-        min_proficiency: 2,
-      });
-    }
-  }
-
-  return inferredSkills;
+  // TODO: Call Java backend to get ticket skills
+  console.log(`[AssignmentService] analyzeTicketSkills for ticket: ${ticketId}`);
+  return []; // Return empty until backend ready
 }
 
 /**
  * Get current workload for a user (in-progress tickets)
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function getUserWorkload(userId: string): Promise<number> {
-  const inProgressTickets = await prisma.qUAD_tickets.count({
-    where: {
-      assigned_to: userId,
-      status: { in: ['in_progress', 'in_review'] },
-    },
-  });
-
-  return inProgressTickets;
+  // TODO: Call Java backend to get user workload
+  console.log(`[AssignmentService] getUserWorkload for user: ${userId}`);
+  return 0; // Return 0 until backend ready
 }
 
 /**
@@ -154,22 +85,12 @@ interface UserSkillInfo {
 }
 
 async function getUserSkillInfo(userId: string, skillName: string): Promise<UserSkillInfo> {
-  const userSkill = await prisma.qUAD_user_skills.findFirst({
-    where: {
-      user_id: userId,
-      skill_name: { equals: skillName, mode: 'insensitive' },
-    },
-    select: {
-      proficiency_level: true,
-      interest_level: true,
-      wants_to_learn: true,
-    },
-  });
-
+  // TODO: Call Java backend to get user skill info
+  console.log(`[AssignmentService] getUserSkillInfo for user: ${userId}, skill: ${skillName}`);
   return {
-    proficiency_level: userSkill?.proficiency_level || 0,
-    interest_level: userSkill?.interest_level || 'medium',
-    wants_to_learn: userSkill?.wants_to_learn || false,
+    proficiency_level: 0,
+    interest_level: 'medium',
+    wants_to_learn: false,
   };
 }
 
@@ -205,33 +126,12 @@ function calculateInterestScore(interest: string, wantsToLearn: boolean, profici
 
 /**
  * Get user experience score based on role and org membership
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function getUserExperienceScore(userId: string, orgId: string): Promise<number> {
-  const membership = await prisma.qUAD_org_members.findFirst({
-    where: { user_id: userId, org_id: orgId },
-    select: { role: true, joined_at: true },
-  });
-
-  if (!membership) return 1;
-
-  // Role-based score
-  const roleScores: Record<string, number> = {
-    'OWNER': 5,
-    'ADMIN': 4,
-    'LEAD': 4,
-    'SENIOR': 4,
-    'DEVELOPER': 3,
-    'MEMBER': 2,
-    'INTERN': 1,
-  };
-
-  const baseScore = roleScores[membership.role] || 2;
-
-  // Add tenure bonus (up to 1 point for 1+ year)
-  const monthsInOrg = Math.floor((Date.now() - membership.joined_at.getTime()) / (30 * 24 * 60 * 60 * 1000));
-  const tenureBonus = Math.min(monthsInOrg / 12, 1);
-
-  return baseScore + tenureBonus;
+  // TODO: Call Java backend to get user experience score
+  console.log(`[AssignmentService] getUserExperienceScore for user: ${userId}, org: ${orgId}`);
+  return 3; // Default score until backend ready
 }
 
 /**
@@ -251,14 +151,9 @@ export async function assignTicket(
 
   // 2. If only one developer, assign directly
   if (developerIds.length === 1) {
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: developerIds[0] },
-      select: { full_name: true },
-    });
-
     return {
       assigned_to: developerIds[0],
-      assigned_name: user?.full_name || 'Developer',
+      assigned_name: 'Developer',
       assignment_type: 'single_developer',
       score: 100,
       reason: 'Only developer in Circle 2',
@@ -268,20 +163,15 @@ export async function assignTicket(
 
   // 3. Get required skills and ticket priority for weighted scoring
   const requiredSkills = await analyzeTicketSkills(ticketId, orgId);
-  const ticket = await prisma.qUAD_tickets.findUnique({
-    where: { id: ticketId },
-    select: { priority: true },
-  });
-  const priority = ticket?.priority || 'medium';
+  // TODO: Get ticket priority from Java backend
+  const priority = 'medium'; // Default priority until backend ready
 
   // 4. Score each candidate
   const candidates: AssignmentCandidate[] = [];
 
   for (const userId of developerIds) {
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: userId },
-      select: { full_name: true },
-    });
+    // TODO: Get user name from Java backend
+    const userName = 'Developer';
 
     const reasons: string[] = [];
     const skillMatches: AssignmentCandidate['skill_matches'] = [];
@@ -378,7 +268,7 @@ export async function assignTicket(
 
     candidates.push({
       user_id: userId,
-      user_name: user?.full_name || 'Unknown',
+      user_name: userName,
       skill_score: skillScore,
       interest_score: interestScore,
       workload_score: workloadScore,
@@ -435,6 +325,7 @@ export async function assignTicket(
 
 /**
  * Record assignment decision for audit and learning
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function recordAssignment(
   ticketId: string,
@@ -442,22 +333,14 @@ export async function recordAssignment(
   overriddenBy?: string,
   overrideReason?: string
 ): Promise<void> {
-  await prisma.qUAD_assignment_scores.create({
-    data: {
-      ticket_id: ticketId,
-      assigned_to: result.assigned_to,
-      assignment_type: overriddenBy ? 'manual_override' : result.assignment_type,
-      assignment_reason: result.reason,
-      candidates: JSON.parse(JSON.stringify(result.candidates)),
-      overridden_by: overriddenBy,
-      override_reason: overrideReason,
-    },
-  });
+  // TODO: Call Java backend to record assignment
+  console.log(`[AssignmentService] recordAssignment for ticket: ${ticketId}, assigned to: ${result.assigned_to}`);
 }
 
 /**
  * Record skill feedback when user declines or completes a ticket
  * Also used for scrum feedback without a specific ticket
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function recordSkillFeedback(
   userId: string,
@@ -466,62 +349,6 @@ export async function recordSkillFeedback(
   skillName?: string,
   notes?: string
 ): Promise<void> {
-  // Get skills associated with this ticket (if ticket provided)
-  let skillsToRecord: { skill_name: string; skill_id: string | null }[] = [];
-
-  if (skillName) {
-    skillsToRecord = [{ skill_name: skillName, skill_id: null }];
-  } else if (ticketId) {
-    const ticketSkills = await prisma.qUAD_ticket_skills.findMany({
-      where: { ticket_id: ticketId },
-      include: { skill: true },
-    });
-    skillsToRecord = ticketSkills.map(ts => ({ skill_name: ts.skill.skill_name, skill_id: ts.skill_id }));
-  }
-
-  // If no skills to record, return early
-  if (skillsToRecord.length === 0) return;
-
-  for (const skill of skillsToRecord) {
-    const delta = feedbackType === 'ticket_completed' ? 1 :
-                  feedbackType === 'ticket_declined' ? -1 :
-                  feedbackType === 'scrum_feedback' ? -1 : 0;
-
-    await prisma.qUAD_skill_feedback.create({
-      data: {
-        user_id: userId,
-        skill_id: skill.skill_id,
-        skill_name: skill.skill_name,
-        feedback_type: feedbackType,
-        proficiency_delta: delta,
-        ticket_id: ticketId,
-        feedback_notes: notes,
-        is_processed: false,
-      },
-    });
-
-    // Update user skill stats
-    if (delta !== 0) {
-      const userSkill = await prisma.qUAD_user_skills.findFirst({
-        where: { user_id: userId, skill_name: skill.skill_name },
-      });
-
-      if (userSkill) {
-        await prisma.qUAD_user_skills.update({
-          where: { id: userSkill.id },
-          data: {
-            tickets_completed: feedbackType === 'ticket_completed'
-              ? { increment: 1 }
-              : undefined,
-            tickets_declined: feedbackType === 'ticket_declined'
-              ? { increment: 1 }
-              : undefined,
-            positive_feedback: delta > 0 ? { increment: 1 } : undefined,
-            negative_feedback: delta < 0 ? { increment: 1 } : undefined,
-            last_assessed: new Date(),
-          },
-        });
-      }
-    }
-  }
+  // TODO: Call Java backend to record skill feedback
+  console.log(`[AssignmentService] recordSkillFeedback for user: ${userId}, feedback: ${feedbackType}`);
 }

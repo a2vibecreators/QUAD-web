@@ -5,11 +5,76 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface ResourceAttribute {
+  id: string;
+  resource_id: string;
+  attribute_name: string;
+  attribute_value: string | null;
+}
+
+interface DomainResource {
+  id: string;
+  domain_id: string;
+  resource_type: string;
+  resource_name: string;
+  resource_status: string;
+  created_by: string | null;
+  domain: Domain;
+  attributes: ResourceAttribute[];
+}
 
 interface RouteParams {
   params: Promise<{ resourceId: string }>;
+}
+
+// Stub functions for database operations
+async function findUniqueResource(id: string, include?: Record<string, unknown>): Promise<DomainResource | null> {
+  console.log('[STUB] findUniqueResource called with:', { id, include });
+  return null;
+}
+
+async function updateResource(id: string, data: Record<string, unknown>, include?: Record<string, unknown>): Promise<DomainResource> {
+  console.log('[STUB] updateResource called with:', { id, data, include });
+  return {
+    id,
+    domain_id: 'stub-domain-id',
+    resource_type: 'git_repo',
+    resource_name: 'Stub Resource',
+    resource_status: 'active',
+    created_by: null,
+    domain: { id: 'stub-domain-id', name: 'Stub Domain', org_id: 'stub-org-id' },
+    attributes: []
+  };
+}
+
+async function upsertResourceAttribute(
+  resourceId: string,
+  attributeName: string,
+  attributeValue: string
+): Promise<ResourceAttribute> {
+  console.log('[STUB] upsertResourceAttribute called with:', { resourceId, attributeName, attributeValue });
+  return {
+    id: 'stub-attribute-id',
+    resource_id: resourceId,
+    attribute_name: attributeName,
+    attribute_value: attributeValue
+  };
+}
+
+async function deleteResource(id: string): Promise<void> {
+  console.log('[STUB] deleteResource called with id:', id);
 }
 
 // GET: Get resource by ID with attributes
@@ -29,14 +94,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const resource = await prisma.qUAD_domain_resources.findUnique({
-      where: { id: resourceId },
-      include: {
-        domain: {
-          select: { id: true, name: true, org_id: true }
-        },
-        attributes: true
-      }
+    const resource = await findUniqueResource(resourceId, {
+      domain: {
+        select: { id: true, name: true, org_id: true }
+      },
+      attributes: true
     });
 
     if (!resource) {
@@ -89,11 +151,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const existing = await prisma.qUAD_domain_resources.findUnique({
-      where: { id: resourceId },
-      include: {
-        domain: { select: { org_id: true } }
-      }
+    const existing = await findUniqueResource(resourceId, {
+      domain: { select: { org_id: true } }
     });
 
     if (!existing) {
@@ -108,17 +167,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { resource_name, resource_status, attributes } = body;
 
     // Update resource
-    const resource = await prisma.qUAD_domain_resources.update({
-      where: { id: resourceId },
-      data: {
+    const resource = await updateResource(
+      resourceId,
+      {
         ...(resource_name !== undefined && { resource_name }),
         ...(resource_status !== undefined && { resource_status })
       },
-      include: {
+      {
         domain: { select: { id: true, name: true } },
         attributes: true
       }
-    });
+    );
 
     // Handle attributes updates (EAV pattern)
     if (attributes && Array.isArray(attributes)) {
@@ -126,31 +185,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (!attr.name) continue;
 
         // Upsert each attribute
-        await prisma.qUAD_resource_attributes.upsert({
-          where: {
-            resource_id_attribute_name: {
-              resource_id: resourceId,
-              attribute_name: attr.name
-            }
-          },
-          update: {
-            attribute_value: attr.value
-          },
-          create: {
-            resource_id: resourceId,
-            attribute_name: attr.name,
-            attribute_value: attr.value
-          }
-        });
+        await upsertResourceAttribute(resourceId, attr.name, attr.value);
       }
 
       // Refresh to get updated attributes
-      const updated = await prisma.qUAD_domain_resources.findUnique({
-        where: { id: resourceId },
-        include: {
-          domain: { select: { id: true, name: true } },
-          attributes: true
-        }
+      const updated = await findUniqueResource(resourceId, {
+        domain: { select: { id: true, name: true } },
+        attributes: true
       });
 
       return NextResponse.json(updated);
@@ -188,11 +229,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const existing = await prisma.qUAD_domain_resources.findUnique({
-      where: { id: resourceId },
-      include: {
-        domain: { select: { org_id: true } }
-      }
+    const existing = await findUniqueResource(resourceId, {
+      domain: { select: { org_id: true } }
     });
 
     if (!existing) {
@@ -204,9 +242,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete resource (cascade will delete attributes)
-    await prisma.qUAD_domain_resources.delete({
-      where: { id: resourceId }
-    });
+    await deleteResource(resourceId);
 
     return NextResponse.json({ message: 'Resource deleted successfully' });
   } catch (error) {

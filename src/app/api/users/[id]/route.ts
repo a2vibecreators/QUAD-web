@@ -5,8 +5,84 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken, hashPassword } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+interface User {
+  id: string;
+  org_id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  is_active: boolean;
+  email_verified: boolean;
+  created_at: Date;
+  updated_at: Date;
+  adoption_matrix: unknown | null;
+  domain_members?: DomainMember[];
+  workload_metrics?: WorkloadMetric[];
+  _count?: {
+    flows_assigned: number;
+    flows_created: number;
+    work_sessions: number;
+  };
+}
+
+interface DomainMember {
+  domain: {
+    id: string;
+    name: string;
+    domain_type: string;
+  };
+}
+
+interface WorkloadMetric {
+  period_start: Date;
+}
+
+interface UserUpdateData {
+  full_name?: string;
+  password_hash?: string;
+  role?: string;
+  is_active?: boolean;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function findUserById(id: string): Promise<User | null> {
+  console.log('[STUB] findUserById called with id:', id);
+  // TODO: Call Java backend GET /users/{id}
+  return null;
+}
+
+async function findUserByIdSimple(id: string): Promise<{ id: string; org_id: string } | null> {
+  console.log('[STUB] findUserByIdSimple called with id:', id);
+  // TODO: Call Java backend GET /users/{id}
+  return null;
+}
+
+async function updateUser(id: string, data: UserUpdateData): Promise<User | null> {
+  console.log('[STUB] updateUser called with id:', id, 'data:', data);
+  // TODO: Call Java backend PUT /users/{id}
+  return null;
+}
+
+async function deleteUser(id: string): Promise<void> {
+  console.log('[STUB] deleteUser called with id:', id);
+  // TODO: Call Java backend DELETE /users/{id}
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -29,43 +105,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        org_id: true,
-        email: true,
-        full_name: true,
-        role: true,
-        is_active: true,
-        email_verified: true,
-        created_at: true,
-        updated_at: true,
-        adoption_matrix: true,
-        domain_members: {
-          include: {
-            domain: {
-              select: {
-                id: true,
-                name: true,
-                domain_type: true
-              }
-            }
-          }
-        },
-        workload_metrics: {
-          take: 5,
-          orderBy: { period_start: 'desc' }
-        },
-        _count: {
-          select: {
-            flows_assigned: true,
-            flows_created: true,
-            work_sessions: true
-          }
-        }
-      }
-    });
+    const user = await findUserById(id);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -112,9 +152,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user exists and is in same company
-    const existing = await prisma.qUAD_users.findUnique({
-      where: { id }
-    });
+    const existing = await findUserByIdSimple(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -128,7 +166,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { full_name, password, role, is_active } = body;
 
     // Build update data
-    const updateData: Record<string, unknown> = {};
+    const updateData: UserUpdateData = {};
 
     if (full_name !== undefined) updateData.full_name = full_name;
     if (password) updateData.password_hash = await hashPassword(password);
@@ -139,18 +177,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (is_active !== undefined) updateData.is_active = is_active;
     }
 
-    const user = await prisma.qUAD_users.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        email: true,
-        full_name: true,
-        role: true,
-        is_active: true,
-        updated_at: true
-      }
-    });
+    const user = await updateUser(id, updateData);
 
     return NextResponse.json(user);
   } catch (error) {
@@ -185,9 +212,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user exists and is in same company
-    const existing = await prisma.qUAD_users.findUnique({
-      where: { id }
-    });
+    const existing = await findUserByIdSimple(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -205,9 +230,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    await prisma.qUAD_users.delete({
-      where: { id }
-    });
+    await deleteUser(id);
 
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {

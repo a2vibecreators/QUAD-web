@@ -9,7 +9,94 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
+
+// TODO: All database operations in this file need to be implemented via Java backend
+// Stubbed functions return safe defaults until backend is ready
+
+interface User {
+  id: string;
+  full_name: string | null;
+  email: string;
+}
+
+interface Assigner {
+  id: string;
+  full_name: string | null;
+}
+
+interface Reviewer {
+  id: string;
+  user_id: string;
+  status: string;
+  assigned_at: Date;
+  assigned_by: string | null;
+  reviewed_at: Date | null;
+  user: User;
+  assigner: Assigner | null;
+}
+
+interface PR {
+  id: string;
+  flow: { domain: { org_id: string } };
+}
+
+async function getUserOrgId(_email: string): Promise<string | null> {
+  console.log('[PRReviewers] getUserOrgId - stub');
+  return 'mock-org-id';
+}
+
+async function getUserById(_email: string): Promise<{ id: string; org_id: string | null; role: string | null } | null> {
+  console.log('[PRReviewers] getUserById - stub');
+  return null;
+}
+
+async function getPRWithOrgVerification(_prId: string): Promise<PR | null> {
+  console.log('[PRReviewers] getPRWithOrgVerification - stub');
+  return null;
+}
+
+async function getPRReviewers(_prId: string): Promise<Reviewer[]> {
+  console.log('[PRReviewers] getPRReviewers - stub');
+  return [];
+}
+
+async function findUserInOrg(_userId: string, _orgId: string): Promise<{ id: string } | null> {
+  console.log('[PRReviewers] findUserInOrg - stub');
+  return null;
+}
+
+async function upsertReviewer(_prId: string, _userId: string, _assignedBy: string): Promise<Reviewer> {
+  console.log('[PRReviewers] upsertReviewer - stub');
+  return {
+    id: 'mock-id',
+    user_id: _userId,
+    status: 'pending',
+    assigned_at: new Date(),
+    assigned_by: _assignedBy,
+    reviewed_at: null,
+    user: { id: _userId, full_name: null, email: '' },
+    assigner: null,
+  };
+}
+
+async function deleteReviewer(_prId: string, _userId: string): Promise<void> {
+  console.log('[PRReviewers] deleteReviewer - stub');
+}
+
+async function updateReviewerStatus(_prId: string, _userId: string, _status: string): Promise<Reviewer> {
+  console.log('[PRReviewers] updateReviewerStatus - stub');
+  return {
+    id: 'mock-id',
+    user_id: _userId,
+    status: _status,
+    assigned_at: new Date(),
+    assigned_by: null,
+    reviewed_at: _status !== 'pending' ? new Date() : null,
+    user: { id: _userId, full_name: null, email: '' },
+    assigner: null,
+  };
+}
 
 interface RouteContext {
   params: Promise<{ prId: string }>;
@@ -27,12 +114,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     const { prId } = await context.params;
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrgId(session.user.email);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json(
         { error: 'User not associated with an organization' },
         { status: 400 }
@@ -40,45 +124,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     // Get PR with org verification
-    const pr = await prisma.qUAD_pull_requests.findUnique({
-      where: { id: prId },
-      include: {
-        flow: {
-          include: {
-            domain: { select: { org_id: true } },
-          },
-        },
-      },
-    });
+    const pr = await getPRWithOrgVerification(prId);
 
-    if (!pr || !pr.flow) {
+    if (!pr) {
       return NextResponse.json({ error: 'Pull request not found' }, { status: 404 });
     }
 
-    if (pr.flow.domain.org_id !== user.org_id) {
+    if (pr.flow.domain.org_id !== orgId) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     // Get reviewers
-    const reviewers = await prisma.qUAD_pr_reviewers.findMany({
-      where: { pr_id: prId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            full_name: true,
-            email: true,
-          },
-        },
-        assigner: {
-          select: {
-            id: true,
-            full_name: true,
-          },
-        },
-      },
-      orderBy: { assigned_at: 'asc' },
-    });
+    const reviewers = await getPRReviewers(prId);
 
     return NextResponse.json({
       reviewers: reviewers.map((r) => ({
@@ -118,10 +175,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, org_id: true },
-    });
+    const user = await getUserById(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -131,18 +185,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Get PR with org verification
-    const pr = await prisma.qUAD_pull_requests.findUnique({
-      where: { id: prId },
-      include: {
-        flow: {
-          include: {
-            domain: { select: { org_id: true } },
-          },
-        },
-      },
-    });
+    const pr = await getPRWithOrgVerification(prId);
 
-    if (!pr || !pr.flow) {
+    if (!pr) {
       return NextResponse.json({ error: 'Pull request not found' }, { status: 404 });
     }
 
@@ -151,12 +196,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Verify reviewer exists and is in org
-    const reviewer = await prisma.qUAD_users.findFirst({
-      where: {
-        id: userId,
-        org_id: user.org_id,
-      },
-    });
+    const reviewer = await findUserInOrg(userId, user.org_id);
 
     if (!reviewer) {
       return NextResponse.json(
@@ -166,32 +206,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Add reviewer (upsert to handle re-assignments)
-    const prReviewer = await prisma.qUAD_pr_reviewers.upsert({
-      where: {
-        pr_id_user_id: { pr_id: prId, user_id: userId },
-      },
-      update: {
-        status: 'pending',
-        assigned_at: new Date(),
-        assigned_by: user.id,
-        reviewed_at: null,
-      },
-      create: {
-        pr_id: prId,
-        user_id: userId,
-        assigned_by: user.id,
-        status: 'pending',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            full_name: true,
-            email: true,
-          },
-        },
-      },
-    });
+    const prReviewer = await upsertReviewer(prId, userId, user.id);
 
     return NextResponse.json({
       success: true,
@@ -230,12 +245,9 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'userId query param required' }, { status: 400 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrgId(session.user.email);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json(
         { error: 'User not associated with an organization' },
         { status: 400 }
@@ -243,32 +255,18 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     // Get PR with org verification
-    const pr = await prisma.qUAD_pull_requests.findUnique({
-      where: { id: prId },
-      include: {
-        flow: {
-          include: {
-            domain: { select: { org_id: true } },
-          },
-        },
-      },
-    });
+    const pr = await getPRWithOrgVerification(prId);
 
-    if (!pr || !pr.flow) {
+    if (!pr) {
       return NextResponse.json({ error: 'Pull request not found' }, { status: 404 });
     }
 
-    if (pr.flow.domain.org_id !== user.org_id) {
+    if (pr.flow.domain.org_id !== orgId) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     // Delete reviewer assignment
-    await prisma.qUAD_pr_reviewers.deleteMany({
-      where: {
-        pr_id: prId,
-        user_id: userId,
-      },
-    });
+    await deleteReviewer(prId, userId);
 
     return NextResponse.json({
       success: true,
@@ -312,10 +310,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, org_id: true },
-    });
+    const user = await getUserById(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -325,18 +320,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     // Get PR with org verification
-    const pr = await prisma.qUAD_pull_requests.findUnique({
-      where: { id: prId },
-      include: {
-        flow: {
-          include: {
-            domain: { select: { org_id: true } },
-          },
-        },
-      },
-    });
+    const pr = await getPRWithOrgVerification(prId);
 
-    if (!pr || !pr.flow) {
+    if (!pr) {
       return NextResponse.json({ error: 'Pull request not found' }, { status: 404 });
     }
 
@@ -345,24 +331,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     // Update reviewer status
-    const updated = await prisma.qUAD_pr_reviewers.update({
-      where: {
-        pr_id_user_id: { pr_id: prId, user_id: userId },
-      },
-      data: {
-        status,
-        reviewed_at: status !== 'pending' ? new Date() : null,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            full_name: true,
-            email: true,
-          },
-        },
-      },
-    });
+    const updated = await updateReviewerStatus(prId, userId, status);
 
     return NextResponse.json({
       success: true,

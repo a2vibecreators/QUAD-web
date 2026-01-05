@@ -6,8 +6,50 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+interface Organization {
+  id: string;
+  name: string;
+  admin_email: string;
+  size: string;
+  slug: string | null;
+  created_at: Date;
+  _count?: {
+    users: number;
+    domains: number;
+  };
+}
+
+async function getOrgById(_id: string): Promise<Organization | null> {
+  console.log(`[Companies] getOrgById: ${_id}`);
+  return null;
+}
+
+async function getAllOrgs(): Promise<Organization[]> {
+  console.log('[Companies] getAllOrgs - stub');
+  return [];
+}
+
+async function findOrgByNameAndEmail(_name: string, _email: string): Promise<Organization | null> {
+  console.log('[Companies] findOrgByNameAndEmail - stub');
+  return null;
+}
+
+async function createOrg(_data: { name: string; admin_email: string; size: string }): Promise<Organization> {
+  console.log('[Companies] createOrg - stub');
+  return {
+    id: 'mock-org-id',
+    name: _data.name,
+    admin_email: _data.admin_email,
+    size: _data.size,
+    slug: null,
+    created_at: new Date(),
+  };
+}
 
 // GET: List all organizations (admin only)
 export async function GET(request: NextRequest) {
@@ -27,27 +69,13 @@ export async function GET(request: NextRequest) {
     // Check if user is admin
     if (payload.role !== 'ADMIN') {
       // Non-admins can only see their own organization
-      const organization = await prisma.qUAD_organizations.findUnique({
-        where: { id: payload.companyId },
-        include: {
-          _count: {
-            select: { users: true, domains: true }
-          }
-        }
-      });
+      const organization = await getOrgById(payload.companyId);
 
       return NextResponse.json({ companies: organization ? [organization] : [] });
     }
 
     // Admins can see all organizations
-    const organizations = await prisma.qUAD_organizations.findMany({
-      include: {
-        _count: {
-          select: { users: true, domains: true }
-        }
-      },
-      orderBy: { created_at: 'desc' }
-    });
+    const organizations = await getAllOrgs();
 
     return NextResponse.json({ companies: organizations });
   } catch (error) {
@@ -75,9 +103,7 @@ export async function POST(request: NextRequest) {
 
     // Note: admin_email is not unique - sub-orgs can share admin
     // Check for duplicate organization name instead
-    const existing = await prisma.qUAD_organizations.findFirst({
-      where: { name, admin_email }
-    });
+    const existing = await findOrgByNameAndEmail(name, admin_email);
 
     if (existing) {
       return NextResponse.json(
@@ -87,12 +113,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create organization
-    const organization = await prisma.qUAD_organizations.create({
-      data: {
-        name,
-        admin_email,
-        size: size || 'medium'
-      }
+    const organization = await createOrg({
+      name,
+      admin_email,
+      size: size || 'medium'
     });
 
     return NextResponse.json(organization, { status: 201 });

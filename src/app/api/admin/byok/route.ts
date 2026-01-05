@@ -8,13 +8,49 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import {
   getAllBYOKCategories,
   BYOK_CATEGORY_NAMES,
   BYOK_CATEGORY_DESCRIPTIONS,
   type BYOKCategory,
 } from '@/lib/integrations/byok-matrix';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+interface OrgSettings {
+  byok_git_enabled: boolean;
+  byok_calendar_enabled: boolean;
+  byok_ai_enabled: boolean;
+  byok_communication_enabled: boolean;
+}
+
+interface Integration {
+  provider: string;
+  use_byok: boolean;
+  byok_client_id: string | null;
+  is_configured: boolean;
+}
+
+async function getUserWithRole(_email: string): Promise<{ org_id: string | null; role: string | null } | null> {
+  console.log('[BYOK] getUserWithRole - stub');
+  return null;
+}
+
+async function getOrgSettings(_orgId: string): Promise<OrgSettings | null> {
+  console.log(`[BYOK] getOrgSettings: ${_orgId}`);
+  return null;
+}
+
+async function getGitIntegrations(_orgId: string): Promise<Integration[]> {
+  console.log(`[BYOK] getGitIntegrations: ${_orgId}`);
+  return [];
+}
+
+async function getMeetingIntegrations(_orgId: string): Promise<Integration[]> {
+  console.log(`[BYOK] getMeetingIntegrations: ${_orgId}`);
+  return [];
+}
 
 export async function GET() {
   try {
@@ -24,10 +60,7 @@ export async function GET() {
     }
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true, role: true },
-    });
+    const user = await getUserWithRole(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -46,36 +79,12 @@ export async function GET() {
     }
 
     // Get org settings for BYOK flags
-    const orgSettings = await prisma.qUAD_org_settings.findUnique({
-      where: { org_id: user.org_id },
-      select: {
-        byok_git_enabled: true,
-        byok_calendar_enabled: true,
-        byok_ai_enabled: true,
-        byok_communication_enabled: true,
-      },
-    });
+    const orgSettings = await getOrgSettings(user.org_id);
 
     // Get all integrations with BYOK status
     const [gitIntegrations, meetingIntegrations] = await Promise.all([
-      prisma.qUAD_git_integrations.findMany({
-        where: { org_id: user.org_id },
-        select: {
-          provider: true,
-          use_byok: true,
-          byok_client_id: true,
-          is_configured: true,
-        },
-      }),
-      prisma.qUAD_meeting_integrations.findMany({
-        where: { org_id: user.org_id },
-        select: {
-          provider: true,
-          use_byok: true,
-          byok_client_id: true,
-          is_configured: true,
-        },
-      }),
+      getGitIntegrations(user.org_id),
+      getMeetingIntegrations(user.org_id),
     ]);
 
     // Build BYOK status for each category

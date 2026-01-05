@@ -4,8 +4,65 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+interface UserSkill {
+  id: string;
+  user_id: string;
+  skill_name: string;
+  proficiency_level: number;
+  certified: boolean;
+  certification_date: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface SkillUpdateData {
+  proficiency_level?: number;
+  certified?: boolean;
+  certification_date?: Date | null;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function findSkillById(id: string): Promise<UserSkill | null> {
+  console.log('[STUB] findSkillById called with id:', id);
+  // TODO: Call Java backend GET /skills/{id}
+  return null;
+}
+
+async function updateSkill(id: string, data: SkillUpdateData): Promise<UserSkill> {
+  console.log('[STUB] updateSkill called with id:', id, 'data:', data);
+  // TODO: Call Java backend PUT /skills/{id}
+  return {
+    id,
+    user_id: 'stub-user-id',
+    skill_name: 'Stub Skill',
+    proficiency_level: data.proficiency_level ?? 1,
+    certified: data.certified ?? false,
+    certification_date: data.certification_date ?? null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+}
+
+async function deleteSkill(id: string): Promise<void> {
+  console.log('[STUB] deleteSkill called with id:', id);
+  // TODO: Call Java backend DELETE /skills/{id}
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 // PUT: Update skill
 export async function PUT(
@@ -30,9 +87,7 @@ export async function PUT(
     const { proficiency_level, certified, certification_date } = body;
 
     // Find skill and verify ownership
-    const existingSkill = await prisma.qUAD_user_skills.findUnique({
-      where: { id }
-    });
+    const existingSkill = await findSkillById(id);
 
     if (!existingSkill) {
       return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
@@ -50,16 +105,14 @@ export async function PUT(
       );
     }
 
-    const skill = await prisma.qUAD_user_skills.update({
-      where: { id },
-      data: {
-        ...(proficiency_level !== undefined && { proficiency_level }),
-        ...(certified !== undefined && { certified }),
-        ...(certification_date !== undefined && {
-          certification_date: certification_date ? new Date(certification_date) : null
-        })
-      }
-    });
+    const updateData: SkillUpdateData = {};
+    if (proficiency_level !== undefined) updateData.proficiency_level = proficiency_level;
+    if (certified !== undefined) updateData.certified = certified;
+    if (certification_date !== undefined) {
+      updateData.certification_date = certification_date ? new Date(certification_date) : null;
+    }
+
+    const skill = await updateSkill(id, updateData);
 
     return NextResponse.json({ skill });
 
@@ -89,9 +142,7 @@ export async function DELETE(
     }
 
     // Find skill and verify ownership
-    const existingSkill = await prisma.qUAD_user_skills.findUnique({
-      where: { id }
-    });
+    const existingSkill = await findSkillById(id);
 
     if (!existingSkill) {
       return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
@@ -101,9 +152,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Not authorized to delete this skill' }, { status: 403 });
     }
 
-    await prisma.qUAD_user_skills.delete({
-      where: { id }
-    });
+    await deleteSkill(id);
 
     return NextResponse.json({ message: 'Skill deleted successfully' });
 

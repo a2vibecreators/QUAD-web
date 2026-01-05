@@ -5,8 +5,98 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface Cycle {
+  id: string;
+  cycle_number: number;
+  name: string;
+  status: string;
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  status: string;
+  sequence_order: number;
+  cycles?: Cycle[];
+  _count?: { cycles: number };
+}
+
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface Requirement {
+  id: string;
+  domain_id: string;
+  title: string;
+  description: string | null;
+  source_type: string;
+  source_file_url: string | null;
+  source_file_name: string | null;
+  status: string;
+  created_by: string;
+  approved_by?: string | null;
+  approved_at?: Date | null;
+  domain: Domain;
+  milestones?: Milestone[];
+}
+
+// ============================================================================
+// Stub Functions
+// ============================================================================
+
+async function stubFindUniqueRequirementWithDetails(
+  id: string
+): Promise<Requirement | null> {
+  console.log('[STUB] findUniqueRequirementWithDetails called with id:', id);
+  return null;
+}
+
+async function stubFindUniqueRequirement(
+  id: string
+): Promise<(Requirement & { domain: { org_id: string } }) | null> {
+  console.log('[STUB] findUniqueRequirement called with id:', id);
+  return null;
+}
+
+async function stubUpdateRequirement(
+  id: string,
+  data: Record<string, unknown>
+): Promise<Requirement> {
+  console.log('[STUB] updateRequirement called with id:', id, 'data:', data);
+  return {
+    id,
+    domain_id: 'stub-domain-id',
+    title: (data.title as string) || 'Stub Title',
+    description: (data.description as string) || null,
+    source_type: 'MANUAL',
+    source_file_url: null,
+    source_file_name: null,
+    status: (data.status as string) || 'draft',
+    created_by: 'stub-user-id',
+    domain: { id: 'stub-domain-id', name: 'Stub Domain', org_id: 'stub-org-id' },
+    milestones: []
+  };
+}
+
+async function stubDeleteRequirement(id: string): Promise<void> {
+  console.log('[STUB] deleteRequirement called with id:', id);
+}
+
+// ============================================================================
+// API Handlers
+// ============================================================================
 
 // GET: Get single requirement with milestones
 export async function GET(
@@ -28,34 +118,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const requirement = await prisma.qUAD_requirements.findUnique({
-      where: { id },
-      include: {
-        domain: {
-          select: {
-            id: true,
-            name: true,
-            org_id: true
-          }
-        },
-        milestones: {
-          include: {
-            cycles: {
-              select: {
-                id: true,
-                cycle_number: true,
-                name: true,
-                status: true
-              }
-            },
-            _count: {
-              select: { cycles: true }
-            }
-          },
-          orderBy: { sequence_order: 'asc' }
-        }
-      }
-    });
+    const requirement = await stubFindUniqueRequirementWithDetails(id);
 
     if (!requirement) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
@@ -97,12 +160,7 @@ export async function PUT(
     }
 
     // Fetch existing requirement
-    const existing = await prisma.qUAD_requirements.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true } }
-      }
-    });
+    const existing = await stubFindUniqueRequirement(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
@@ -138,22 +196,7 @@ export async function PUT(
       updateData.status = status;
     }
 
-    const requirement = await prisma.qUAD_requirements.update({
-      where: { id },
-      data: updateData,
-      include: {
-        domain: {
-          select: { id: true, name: true }
-        },
-        milestones: {
-          select: {
-            id: true,
-            title: true,
-            status: true
-          }
-        }
-      }
-    });
+    const requirement = await stubUpdateRequirement(id, updateData);
 
     return NextResponse.json(requirement);
   } catch (error) {
@@ -191,12 +234,7 @@ export async function DELETE(
     }
 
     // Fetch existing requirement
-    const existing = await prisma.qUAD_requirements.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true } }
-      }
-    });
+    const existing = await stubFindUniqueRequirement(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
@@ -206,9 +244,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 
-    await prisma.qUAD_requirements.delete({
-      where: { id }
-    });
+    await stubDeleteRequirement(id);
 
     return NextResponse.json({ message: 'Requirement deleted' });
   } catch (error) {

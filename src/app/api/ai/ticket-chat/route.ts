@@ -13,12 +13,98 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { callAI, AIMessage } from '@/lib/ai/providers';
 import { hasCredits, deductCredits } from '@/lib/ai/credit-service';
 
 // Environment check for AI providers
 const USE_REAL_AI = process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY;
+
+// Conversation types
+interface AIConversation {
+  id: string;
+  org_id: string;
+  user_id: string;
+  scope_type: string;
+  scope_id: string;
+  title: string;
+  status: string;
+  total_messages: number;
+  total_tokens_used: number;
+  primary_provider: string;
+  messages?: AIMessage_DB[];
+}
+
+interface AIMessage_DB {
+  id: string;
+  conversation_id: string;
+  role: string;
+  content: string;
+  content_type: string;
+  tokens_used: number;
+  provider?: string;
+  model_id?: string;
+  latency_ms?: number;
+  suggestion_type?: string;
+  suggestion_data?: object;
+  suggestion_status?: string;
+  created_at: Date;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function findConversation(orgId: string, scopeType: string, scopeId: string): Promise<AIConversation | null> {
+  console.log(`[TicketChat] findConversation for org: ${orgId}, scope: ${scopeType}/${scopeId}`);
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createConversation(data: Partial<AIConversation>): Promise<AIConversation> {
+  console.log(`[TicketChat] createConversation:`, data);
+  return {
+    id: 'mock-conv-id',
+    org_id: data.org_id || '',
+    user_id: data.user_id || '',
+    scope_type: data.scope_type || 'ticket',
+    scope_id: data.scope_id || '',
+    title: data.title || 'Chat',
+    status: 'active',
+    total_messages: 0,
+    total_tokens_used: 0,
+    primary_provider: 'claude',
+  };
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createMessage(data: Partial<AIMessage_DB>): Promise<AIMessage_DB> {
+  console.log(`[TicketChat] createMessage:`, data);
+  return {
+    id: 'mock-msg-id',
+    conversation_id: data.conversation_id || '',
+    role: data.role || 'user',
+    content: data.content || '',
+    content_type: data.content_type || 'text',
+    tokens_used: data.tokens_used || 0,
+    created_at: new Date(),
+    ...data,
+  };
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function updateConversation(id: string, data: Partial<AIConversation>): Promise<void> {
+  console.log(`[TicketChat] updateConversation: ${id}`, data);
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getActivityRouting(orgId: string, activityType: string): Promise<{ provider?: string; model_id?: string } | null> {
+  console.log(`[TicketChat] getActivityRouting for org: ${orgId}, activity: ${activityType}`);
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getTicketNumber(ticketId: string): Promise<string | null> {
+  console.log(`[TicketChat] getTicketNumber: ${ticketId}`);
+  return null;
+}
 
 /**
  * GET - Retrieve conversation history for a ticket
@@ -38,20 +124,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find existing conversation for this ticket
-    const conversation = await prisma.qUAD_ai_conversations.findFirst({
-      where: {
-        org_id: session.user.companyId,
-        scope_type: 'ticket',
-        scope_id: ticketId,
-        status: 'active',
-      },
-      include: {
-        messages: {
-          orderBy: { created_at: 'asc' },
-          take: 50, // Last 50 messages
-        },
-      },
-    });
+    const conversation = await findConversation(session.user.companyId, 'ticket', ticketId);
 
     if (!conversation) {
       return NextResponse.json({
@@ -64,7 +137,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         conversationId: conversation.id,
-        messages: conversation.messages.map((m) => ({
+        messages: (conversation.messages || []).map((m) => ({
           id: m.id,
           role: m.role,
           content: m.content,
@@ -123,51 +196,34 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Find or create conversation for this ticket
-    let conversation = await prisma.qUAD_ai_conversations.findFirst({
-      where: {
-        org_id: orgId,
-        scope_type: 'ticket',
-        scope_id: ticketId,
-        status: 'active',
-      },
-    });
+    let conversation = await findConversation(orgId, 'ticket', ticketId);
 
     if (!conversation) {
       // Create new conversation
-      conversation = await prisma.qUAD_ai_conversations.create({
-        data: {
-          org_id: orgId,
-          user_id: userId,
-          scope_type: 'ticket',
-          scope_id: ticketId,
-          title: ticketContext?.title
-            ? `Chat: ${ticketContext.title.substring(0, 50)}`
-            : 'Ticket Chat',
-          status: 'active',
-          primary_provider: 'claude', // Will be determined by activity routing
-        },
+      conversation = await createConversation({
+        org_id: orgId,
+        user_id: userId,
+        scope_type: 'ticket',
+        scope_id: ticketId,
+        title: ticketContext?.title
+          ? `Chat: ${ticketContext.title.substring(0, 50)}`
+          : 'Ticket Chat',
+        status: 'active',
+        primary_provider: 'claude', // Will be determined by activity routing
       });
     }
 
     // 2. Save user message
-    const userMessage = await prisma.qUAD_ai_messages.create({
-      data: {
-        conversation_id: conversation.id,
-        role: 'user',
-        content: message,
-        content_type: 'text',
-        tokens_used: Math.ceil(message.length / 4),
-      },
+    const userMessage = await createMessage({
+      conversation_id: conversation.id,
+      role: 'user',
+      content: message,
+      content_type: 'text',
+      tokens_used: Math.ceil(message.length / 4),
     });
 
     // 3. Get activity routing for ticket questions
-    const routing = await prisma.qUAD_ai_activity_routing.findFirst({
-      where: {
-        org_id: orgId,
-        activity_type: 'ticket_question',
-        is_active: true,
-      },
-    });
+    const routing = await getActivityRouting(orgId, 'ticket_question');
 
     // 4. Build ticket-scoped context (LIMITED to this ticket)
     const ticketPrompt = buildTicketContext(ticketContext);
@@ -182,40 +238,30 @@ export async function POST(request: NextRequest) {
     );
 
     // 6. Save assistant message
-    const assistantMessage = await prisma.qUAD_ai_messages.create({
-      data: {
-        conversation_id: conversation.id,
-        role: 'assistant',
-        content: aiResponse.content,
-        content_type: aiResponse.hasCode ? 'code' : 'text',
-        tokens_used: aiResponse.tokensUsed,
-        provider: aiResponse.provider,
-        model_id: aiResponse.model,
-        latency_ms: aiResponse.latencyMs,
-        suggestion_type: aiResponse.suggestion?.type,
-        suggestion_data: aiResponse.suggestion?.data as object | undefined,
-        suggestion_status: aiResponse.suggestion ? 'pending' : null,
-      },
+    const assistantMessage = await createMessage({
+      conversation_id: conversation.id,
+      role: 'assistant',
+      content: aiResponse.content,
+      content_type: aiResponse.hasCode ? 'code' : 'text',
+      tokens_used: aiResponse.tokensUsed,
+      provider: aiResponse.provider,
+      model_id: aiResponse.model,
+      latency_ms: aiResponse.latencyMs,
+      suggestion_type: aiResponse.suggestion?.type,
+      suggestion_data: aiResponse.suggestion?.data as object | undefined,
+      suggestion_status: aiResponse.suggestion ? 'pending' : undefined,
     });
 
     // 7. Update conversation stats
-    await prisma.qUAD_ai_conversations.update({
-      where: { id: conversation.id },
-      data: {
-        total_messages: { increment: 2 },
-        total_tokens_used: {
-          increment: userMessage.tokens_used + aiResponse.tokensUsed,
-        },
-      },
+    await updateConversation(conversation.id, {
+      total_messages: conversation.total_messages + 2,
+      total_tokens_used: conversation.total_tokens_used + userMessage.tokens_used + aiResponse.tokensUsed,
     });
 
     // 8. Deduct credits from org pool (shared by all users)
     // Skip for mock provider (no real cost)
     if (aiResponse.provider !== 'mock') {
-      const ticketInfo = await prisma.qUAD_tickets.findUnique({
-        where: { id: ticketId },
-        select: { ticket_number: true },
-      });
+      const ticketNumber = await getTicketNumber(ticketId);
 
       await deductCredits(
         orgId,
@@ -230,7 +276,7 @@ export async function POST(request: NextRequest) {
           conversationId: conversation.id,
           messageId: assistantMessage.id,
           ticketId: ticketId,
-          ticketNumber: ticketInfo?.ticket_number || undefined,
+          ticketNumber: ticketNumber || undefined,
         }
       );
     }

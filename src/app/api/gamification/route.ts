@@ -14,8 +14,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
 
 // Complexity points multiplier
 const COMPLEXITY_POINTS: Record<number, number> = {
@@ -25,6 +27,79 @@ const COMPLEXITY_POINTS: Record<number, number> = {
   4: 8,   // Very Complex
   5: 16   // Extremely Complex
 };
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface Domain {
+  id: string;
+  org_id: string;
+}
+
+interface TimeLog {
+  id: string;
+  hours: number | string;
+}
+
+interface Ticket {
+  id: string;
+  domain_id: string;
+  status: string;
+  completed_at: Date | null;
+  assigned_to: string | null;
+  story_points: number | null;
+  ticket_type: string;
+  due_date: Date | null;
+  ai_estimate_hours: number | string | null;
+  time_logs: TimeLog[];
+}
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+}
+
+interface UserStats {
+  tickets_completed: number;
+  story_points: number;
+  complexity_points: number;
+  total_hours: number;
+  estimated_hours: number;
+  bug_fixes: number;
+  features: number;
+  on_time_deliveries: number;
+  late_deliveries: number;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function findDomainsByOrgId(orgId: string): Promise<Domain[]> {
+  console.log('[STUB] findDomainsByOrgId called:', { orgId });
+  return [];
+}
+
+async function findCompletedTickets(
+  domainIds: string[],
+  startDate: Date,
+  endDate: Date,
+  userId?: string
+): Promise<Ticket[]> {
+  console.log('[STUB] findCompletedTickets called:', { domainIds, startDate, endDate, userId });
+  return [];
+}
+
+async function findUsersByIds(userIds: string[]): Promise<User[]> {
+  console.log('[STUB] findUsersByIds called:', { userIds });
+  return [];
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 // GET: Get gamification metrics
 export async function GET(request: NextRequest) {
@@ -69,40 +144,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Get organization domains
-    const orgDomains = await prisma.qUAD_domains.findMany({
-      where: { org_id: payload.companyId },
-      select: { id: true }
-    });
+    const orgDomains = await findDomainsByOrgId(payload.companyId);
     const domainIds = domainId ? [domainId] : orgDomains.map(d => d.id);
 
     // Get completed tickets in period
-    const completedTickets = await prisma.qUAD_tickets.findMany({
-      where: {
-        domain_id: { in: domainIds },
-        status: 'done',
-        completed_at: {
-          gte: startDate,
-          lte: endDate
-        },
-        ...(userId ? { assigned_to: userId } : {})
-      },
-      include: {
-        time_logs: true
-      }
-    });
+    const completedTickets = await findCompletedTickets(
+      domainIds,
+      startDate,
+      endDate,
+      userId || undefined
+    );
 
     // Get all users who completed tickets
-    const userStats: Record<string, {
-      tickets_completed: number;
-      story_points: number;
-      complexity_points: number;
-      total_hours: number;
-      estimated_hours: number;
-      bug_fixes: number;
-      features: number;
-      on_time_deliveries: number;
-      late_deliveries: number;
-    }> = {};
+    const userStats: Record<string, UserStats> = {};
 
     completedTickets.forEach(ticket => {
       if (!ticket.assigned_to) return;
@@ -154,10 +208,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch user details
     const userIds = Object.keys(userStats);
-    const users = await prisma.qUAD_users.findMany({
-      where: { id: { in: userIds } },
-      select: { id: true, email: true, full_name: true }
-    });
+    const users = await findUsersByIds(userIds);
     const userMap = new Map(users.map(u => [u.id, u]));
 
     // Build leaderboard

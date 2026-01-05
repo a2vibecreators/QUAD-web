@@ -4,8 +4,111 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  org_id: string;
+}
+
+interface WorkSession {
+  id: string;
+  user_id: string;
+  session_date: Date;
+  hours_worked: number;
+  is_workday: boolean;
+  start_time: string | null;
+  end_time: string | null;
+  deep_work_pct: number | null;
+  meeting_hours: number | null;
+  notes: string | null;
+  user?: {
+    id: string;
+    email: string;
+    full_name: string | null;
+  };
+}
+
+interface WorkSessionCreateInput {
+  user_id: string;
+  session_date: Date;
+  hours_worked: number;
+  is_workday: boolean;
+  start_time?: string | null;
+  end_time?: string | null;
+  deep_work_pct?: number | null;
+  meeting_hours?: number | null;
+  notes?: string | null;
+}
+
+// ============================================================================
+// Stub Functions
+// ============================================================================
+
+async function findUserById(userId: string): Promise<User | null> {
+  console.log('[STUB] findUserById called with:', userId);
+  // TODO: Implement via Java backend GET /users/{id}
+  return null;
+}
+
+async function findWorkSessions(where: Record<string, unknown>): Promise<WorkSession[]> {
+  console.log('[STUB] findWorkSessions called with:', JSON.stringify(where));
+  // TODO: Implement via Java backend GET /work-sessions
+  return [];
+}
+
+async function findUniqueWorkSession(userId: string, sessionDate: Date): Promise<WorkSession | null> {
+  console.log('[STUB] findUniqueWorkSession called with:', userId, sessionDate);
+  // TODO: Implement via Java backend GET /work-sessions?user_id={userId}&session_date={date}
+  return null;
+}
+
+async function updateWorkSession(id: string, data: Partial<WorkSessionCreateInput>): Promise<WorkSession> {
+  console.log('[STUB] updateWorkSession called with:', id, JSON.stringify(data));
+  // TODO: Implement via Java backend PUT /work-sessions/{id}
+  return {
+    id,
+    user_id: data.user_id || '',
+    session_date: data.session_date || new Date(),
+    hours_worked: data.hours_worked || 0,
+    is_workday: data.is_workday ?? true,
+    start_time: data.start_time || null,
+    end_time: data.end_time || null,
+    deep_work_pct: data.deep_work_pct || null,
+    meeting_hours: data.meeting_hours || null,
+    notes: data.notes || null,
+  };
+}
+
+async function createWorkSession(data: WorkSessionCreateInput): Promise<WorkSession> {
+  console.log('[STUB] createWorkSession called with:', JSON.stringify(data));
+  // TODO: Implement via Java backend POST /work-sessions
+  return {
+    id: 'stub-session-id',
+    user_id: data.user_id,
+    session_date: data.session_date,
+    hours_worked: data.hours_worked,
+    is_workday: data.is_workday,
+    start_time: data.start_time || null,
+    end_time: data.end_time || null,
+    deep_work_pct: data.deep_work_pct || null,
+    meeting_hours: data.meeting_hours || null,
+    notes: data.notes || null,
+  };
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 // GET: Get work sessions
 export async function GET(request: NextRequest) {
@@ -31,9 +134,7 @@ export async function GET(request: NextRequest) {
 
     // Verify user is in same company
     if (userId !== payload.userId) {
-      const user = await prisma.qUAD_users.findUnique({
-        where: { id: userId }
-      });
+      const user = await findUserById(userId);
       if (!user || user.org_id !== payload.companyId) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
@@ -52,15 +153,7 @@ export async function GET(request: NextRequest) {
       where.is_workday = isWorkday === 'true';
     }
 
-    const sessions = await prisma.qUAD_work_sessions.findMany({
-      where,
-      include: {
-        user: {
-          select: { id: true, email: true, full_name: true }
-        }
-      },
-      orderBy: { session_date: 'desc' }
-    });
+    const sessions = await findWorkSessions(where);
 
     // Calculate 4-4-4 metrics for the period
     const workdaySessions = sessions.filter(s => s.is_workday);
@@ -144,9 +237,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
 
-      const user = await prisma.qUAD_users.findUnique({
-        where: { id: targetUserId }
-      });
+      const user = await findUserById(targetUserId);
       if (!user || user.org_id !== payload.companyId) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
@@ -154,50 +245,32 @@ export async function POST(request: NextRequest) {
 
     // Check for existing session on this date (upsert)
     const sessionDateObj = new Date(session_date);
-    const existing = await prisma.qUAD_work_sessions.findUnique({
-      where: {
-        user_id_session_date: {
-          user_id: targetUserId,
-          session_date: sessionDateObj
-        }
-      }
-    });
+    const existing = await findUniqueWorkSession(targetUserId, sessionDateObj);
 
     let session;
     if (existing) {
       // Update existing
-      session = await prisma.qUAD_work_sessions.update({
-        where: { id: existing.id },
-        data: {
-          hours_worked: hours_worked !== undefined ? hours_worked : existing.hours_worked,
-          is_workday: is_workday !== undefined ? is_workday : existing.is_workday,
-          start_time: start_time !== undefined ? start_time : existing.start_time,
-          end_time: end_time !== undefined ? end_time : existing.end_time,
-          deep_work_pct: deep_work_pct !== undefined ? deep_work_pct : existing.deep_work_pct,
-          meeting_hours: meeting_hours !== undefined ? meeting_hours : existing.meeting_hours,
-          notes: notes !== undefined ? notes : existing.notes
-        },
-        include: {
-          user: { select: { id: true, email: true, full_name: true } }
-        }
+      session = await updateWorkSession(existing.id, {
+        hours_worked: hours_worked !== undefined ? hours_worked : existing.hours_worked,
+        is_workday: is_workday !== undefined ? is_workday : existing.is_workday,
+        start_time: start_time !== undefined ? start_time : existing.start_time,
+        end_time: end_time !== undefined ? end_time : existing.end_time,
+        deep_work_pct: deep_work_pct !== undefined ? deep_work_pct : existing.deep_work_pct,
+        meeting_hours: meeting_hours !== undefined ? meeting_hours : existing.meeting_hours,
+        notes: notes !== undefined ? notes : existing.notes
       });
     } else {
       // Create new
-      session = await prisma.qUAD_work_sessions.create({
-        data: {
-          user_id: targetUserId,
-          session_date: sessionDateObj,
-          hours_worked: hours_worked || 0,
-          is_workday: is_workday !== undefined ? is_workday : true,
-          start_time,
-          end_time,
-          deep_work_pct,
-          meeting_hours,
-          notes
-        },
-        include: {
-          user: { select: { id: true, email: true, full_name: true } }
-        }
+      session = await createWorkSession({
+        user_id: targetUserId,
+        session_date: sessionDateObj,
+        hours_worked: hours_worked || 0,
+        is_workday: is_workday !== undefined ? is_workday : true,
+        start_time,
+        end_time,
+        deep_work_pct,
+        meeting_hours,
+        notes
       });
     }
 

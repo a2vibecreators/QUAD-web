@@ -8,7 +8,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
+
+// Types
+interface Skill {
+  id: string;
+  org_id: string;
+  skill_code: string;
+  skill_name: string;
+  category: string;
+  description: string | null;
+  ai_context: string | null;
+  is_active: boolean;
+  related_skills: string[];
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrgId(userId: string): Promise<string | null> {
+  console.log(`[Skills] getUserOrgId for: ${userId}`);
+  return 'mock-org-id';
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getOrgSkills(orgId: string, category?: string | null): Promise<Skill[]> {
+  console.log(`[Skills] getOrgSkills for org: ${orgId}, category: ${category}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getExistingSkillCodes(orgId: string): Promise<string[]> {
+  console.log(`[Skills] getExistingSkillCodes for org: ${orgId}`);
+  return [];
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createManySkills(orgId: string, skills: Partial<Skill>[]): Promise<void> {
+  console.log(`[Skills] createManySkills for org: ${orgId}:`, skills.length);
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function findSkillByCode(orgId: string, skillCode: string): Promise<Skill | null> {
+  console.log(`[Skills] findSkillByCode: ${orgId}, ${skillCode}`);
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createSkill(data: Partial<Skill>): Promise<Skill> {
+  console.log(`[Skills] createSkill:`, data);
+  return { id: 'mock-id', org_id: data.org_id || '', skill_code: data.skill_code || '', skill_name: data.skill_name || '', category: data.category || '', description: null, ai_context: null, is_active: true, related_skills: [] };
+}
 
 // Common tech skills to seed when org creates first skill
 const COMMON_SKILLS = [
@@ -47,26 +95,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrgId(session.user.id);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 });
     }
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
 
-    const skills = await prisma.qUAD_skills.findMany({
-      where: {
-        org_id: user.org_id,
-        is_active: true,
-        ...(category && { category }),
-      },
-      orderBy: [{ category: 'asc' }, { skill_name: 'asc' }],
-    });
+    const skills = await getOrgSkills(orgId, category);
 
     const skillsByCategory = skills.reduce((acc, skill) => {
       if (!acc[skill.category]) acc[skill.category] = [];
@@ -88,12 +126,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrgId(session.user.id);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 });
     }
 
@@ -102,17 +137,12 @@ export async function POST(request: NextRequest) {
 
     // Seed all common skills
     if (seed_common) {
-      const existingSkills = await prisma.qUAD_skills.findMany({
-        where: { org_id: user.org_id },
-        select: { skill_code: true },
-      });
-      const existingCodes = new Set(existingSkills.map(s => s.skill_code));
-      const skillsToCreate = COMMON_SKILLS.filter(s => !existingCodes.has(s.skill_code));
+      const existingCodes = await getExistingSkillCodes(orgId);
+      const existingCodeSet = new Set(existingCodes);
+      const skillsToCreate = COMMON_SKILLS.filter(s => !existingCodeSet.has(s.skill_code));
 
       if (skillsToCreate.length > 0) {
-        await prisma.qUAD_skills.createMany({
-          data: skillsToCreate.map(s => ({ org_id: user.org_id, ...s, related_skills: [] })),
-        });
+        await createManySkills(orgId, skillsToCreate.map(s => ({ org_id: orgId, ...s, related_skills: [] })));
       }
 
       return NextResponse.json({
@@ -128,16 +158,20 @@ export async function POST(request: NextRequest) {
     }
 
     const code = skill_code || skill_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    const existing = await prisma.qUAD_skills.findFirst({
-      where: { org_id: user.org_id, skill_code: code },
-    });
+    const existing = await findSkillByCode(orgId, code);
 
     if (existing) {
       return NextResponse.json({ error: 'Skill already exists' }, { status: 400 });
     }
 
-    const skill = await prisma.qUAD_skills.create({
-      data: { org_id: user.org_id, skill_name, skill_code: code, category, description, ai_context, related_skills: [] },
+    const skill = await createSkill({
+      org_id: orgId,
+      skill_name,
+      skill_code: code,
+      category,
+      description,
+      ai_context,
+      related_skills: [],
     });
 
     return NextResponse.json({ success: true, skill });

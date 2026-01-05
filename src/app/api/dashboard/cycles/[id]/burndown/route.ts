@@ -8,14 +8,44 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
 
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
 interface BurndownPoint {
   date: string;
   ideal: number;
   actual: number | null;
   completed: number;
+}
+
+interface Ticket {
+  id: string;
+  story_points: number | null;
+  status: string;
+  completed_at: Date | null;
+  created_at: Date;
+}
+
+interface Cycle {
+  id: string;
+  name: string;
+  start_date: Date;
+  end_date: Date;
+  status: string;
+  domain: {
+    org_id: string;
+    name: string;
+  };
+  tickets: Ticket[];
+}
+
+// Stub functions for database operations
+async function stubFindCycleById(cycleId: string): Promise<Cycle | null> {
+  console.log(`[STUB] findCycleById called with cycleId: ${cycleId}`);
+  return null;
 }
 
 // GET: Burndown data for a cycle
@@ -43,21 +73,7 @@ export async function GET(
     const metric = searchParams.get('metric') || 'points'; // 'points' or 'count'
 
     // Fetch cycle with tickets
-    const cycle = await prisma.qUAD_cycles.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true, name: true } },
-        tickets: {
-          select: {
-            id: true,
-            story_points: true,
-            status: true,
-            completed_at: true,
-            created_at: true
-          }
-        }
-      }
-    });
+    const cycle = await stubFindCycleById(id);
 
     if (!cycle) {
       return NextResponse.json({ error: 'Cycle not found' }, { status: 404 });

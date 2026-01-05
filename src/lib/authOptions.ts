@@ -103,10 +103,12 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (existingUser) {
-          // Account linking: User exists, redirect directly to dashboard
+          // Account linking: User exists - allow sign-in and let redirect callback handle destination
           console.log(`Account linking: ${user.email} signed in via ${account.provider} (existing user)`);
-          // Existing user - skip signup flow, go directly to dashboard
-          return '/dashboard';
+          // Mark this as an existing user sign-in (will be handled by redirect callback)
+          // Store in account object so redirect callback can access it
+          (account as any).isExistingUser = true;
+          return true; // Allow sign-in, redirect callback will handle destination
         }
 
         // New user - redirect to unified signup page with OAuth params
@@ -185,6 +187,44 @@ export const authOptions: NextAuthOptions = {
         session.accessToken = token.accessToken as string;
       }
       return session;
+    },
+
+    /**
+     * Control redirect destination after sign-in
+     * This runs AFTER jwt and session callbacks, so session is properly established
+     */
+    async redirect({ url, baseUrl }) {
+      console.log(`[redirect callback] URL: ${url}, baseUrl: ${baseUrl}`);
+
+      // If URL contains oauth=true, it's a new user being sent to signup - allow it
+      if (url.includes('oauth=true')) {
+        console.log(`[redirect callback] New OAuth user, allowing redirect to signup`);
+        // Handle relative URL
+        if (url.startsWith('/')) {
+          return `${baseUrl}${url}`;
+        }
+        return url;
+      }
+
+      // If the URL is the signup page WITHOUT oauth=true, it's an existing user
+      // who clicked OAuth from signup page - redirect to dashboard instead
+      if (url.includes('/auth/signup')) {
+        console.log(`[redirect callback] Existing user from signup page, redirecting to dashboard`);
+        return `${baseUrl}/dashboard`;
+      }
+
+      // Handle relative URLs
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+
+      // Handle same-origin URLs
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+
+      // Default to dashboard for any other OAuth callback
+      return `${baseUrl}/dashboard`;
     },
   },
 

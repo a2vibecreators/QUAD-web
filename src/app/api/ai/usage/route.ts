@@ -15,9 +15,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { TOKEN_PRICING } from '@/lib/ai/providers';
 import { getOrCreateBalance } from '@/lib/ai/credit-service';
+
+// Conversation with messages
+interface AIConversation {
+  id: string;
+  org_id: string;
+  scope_type: string;
+  scope_id: string | null;
+  total_tokens_used: number;
+  created_at: Date;
+  messages: {
+    tokens_used: number;
+    role: string;
+    provider: string | null;
+    model_id: string | null;
+    latency_ms: number | null;
+    created_at: Date;
+  }[];
+}
+
+interface Ticket {
+  id: string;
+  ticket_number: string;
+  title: string;
+  story_points: number | null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getConversations(orgId: string, startDate: Date): Promise<AIConversation[]> {
+  console.log(`[AIUsage] getConversations for org: ${orgId}, since: ${startDate.toISOString()}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getTicketsByIds(ticketIds: string[]): Promise<Ticket[]> {
+  console.log(`[AIUsage] getTicketsByIds: ${ticketIds.length} tickets`);
+  return []; // Return empty until backend ready
+}
 
 // Haiku pricing (current default)
 const HAIKU_PRICING = TOKEN_PRICING['claude-3-5-haiku-20241022'];
@@ -51,24 +88,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all AI conversations for this org
-    const conversations = await prisma.qUAD_ai_conversations.findMany({
-      where: {
-        org_id: orgId,
-        created_at: { gte: startDate },
-      },
-      include: {
-        messages: {
-          select: {
-            tokens_used: true,
-            role: true,
-            provider: true,
-            model_id: true,
-            latency_ms: true,
-            created_at: true,
-          },
-        },
-      },
-    });
+    const conversations = await getConversations(orgId, startDate);
 
     // Aggregate stats
     let totalTokens = 0;
@@ -128,15 +148,7 @@ export async function GET(request: NextRequest) {
     // Get ticket complexity correlation (if tickets have story_points)
     const ticketIds = Object.keys(ticketUsage);
     const tickets = ticketIds.length > 0
-      ? await prisma.qUAD_tickets.findMany({
-          where: { id: { in: ticketIds } },
-          select: {
-            id: true,
-            ticket_number: true,
-            title: true,
-            story_points: true,
-          },
-        })
+      ? await getTicketsByIds(ticketIds)
       : [];
 
     // Build complexity vs tokens analysis

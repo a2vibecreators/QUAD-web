@@ -5,8 +5,148 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface Domain {
+  id: string;
+  name: string;
+  ticket_prefix: string | null;
+  org_id: string;
+}
+
+interface Cycle {
+  id: string;
+  name: string;
+  cycle_number: number;
+  status: string;
+}
+
+interface ParentTicket {
+  id: string;
+  ticket_number: string;
+  title: string;
+}
+
+interface Subtask {
+  id: string;
+  ticket_number: string;
+  title: string;
+  status: string;
+  assigned_to: string | null;
+}
+
+interface Comment {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  content: string;
+  is_ai: boolean;
+  created_at: Date;
+}
+
+interface TimeLog {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  hours: number;
+  description: string | null;
+  logged_date: Date;
+}
+
+interface PullRequest {
+  id: string;
+  pr_number: number;
+  title: string;
+  state: string;
+  pr_url: string;
+}
+
+interface Ticket {
+  id: string;
+  domain_id: string;
+  cycle_id: string | null;
+  parent_ticket_id: string | null;
+  ticket_number: string;
+  title: string;
+  description: string | null;
+  acceptance_criteria: string | null;
+  ticket_type: string;
+  status: string;
+  priority: string;
+  assigned_to: string | null;
+  reporter_id: string;
+  story_points: number | null;
+  due_date: Date | null;
+  started_at: Date | null;
+  completed_at: Date | null;
+  branch_name: string | null;
+  ai_implementation_plan: string | null;
+  ai_suggested_files: string[] | null;
+  created_at: Date;
+  domain: Domain;
+  cycle?: Cycle | null;
+  parent_ticket?: ParentTicket | null;
+  subtasks: Subtask[];
+  comments: Comment[];
+  time_logs: TimeLog[];
+  pull_request?: PullRequest | null;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function stubFindTicketById(ticketId: string): Promise<Ticket | null> {
+  console.log('[STUB] prisma.qUAD_tickets.findUnique called with id:', ticketId);
+  return null;
+}
+
+async function stubFindTicketWithDomainById(ticketId: string): Promise<{ id: string; status: string; started_at: Date | null; reporter_id: string; domain: { org_id: string }; subtasks: { id: string }[] } | null> {
+  console.log('[STUB] prisma.qUAD_tickets.findUnique (with domain) called with id:', ticketId);
+  return null;
+}
+
+async function stubUpdateTicket(ticketId: string, data: Record<string, unknown>): Promise<Ticket> {
+  console.log('[STUB] prisma.qUAD_tickets.update called with id:', ticketId, 'data:', JSON.stringify(data));
+  return {
+    id: ticketId,
+    domain_id: 'stub-domain-id',
+    cycle_id: null,
+    parent_ticket_id: null,
+    ticket_number: 'STUB-1',
+    title: 'Stub Ticket',
+    description: null,
+    acceptance_criteria: null,
+    ticket_type: 'task',
+    status: 'backlog',
+    priority: 'medium',
+    assigned_to: null,
+    reporter_id: 'stub-user-id',
+    story_points: null,
+    due_date: null,
+    started_at: null,
+    completed_at: null,
+    branch_name: null,
+    ai_implementation_plan: null,
+    ai_suggested_files: null,
+    created_at: new Date(),
+    domain: { id: 'stub-domain-id', name: 'Stub Domain', ticket_prefix: null, org_id: 'stub-org-id' },
+    subtasks: [],
+    comments: [],
+    time_logs: [],
+  };
+}
+
+async function stubDeleteTicket(ticketId: string): Promise<void> {
+  console.log('[STUB] prisma.qUAD_tickets.delete called with id:', ticketId);
+}
 
 // GET: Get single ticket with full details
 export async function GET(
@@ -28,53 +168,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const ticket = await prisma.qUAD_tickets.findUnique({
-      where: { id },
-      include: {
-        domain: {
-          select: {
-            id: true,
-            name: true,
-            ticket_prefix: true,
-            org_id: true
-          }
-        },
-        cycle: {
-          select: { id: true, name: true, cycle_number: true, status: true }
-        },
-        parent_ticket: {
-          select: {
-            id: true,
-            ticket_number: true,
-            title: true
-          }
-        },
-        subtasks: {
-          select: {
-            id: true,
-            ticket_number: true,
-            title: true,
-            status: true,
-            assigned_to: true
-          }
-        },
-        comments: {
-          orderBy: { created_at: 'desc' }
-        },
-        time_logs: {
-          orderBy: { logged_date: 'desc' }
-        },
-        pull_request: {
-          select: {
-            id: true,
-            pr_number: true,
-            title: true,
-            state: true,
-            pr_url: true
-          }
-        }
-      }
-    });
+    const ticket = await stubFindTicketById(id);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
@@ -134,12 +228,7 @@ export async function PUT(
     }
 
     // Fetch existing ticket
-    const existing = await prisma.qUAD_tickets.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true } }
-      }
-    });
+    const existing = await stubFindTicketWithDomainById(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
@@ -203,25 +292,7 @@ export async function PUT(
       }
     }
 
-    const ticket = await prisma.qUAD_tickets.update({
-      where: { id },
-      data: updateData,
-      include: {
-        domain: {
-          select: { id: true, name: true }
-        },
-        cycle: {
-          select: { id: true, name: true }
-        },
-        subtasks: {
-          select: {
-            id: true,
-            title: true,
-            status: true
-          }
-        }
-      }
-    });
+    const ticket = await stubUpdateTicket(id, updateData);
 
     return NextResponse.json(ticket);
   } catch (error) {
@@ -254,13 +325,7 @@ export async function DELETE(
     }
 
     // Fetch existing ticket
-    const existing = await prisma.qUAD_tickets.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true } },
-        subtasks: { select: { id: true } }
-      }
-    });
+    const existing = await stubFindTicketWithDomainById(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
@@ -280,9 +345,7 @@ export async function DELETE(
       // Subtasks will be deleted due to cascade
     }
 
-    await prisma.qUAD_tickets.delete({
-      where: { id }
-    });
+    await stubDeleteTicket(id);
 
     return NextResponse.json({ message: 'Ticket deleted' });
   } catch (error) {

@@ -14,7 +14,7 @@ import { NextRequest } from 'next/server';
 import { routeToContext, compactConversation, Message } from '@/lib/ai/context-categories';
 import { getCodebaseIndex, formatIndexForAI } from '@/lib/ai/codebase-indexer';
 import { streamAI, AIMessage } from '@/lib/ai/providers';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
 
 // Schema definitions (simplified for streaming context)

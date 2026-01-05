@@ -9,11 +9,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import {
   getBYOKProviderConfig,
   type BYOKCategory,
 } from '@/lib/integrations/byok-matrix';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+async function getUserWithRole(_email: string): Promise<{ org_id: string | null; role: string | null } | null> {
+  console.log('[BYOKProvider] getUserWithRole - stub');
+  return null;
+}
+
+async function getGitIntegrationByok(_orgId: string, _provider: string): Promise<{ use_byok: boolean; byok_client_id: string | null; is_configured: boolean } | null> {
+  console.log(`[BYOKProvider] getGitIntegrationByok: ${_provider}`);
+  return null;
+}
+
+async function getMeetingIntegrationByok(_orgId: string, _provider: string): Promise<{ use_byok: boolean; byok_client_id: string | null; is_configured: boolean } | null> {
+  console.log(`[BYOKProvider] getMeetingIntegrationByok: ${_provider}`);
+  return null;
+}
+
+async function upsertGitIntegration(_orgId: string, _provider: string, _providerName: string, _data: object): Promise<void> {
+  console.log(`[BYOKProvider] upsertGitIntegration: ${_provider}`);
+}
+
+async function upsertMeetingIntegration(_orgId: string, _provider: string, _providerName: string, _data: object): Promise<void> {
+  console.log(`[BYOKProvider] upsertMeetingIntegration: ${_provider}`);
+}
+
+async function updateGitIntegrationByok(_orgId: string, _provider: string, _data: object): Promise<void> {
+  console.log(`[BYOKProvider] updateGitIntegrationByok: ${_provider}`);
+}
+
+async function updateMeetingIntegrationByok(_orgId: string, _provider: string, _data: object): Promise<void> {
+  console.log(`[BYOKProvider] updateMeetingIntegrationByok: ${_provider}`);
+}
 
 interface RouteParams {
   params: Promise<{ category: string; provider: string }>;
@@ -42,10 +75,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true },
-    });
+    const user = await getUserWithRole(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -58,16 +88,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     let byokStatus = { enabled: false, hasCredentials: false, clientIdPreview: null as string | null };
 
     if (category === 'git') {
-      const integration = await prisma.qUAD_git_integrations.findUnique({
-        where: {
-          org_id_provider: { org_id: user.org_id, provider },
-        },
-        select: {
-          use_byok: true,
-          byok_client_id: true,
-          is_configured: true,
-        },
-      });
+      const integration = await getGitIntegrationByok(user.org_id, provider);
 
       byokStatus = {
         enabled: integration?.use_byok || false,
@@ -77,16 +98,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           : null,
       };
     } else if (category === 'calendar') {
-      const integration = await prisma.qUAD_meeting_integrations.findUnique({
-        where: {
-          org_id_provider: { org_id: user.org_id, provider },
-        },
-        select: {
-          use_byok: true,
-          byok_client_id: true,
-          is_configured: true,
-        },
-      });
+      const integration = await getMeetingIntegrationByok(user.org_id, provider);
 
       byokStatus = {
         enabled: integration?.use_byok || false,
@@ -148,10 +160,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true, role: true },
-    });
+    const user = await getUserWithRole(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -182,50 +191,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Save BYOK credentials based on category
     if (category === 'git') {
-      await prisma.qUAD_git_integrations.upsert({
-        where: {
-          org_id_provider: { org_id: user.org_id, provider },
-        },
-        update: {
-          use_byok: true,
-          byok_client_id: body.client_id,
-          byok_client_secret: body.client_secret,
-          byok_redirect_uri: body.redirect_uri || null,
-        },
-        create: {
-          org_id: user.org_id,
-          provider,
-          provider_name: providerConfig.name,
-          use_byok: true,
-          byok_client_id: body.client_id,
-          byok_client_secret: body.client_secret,
-          byok_redirect_uri: body.redirect_uri || null,
-          is_configured: false,
-          is_enabled: false,
-        },
+      await upsertGitIntegration(user.org_id, provider, providerConfig.name, {
+        use_byok: true,
+        byok_client_id: body.client_id,
+        byok_client_secret: body.client_secret,
+        byok_redirect_uri: body.redirect_uri || null,
       });
     } else if (category === 'calendar') {
-      await prisma.qUAD_meeting_integrations.upsert({
-        where: {
-          org_id_provider: { org_id: user.org_id, provider },
-        },
-        update: {
-          use_byok: true,
-          byok_client_id: body.client_id,
-          byok_client_secret: body.client_secret,
-          byok_redirect_uri: body.redirect_uri || null,
-        },
-        create: {
-          org_id: user.org_id,
-          provider,
-          provider_name: providerConfig.name,
-          use_byok: true,
-          byok_client_id: body.client_id,
-          byok_client_secret: body.client_secret,
-          byok_redirect_uri: body.redirect_uri || null,
-          is_configured: false,
-          is_enabled: false,
-        },
+      await upsertMeetingIntegration(user.org_id, provider, providerConfig.name, {
+        use_byok: true,
+        byok_client_id: body.client_id,
+        byok_client_secret: body.client_secret,
+        byok_redirect_uri: body.redirect_uri || null,
       });
     }
     // AI and Communication would follow similar pattern
@@ -266,10 +243,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.qUAD_users.findUnique({
-      where: { email: session.user.email },
-      select: { org_id: true, role: true },
-    });
+    const user = await getUserWithRole(session.user.email);
 
     if (!user?.org_id) {
       return NextResponse.json(
@@ -288,28 +262,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Clear BYOK credentials based on category
     if (category === 'git') {
-      await prisma.qUAD_git_integrations.update({
-        where: {
-          org_id_provider: { org_id: user.org_id, provider },
-        },
-        data: {
-          use_byok: false,
-          byok_client_id: null,
-          byok_client_secret: null,
-          byok_redirect_uri: null,
-        },
+      await updateGitIntegrationByok(user.org_id, provider, {
+        use_byok: false,
+        byok_client_id: null,
+        byok_client_secret: null,
+        byok_redirect_uri: null,
       });
     } else if (category === 'calendar') {
-      await prisma.qUAD_meeting_integrations.update({
-        where: {
-          org_id_provider: { org_id: user.org_id, provider },
-        },
-        data: {
-          use_byok: false,
-          byok_client_id: null,
-          byok_client_secret: null,
-          byok_redirect_uri: null,
-        },
+      await updateMeetingIntegrationByok(user.org_id, provider, {
+        use_byok: false,
+        byok_client_id: null,
+        byok_client_secret: null,
+        byok_redirect_uri: null,
       });
     }
     // AI and Communication would follow similar pattern

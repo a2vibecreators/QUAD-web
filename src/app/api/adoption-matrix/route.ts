@@ -4,8 +4,102 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken, calculateSafetyBuffer, getZoneName } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface AdoptionMatrix {
+  id: string;
+  user_id: string;
+  skill_level: number;
+  trust_level: number;
+  previous_skill_level: number | null;
+  previous_trust_level: number | null;
+  level_changed_at: Date | null;
+  notes: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface UserWithAdoptionMatrix {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  org_id: string;
+  adoption_matrix: AdoptionMatrix | null;
+}
+
+// ============================================================================
+// Stub Functions
+// ============================================================================
+
+async function findUsersByOrgIdWithMatrix(orgId: string): Promise<UserWithAdoptionMatrix[]> {
+  console.log('[STUB] findUsersByOrgIdWithMatrix called with:', orgId);
+  // TODO: Implement via Java backend GET /users?org_id={orgId}&include=adoption_matrix
+  return [];
+}
+
+async function findUserByIdWithMatrix(userId: string): Promise<UserWithAdoptionMatrix | null> {
+  console.log('[STUB] findUserByIdWithMatrix called with:', userId);
+  // TODO: Implement via Java backend GET /users/{id}?include=adoption_matrix
+  return null;
+}
+
+async function updateAdoptionMatrix(userId: string, data: {
+  skill_level?: number;
+  trust_level?: number;
+  previous_skill_level?: number;
+  previous_trust_level?: number;
+  level_changed_at?: Date;
+  notes?: string | null;
+}): Promise<AdoptionMatrix> {
+  console.log('[STUB] updateAdoptionMatrix called with:', userId, JSON.stringify(data));
+  // TODO: Implement via Java backend PUT /adoption-matrix/{userId}
+  return {
+    id: 'stub-matrix-id',
+    user_id: userId,
+    skill_level: data.skill_level || 1,
+    trust_level: data.trust_level || 1,
+    previous_skill_level: data.previous_skill_level || null,
+    previous_trust_level: data.previous_trust_level || null,
+    level_changed_at: data.level_changed_at || null,
+    notes: data.notes || null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+}
+
+async function createAdoptionMatrix(data: {
+  user_id: string;
+  skill_level: number;
+  trust_level: number;
+  notes?: string | null;
+}): Promise<AdoptionMatrix> {
+  console.log('[STUB] createAdoptionMatrix called with:', JSON.stringify(data));
+  // TODO: Implement via Java backend POST /adoption-matrix
+  return {
+    id: 'stub-matrix-id',
+    user_id: data.user_id,
+    skill_level: data.skill_level,
+    trust_level: data.trust_level,
+    previous_skill_level: null,
+    previous_trust_level: null,
+    level_changed_at: null,
+    notes: data.notes || null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 // GET: Get adoption matrix for all users in company
 export async function GET(request: NextRequest) {
@@ -23,16 +117,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all users with their adoption matrix
-    const users = await prisma.qUAD_users.findMany({
-      where: { org_id: payload.companyId },
-      select: {
-        id: true,
-        email: true,
-        full_name: true,
-        role: true,
-        adoption_matrix: true
-      }
-    });
+    const users = await findUsersByOrgIdWithMatrix(payload.companyId);
 
     // Enrich with zone names and safety buffers
     const matrixData = users.map(user => {
@@ -136,10 +221,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verify user exists and is in same company
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: user_id },
-      include: { adoption_matrix: true }
-    });
+    const user = await findUserByIdWithMatrix(user_id);
 
     if (!user || user.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -151,26 +233,21 @@ export async function PUT(request: NextRequest) {
     let matrix;
     if (existing) {
       // Update existing
-      matrix = await prisma.qUAD_adoption_matrix.update({
-        where: { user_id },
-        data: {
-          previous_skill_level: existing.skill_level,
-          previous_trust_level: existing.trust_level,
-          skill_level: skill_level ?? existing.skill_level,
-          trust_level: trust_level ?? existing.trust_level,
-          level_changed_at: new Date(),
-          notes: notes !== undefined ? notes : existing.notes
-        }
+      matrix = await updateAdoptionMatrix(user_id, {
+        previous_skill_level: existing.skill_level,
+        previous_trust_level: existing.trust_level,
+        skill_level: skill_level ?? existing.skill_level,
+        trust_level: trust_level ?? existing.trust_level,
+        level_changed_at: new Date(),
+        notes: notes !== undefined ? notes : existing.notes
       });
     } else {
       // Create new
-      matrix = await prisma.qUAD_adoption_matrix.create({
-        data: {
-          user_id,
-          skill_level: skill_level || 1,
-          trust_level: trust_level || 1,
-          notes
-        }
+      matrix = await createAdoptionMatrix({
+        user_id,
+        skill_level: skill_level || 1,
+        trust_level: trust_level || 1,
+        notes
       });
     }
 

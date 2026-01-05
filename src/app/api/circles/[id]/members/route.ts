@@ -5,8 +5,76 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface AdoptionMatrix {
+  skill_level: number;
+  trust_level: number;
+}
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  is_active: boolean;
+  org_id: string;
+  adoption_matrix: AdoptionMatrix | null;
+}
+
+interface CircleMember {
+  id: string;
+  circle_id: string;
+  user_id: string;
+  role: string;
+  allocation_pct: number;
+  created_at: Date;
+  user: Pick<User, 'id' | 'email' | 'full_name' | 'role' | 'is_active'> & { adoption_matrix: AdoptionMatrix | null };
+}
+
+interface Circle {
+  id: string;
+  domain: { org_id: string };
+}
+
+// Stub functions
+async function stubFindCircleWithOrgId(circleId: string): Promise<Circle | null> {
+  console.log(`[STUB] Finding circle with org ID: ${circleId}`);
+  return null;
+}
+
+async function stubFindCircleMembers(circleId: string): Promise<CircleMember[]> {
+  console.log(`[STUB] Finding members for circle: ${circleId}`);
+  return [];
+}
+
+async function stubFindUserById(userId: string): Promise<User | null> {
+  console.log(`[STUB] Finding user by ID: ${userId}`);
+  return null;
+}
+
+async function stubFindCircleMembership(circleId: string, userId: string): Promise<CircleMember | null> {
+  console.log(`[STUB] Finding circle membership for user ${userId} in circle ${circleId}`);
+  return null;
+}
+
+async function stubCreateCircleMember(data: {
+  circle_id: string;
+  user_id: string;
+  role: string;
+  allocation_pct: number;
+}): Promise<CircleMember | null> {
+  console.log(`[STUB] Creating circle member:`, data);
+  return null;
+}
+
+async function stubDeleteCircleMember(circleId: string, userId: string): Promise<void> {
+  console.log(`[STUB] Deleting circle member: user ${userId} from circle ${circleId}`);
+}
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -30,33 +98,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify circle exists and belongs to user's company
-    const circle = await prisma.qUAD_circles.findUnique({
-      where: { id: circleId },
-      include: { domain: { select: { org_id: true } } }
-    });
+    const circle = await stubFindCircleWithOrgId(circleId);
 
     if (!circle || circle.domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Circle not found' }, { status: 404 });
     }
 
-    const members = await prisma.qUAD_circle_members.findMany({
-      where: { circle_id: circleId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            full_name: true,
-            role: true,
-            is_active: true,
-            adoption_matrix: {
-              select: { skill_level: true, trust_level: true }
-            }
-          }
-        }
-      },
-      orderBy: { created_at: 'asc' }
-    });
+    const members = await stubFindCircleMembers(circleId);
 
     return NextResponse.json({ members });
   } catch (error) {
@@ -91,10 +139,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify circle exists and belongs to user's company
-    const circle = await prisma.qUAD_circles.findUnique({
-      where: { id: circleId },
-      include: { domain: { select: { org_id: true } } }
-    });
+    const circle = await stubFindCircleWithOrgId(circleId);
 
     if (!circle || circle.domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Circle not found' }, { status: 404 });
@@ -111,20 +156,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify user exists and is in same company
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: user_id }
-    });
+    const user = await stubFindUserById(user_id);
 
     if (!user || user.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Check if already a member
-    const existing = await prisma.qUAD_circle_members.findUnique({
-      where: {
-        circle_id_user_id: { circle_id: circleId, user_id }
-      }
-    });
+    const existing = await stubFindCircleMembership(circleId, user_id);
 
     if (existing) {
       return NextResponse.json(
@@ -133,18 +172,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const member = await prisma.qUAD_circle_members.create({
-      data: {
-        circle_id: circleId,
-        user_id,
-        role: role || 'member',
-        allocation_pct: allocation_pct || 100
-      },
-      include: {
-        user: {
-          select: { id: true, email: true, full_name: true }
-        }
-      }
+    const member = await stubCreateCircleMember({
+      circle_id: circleId,
+      user_id,
+      role: role || 'member',
+      allocation_pct: allocation_pct || 100
     });
 
     return NextResponse.json(member, { status: 201 });
@@ -190,21 +222,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify circle exists and belongs to user's company
-    const circle = await prisma.qUAD_circles.findUnique({
-      where: { id: circleId },
-      include: { domain: { select: { org_id: true } } }
-    });
+    const circle = await stubFindCircleWithOrgId(circleId);
 
     if (!circle || circle.domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Circle not found' }, { status: 404 });
     }
 
     // Check membership exists
-    const existing = await prisma.qUAD_circle_members.findUnique({
-      where: {
-        circle_id_user_id: { circle_id: circleId, user_id: userId }
-      }
-    });
+    const existing = await stubFindCircleMembership(circleId, userId);
 
     if (!existing) {
       return NextResponse.json(
@@ -213,11 +238,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    await prisma.qUAD_circle_members.delete({
-      where: {
-        circle_id_user_id: { circle_id: circleId, user_id: userId }
-      }
-    });
+    await stubDeleteCircleMember(circleId, userId);
 
     return NextResponse.json({ message: 'Member removed from circle' });
   } catch (error) {

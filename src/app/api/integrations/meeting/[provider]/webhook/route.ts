@@ -6,11 +6,54 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { CalComService, type WebhookPayload } from '@/lib/integrations';
 
 interface RouteContext {
   params: Promise<{ provider: string }>;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function verifyOrg(orgId: string): Promise<boolean> {
+  console.log(`[MeetingWebhook] verifyOrg: ${orgId}`);
+  return true; // Allow webhooks until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getFirstDomain(orgId: string): Promise<{ id: string } | null> {
+  console.log(`[MeetingWebhook] getFirstDomain for org: ${orgId}`);
+  return null; // Return null until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getOrgAdmin(orgId: string): Promise<{ id: string } | null> {
+  console.log(`[MeetingWebhook] getOrgAdmin for org: ${orgId}`);
+  return null; // Return null until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createMeeting(data: {
+  domainId: string;
+  title: string;
+  scheduledAt: Date;
+  durationMinutes: number;
+  externalProvider: string;
+  externalId: string;
+  meetingUrl: string | null;
+  status: string;
+  organizerId: string;
+}): Promise<void> {
+  console.log(`[MeetingWebhook] createMeeting:`, data);
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function updateMeetingStatus(externalProvider: string, externalId: string, status: string): Promise<void> {
+  console.log(`[MeetingWebhook] updateMeetingStatus: ${externalProvider}/${externalId} → ${status}`);
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function rescheduleMeeting(externalProvider: string, externalId: string, scheduledAt: Date, durationMinutes: number): Promise<void> {
+  console.log(`[MeetingWebhook] rescheduleMeeting: ${externalProvider}/${externalId}`);
 }
 
 export async function POST(
@@ -30,12 +73,9 @@ export async function POST(
     }
 
     // Verify org exists
-    const org = await prisma.qUAD_organizations.findUnique({
-      where: { id: orgId },
-      select: { id: true },
-    });
+    const orgExists = await verifyOrg(orgId);
 
-    if (!org) {
+    if (!orgExists) {
       return NextResponse.json(
         { error: 'Organization not found' },
         { status: 404 }
@@ -85,13 +125,7 @@ async function handleCalComWebhook(
   });
 
   // Find domain to associate meeting with (use first active domain for now)
-  const domain = await prisma.qUAD_domains.findFirst({
-    where: {
-      org_id: orgId,
-      is_deleted: false,
-    },
-    select: { id: true },
-  });
+  const domain = await getFirstDomain(orgId);
 
   if (!domain) {
     console.warn('No domain found for org:', orgId);
@@ -103,58 +137,39 @@ async function handleCalComWebhook(
     case 'BOOKING_CREATED':
     case 'BOOKING_CONFIRMED':
       // Get org admin as default organizer
-      const orgAdmin = await prisma.qUAD_users.findFirst({
-        where: { org_id: orgId },
-        select: { id: true },
-      });
+      const orgAdmin = await getOrgAdmin(orgId);
 
       if (!orgAdmin) {
         console.warn('No organizer found for org:', orgId);
         return NextResponse.json({ success: true, warning: 'No organizer to assign' });
       }
 
-      await prisma.qUAD_meetings.create({
-        data: {
-          domain: { connect: { id: domain.id } },
-          title: processed.meetingTitle,
-          scheduled_at: processed.startTime,
-          duration_minutes: Math.round(
-            (processed.endTime.getTime() - processed.startTime.getTime()) / 60000
-          ),
-          external_provider: 'cal_com',
-          external_id: processed.uid,
-          meeting_url: processed.meetingUrl,
-          status: 'scheduled',
-          organizer_id: orgAdmin.id,
-        },
+      await createMeeting({
+        domainId: domain.id,
+        title: processed.meetingTitle,
+        scheduledAt: processed.startTime,
+        durationMinutes: Math.round(
+          (processed.endTime.getTime() - processed.startTime.getTime()) / 60000
+        ),
+        externalProvider: 'cal_com',
+        externalId: processed.uid,
+        meetingUrl: processed.meetingUrl,
+        status: 'scheduled',
+        organizerId: orgAdmin.id,
       });
       break;
 
     case 'BOOKING_CANCELLED':
-      await prisma.qUAD_meetings.updateMany({
-        where: {
-          external_provider: 'cal_com',
-          external_id: processed.uid,
-        },
-        data: {
-          status: 'cancelled',
-        },
-      });
+      await updateMeetingStatus('cal_com', processed.uid, 'cancelled');
       break;
 
     case 'BOOKING_RESCHEDULED':
-      await prisma.qUAD_meetings.updateMany({
-        where: {
-          external_provider: 'cal_com',
-          external_id: processed.uid,
-        },
-        data: {
-          scheduled_at: processed.startTime,
-          duration_minutes: Math.round(
-            (processed.endTime.getTime() - processed.startTime.getTime()) / 60000
-          ),
-        },
-      });
+      await rescheduleMeeting(
+        'cal_com',
+        processed.uid,
+        processed.startTime,
+        Math.round((processed.endTime.getTime() - processed.startTime.getTime()) / 60000)
+      );
       break;
   }
 

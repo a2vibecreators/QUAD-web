@@ -4,8 +4,153 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  org_id: string;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface WorkloadMetric {
+  id: string;
+  user_id: string;
+  domain_id: string | null;
+  period_start: Date;
+  period_end: Date;
+  period_type: string;
+  assignments: number;
+  completes: number;
+  output_score: number | null;
+  hours_worked: number;
+  target_hours: number;
+  days_worked: number;
+  target_days: number;
+  root_cause: string | null;
+  root_cause_notes: string | null;
+  user?: {
+    id: string;
+    email: string;
+    full_name: string | null;
+  };
+  domain?: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+interface WorkloadMetricCreateInput {
+  user_id: string;
+  domain_id?: string | null;
+  period_start: Date;
+  period_end: Date;
+  period_type: string;
+  assignments: number;
+  completes: number;
+  output_score?: number | null;
+  hours_worked: number;
+  target_hours: number;
+  days_worked: number;
+  target_days: number;
+  root_cause?: string | null;
+  root_cause_notes?: string | null;
+}
+
+// ============================================================================
+// Stub Functions
+// ============================================================================
+
+async function findUserById(userId: string): Promise<User | null> {
+  console.log('[STUB] findUserById called with:', userId);
+  // TODO: Implement via Java backend GET /users/{id}
+  return null;
+}
+
+async function findUsersByOrgId(orgId: string): Promise<{ id: string }[]> {
+  console.log('[STUB] findUsersByOrgId called with:', orgId);
+  // TODO: Implement via Java backend GET /users?org_id={orgId}
+  return [];
+}
+
+async function findDomainById(domainId: string): Promise<Domain | null> {
+  console.log('[STUB] findDomainById called with:', domainId);
+  // TODO: Implement via Java backend GET /domains/{id}
+  return null;
+}
+
+async function findWorkloadMetrics(where: Record<string, unknown>): Promise<WorkloadMetric[]> {
+  console.log('[STUB] findWorkloadMetrics called with:', JSON.stringify(where));
+  // TODO: Implement via Java backend GET /workload-metrics
+  return [];
+}
+
+async function findFirstWorkloadMetric(where: Record<string, unknown>): Promise<WorkloadMetric | null> {
+  console.log('[STUB] findFirstWorkloadMetric called with:', JSON.stringify(where));
+  // TODO: Implement via Java backend GET /workload-metrics
+  return null;
+}
+
+async function updateWorkloadMetric(id: string, data: Partial<WorkloadMetricCreateInput>): Promise<WorkloadMetric> {
+  console.log('[STUB] updateWorkloadMetric called with:', id, JSON.stringify(data));
+  // TODO: Implement via Java backend PUT /workload-metrics/{id}
+  return {
+    id,
+    user_id: data.user_id || '',
+    domain_id: data.domain_id || null,
+    period_start: data.period_start || new Date(),
+    period_end: data.period_end || new Date(),
+    period_type: data.period_type || 'week',
+    assignments: data.assignments || 0,
+    completes: data.completes || 0,
+    output_score: data.output_score || null,
+    hours_worked: data.hours_worked || 0,
+    target_hours: data.target_hours || 16,
+    days_worked: data.days_worked || 0,
+    target_days: data.target_days || 4,
+    root_cause: data.root_cause || null,
+    root_cause_notes: data.root_cause_notes || null,
+  };
+}
+
+async function createWorkloadMetric(data: WorkloadMetricCreateInput): Promise<WorkloadMetric> {
+  console.log('[STUB] createWorkloadMetric called with:', JSON.stringify(data));
+  // TODO: Implement via Java backend POST /workload-metrics
+  return {
+    id: 'stub-metric-id',
+    user_id: data.user_id,
+    domain_id: data.domain_id || null,
+    period_start: data.period_start,
+    period_end: data.period_end,
+    period_type: data.period_type,
+    assignments: data.assignments,
+    completes: data.completes,
+    output_score: data.output_score || null,
+    hours_worked: data.hours_worked,
+    target_hours: data.target_hours,
+    days_worked: data.days_worked,
+    target_days: data.target_days,
+    root_cause: data.root_cause || null,
+    root_cause_notes: data.root_cause_notes || null,
+  };
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 // GET: Get workload metrics
 export async function GET(request: NextRequest) {
@@ -35,19 +180,14 @@ export async function GET(request: NextRequest) {
 
     // If user_id specified, filter by user (must be in same company)
     if (userId) {
-      const user = await prisma.qUAD_users.findUnique({
-        where: { id: userId }
-      });
+      const user = await findUserById(userId);
       if (!user || user.org_id !== payload.companyId) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
       where.user_id = userId;
     } else {
       // Get all users in organization
-      const orgUsers = await prisma.qUAD_users.findMany({
-        where: { org_id: payload.companyId },
-        select: { id: true }
-      });
+      const orgUsers = await findUsersByOrgId(payload.companyId);
       where.user_id = { in: orgUsers.map(u => u.id) };
     }
 
@@ -61,21 +201,7 @@ export async function GET(request: NextRequest) {
       where.period_end = { lte: new Date(endDate) };
     }
 
-    const metrics = await prisma.qUAD_workload_metrics.findMany({
-      where,
-      include: {
-        user: {
-          select: { id: true, email: true, full_name: true }
-        },
-        domain: {
-          select: { id: true, name: true }
-        }
-      },
-      orderBy: [
-        { period_start: 'desc' },
-        { user_id: 'asc' }
-      ]
-    });
+    const metrics = await findWorkloadMetrics(where);
 
     // Calculate summary stats
     const summary = {
@@ -154,9 +280,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user exists and is in same company
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: user_id }
-    });
+    const user = await findUserById(user_id);
 
     if (!user || user.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -164,68 +288,51 @@ export async function POST(request: NextRequest) {
 
     // If domain_id provided, verify it
     if (domain_id) {
-      const domain = await prisma.qUAD_domains.findUnique({
-        where: { id: domain_id }
-      });
+      const domain = await findDomainById(domain_id);
       if (!domain || domain.org_id !== payload.companyId) {
         return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
       }
     }
 
     // Check for existing entry (upsert)
-    const existing = await prisma.qUAD_workload_metrics.findFirst({
-      where: {
-        user_id,
-        domain_id: domain_id || null,
-        period_start: new Date(period_start),
-        period_end: new Date(period_end)
-      }
+    const existing = await findFirstWorkloadMetric({
+      user_id,
+      domain_id: domain_id || null,
+      period_start: new Date(period_start),
+      period_end: new Date(period_end)
     });
 
     let metric;
     if (existing) {
       // Update existing
-      metric = await prisma.qUAD_workload_metrics.update({
-        where: { id: existing.id },
-        data: {
-          assignments: assignments ?? existing.assignments,
-          completes: completes ?? existing.completes,
-          output_score: output_score !== undefined ? output_score : existing.output_score,
-          hours_worked: hours_worked !== undefined ? hours_worked : existing.hours_worked,
-          target_hours: target_hours !== undefined ? target_hours : existing.target_hours,
-          days_worked: days_worked !== undefined ? days_worked : existing.days_worked,
-          target_days: target_days !== undefined ? target_days : existing.target_days,
-          root_cause: root_cause !== undefined ? root_cause : existing.root_cause,
-          root_cause_notes: root_cause_notes !== undefined ? root_cause_notes : existing.root_cause_notes
-        },
-        include: {
-          user: { select: { id: true, email: true, full_name: true } },
-          domain: { select: { id: true, name: true } }
-        }
+      metric = await updateWorkloadMetric(existing.id, {
+        assignments: assignments ?? existing.assignments,
+        completes: completes ?? existing.completes,
+        output_score: output_score !== undefined ? output_score : existing.output_score,
+        hours_worked: hours_worked !== undefined ? hours_worked : existing.hours_worked,
+        target_hours: target_hours !== undefined ? target_hours : existing.target_hours,
+        days_worked: days_worked !== undefined ? days_worked : existing.days_worked,
+        target_days: target_days !== undefined ? target_days : existing.target_days,
+        root_cause: root_cause !== undefined ? root_cause : existing.root_cause,
+        root_cause_notes: root_cause_notes !== undefined ? root_cause_notes : existing.root_cause_notes
       });
     } else {
       // Create new
-      metric = await prisma.qUAD_workload_metrics.create({
-        data: {
-          user_id,
-          domain_id,
-          period_start: new Date(period_start),
-          period_end: new Date(period_end),
-          period_type: period_type || 'week',
-          assignments: assignments || 0,
-          completes: completes || 0,
-          output_score,
-          hours_worked: hours_worked || 0,
-          target_hours: target_hours || 16,
-          days_worked: days_worked || 0,
-          target_days: target_days || 4,
-          root_cause,
-          root_cause_notes
-        },
-        include: {
-          user: { select: { id: true, email: true, full_name: true } },
-          domain: { select: { id: true, name: true } }
-        }
+      metric = await createWorkloadMetric({
+        user_id,
+        domain_id,
+        period_start: new Date(period_start),
+        period_end: new Date(period_end),
+        period_type: period_type || 'week',
+        assignments: assignments || 0,
+        completes: completes || 0,
+        output_score,
+        hours_worked: hours_worked || 0,
+        target_hours: target_hours || 16,
+        days_worked: days_worked || 0,
+        target_days: target_days || 4,
+        root_cause,
+        root_cause_notes
       });
     }
 

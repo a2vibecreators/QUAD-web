@@ -4,8 +4,73 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+}
+
+interface Comment {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  content: string;
+  is_ai: boolean;
+  created_at: Date;
+  user?: User;
+}
+
+interface TicketWithDomain {
+  id: string;
+  domain: {
+    org_id: string;
+  };
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function stubFindTicketById(ticketId: string): Promise<TicketWithDomain | null> {
+  console.log('[STUB] prisma.qUAD_tickets.findUnique called with id:', ticketId);
+  return null;
+}
+
+async function stubFindCommentsByTicketId(ticketId: string): Promise<Comment[]> {
+  console.log('[STUB] prisma.qUAD_ticket_comments.findMany called with ticket_id:', ticketId);
+  return [];
+}
+
+async function stubFindUsersByIds(userIds: string[]): Promise<User[]> {
+  console.log('[STUB] prisma.qUAD_users.findMany called with ids:', userIds);
+  return [];
+}
+
+async function stubCreateComment(data: { ticket_id: string; user_id: string; content: string; is_ai: boolean }): Promise<Comment> {
+  console.log('[STUB] prisma.qUAD_ticket_comments.create called with data:', JSON.stringify(data));
+  return {
+    id: 'stub-comment-id',
+    ticket_id: data.ticket_id,
+    user_id: data.user_id,
+    content: data.content,
+    is_ai: data.is_ai,
+    created_at: new Date(),
+  };
+}
+
+async function stubFindUserById(userId: string): Promise<User | null> {
+  console.log('[STUB] prisma.qUAD_users.findUnique called with id:', userId);
+  return null;
+}
 
 // GET: List comments for a ticket
 export async function GET(
@@ -28,12 +93,7 @@ export async function GET(
     }
 
     // Verify ticket exists and belongs to user's organization
-    const ticket = await prisma.qUAD_tickets.findUnique({
-      where: { id: ticketId },
-      include: {
-        domain: { select: { org_id: true } }
-      }
-    });
+    const ticket = await stubFindTicketById(ticketId);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
@@ -43,17 +103,11 @@ export async function GET(
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    const comments = await prisma.qUAD_ticket_comments.findMany({
-      where: { ticket_id: ticketId },
-      orderBy: { created_at: 'asc' }
-    });
+    const comments = await stubFindCommentsByTicketId(ticketId);
 
     // Fetch user details for each comment
     const userIds = [...new Set(comments.map(c => c.user_id))];
-    const users = await prisma.qUAD_users.findMany({
-      where: { id: { in: userIds } },
-      select: { id: true, email: true, full_name: true }
-    });
+    const users = await stubFindUsersByIds(userIds);
     const userMap = new Map(users.map(u => [u.id, u]));
 
     const commentsWithUsers = comments.map(comment => ({
@@ -95,12 +149,7 @@ export async function POST(
     }
 
     // Verify ticket exists and belongs to user's organization
-    const ticket = await prisma.qUAD_tickets.findUnique({
-      where: { id: ticketId },
-      include: {
-        domain: { select: { org_id: true } }
-      }
-    });
+    const ticket = await stubFindTicketById(ticketId);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
@@ -120,20 +169,15 @@ export async function POST(
       );
     }
 
-    const comment = await prisma.qUAD_ticket_comments.create({
-      data: {
-        ticket_id: ticketId,
-        user_id: payload.userId,
-        content: content.trim(),
-        is_ai: is_ai || false
-      }
+    const comment = await stubCreateComment({
+      ticket_id: ticketId,
+      user_id: payload.userId,
+      content: content.trim(),
+      is_ai: is_ai || false
     });
 
     // Get user details
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: payload.userId },
-      select: { id: true, email: true, full_name: true }
-    });
+    const user = await stubFindUserById(payload.userId);
 
     return NextResponse.json({
       ...comment,

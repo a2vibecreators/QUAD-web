@@ -9,8 +9,150 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { assignTicket } from '@/lib/services/assignment-service';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface ActionItem {
+  id: string;
+  meeting_id: string;
+  description: string;
+  original_text: string | null;
+  speaker_name: string | null;
+  item_type: string;
+  is_uncertain: boolean;
+  uncertainty_reason: string | null;
+  ba_reviewed: boolean;
+  ba_confirmed: boolean;
+  ba_edited_text: string | null;
+  status: string;
+  assigned_to: string | null;
+  due_date: Date | null;
+  ai_confidence: number | null;
+}
+
+interface FollowUp {
+  id: string;
+  meeting_id: string;
+  action_item_id: string | null;
+  proposed_title: string;
+  proposed_description: string | null;
+  proposed_type: string;
+  proposed_priority: string;
+  proposed_story_points: number | null;
+  proposed_assignee_id: string | null;
+  assignment_reason: string | null;
+  alternative_assignees: { user_id: string; user_name: string; score: number }[] | null;
+  status: string;
+  ai_confidence: number | null;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface Meeting {
+  id: string;
+  domain_id: string;
+  title: string;
+  meeting_type: string;
+  scheduled_at: Date | null;
+  status: string;
+  mom_status: string;
+  mom_confirmed_by: string | null;
+  mom_confirmed_at: Date | null;
+  mom_has_uncertain_items: boolean;
+  mom_notes: string | null;
+  followups_proposed: boolean;
+  ai_summary: string | null;
+  transcript_text: string | null;
+  domain: Domain;
+  action_items: ActionItem[];
+  follow_ups: FollowUp[];
+}
+
+interface Ticket {
+  id: string;
+  domain_id: string;
+  ticket_number: string;
+  title: string;
+  description: string | null;
+  ticket_type: string;
+  status: string;
+  priority: string;
+  reporter_id: string;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function getMeetingWithDetails(meetingId: string): Promise<Meeting | null> {
+  console.log(`[MOM] getMeetingWithDetails stub called: ${meetingId}`);
+  return null;
+}
+
+async function updateManyActionItems(
+  meetingId: string,
+  data: Partial<ActionItem>
+): Promise<void> {
+  console.log(`[MOM] updateManyActionItems stub called: ${meetingId}`, data);
+}
+
+async function updateMeeting(
+  meetingId: string,
+  data: Partial<Meeting>
+): Promise<void> {
+  console.log(`[MOM] updateMeeting stub called: ${meetingId}`, data);
+}
+
+async function updateActionItem(
+  itemId: string,
+  data: Partial<ActionItem>
+): Promise<void> {
+  console.log(`[MOM] updateActionItem stub called: ${itemId}`, data);
+}
+
+async function countUnreviewedActionItems(meetingId: string): Promise<number> {
+  console.log(`[MOM] countUnreviewedActionItems stub called: ${meetingId}`);
+  return 0;
+}
+
+async function getMeetingForFollowUps(meetingId: string): Promise<(Meeting & { action_items: ActionItem[] }) | null> {
+  console.log(`[MOM] getMeetingForFollowUps stub called: ${meetingId}`);
+  return null;
+}
+
+async function createTicket(data: Omit<Ticket, 'id'>): Promise<Ticket> {
+  console.log(`[MOM] createTicket stub called:`, data);
+  return {
+    id: 'mock-ticket-id',
+    ...data,
+  };
+}
+
+async function deleteTicket(ticketId: string): Promise<void> {
+  console.log(`[MOM] deleteTicket stub called: ${ticketId}`);
+}
+
+async function createFollowUp(data: Omit<FollowUp, 'id'>): Promise<FollowUp> {
+  console.log(`[MOM] createFollowUp stub called:`, data);
+  return {
+    id: 'mock-followup-id',
+    ...data,
+  };
+}
+
+// ============================================================================
+// API Routes
+// ============================================================================
 
 // GET - Get meeting with action items for BA review
 export async function GET(
@@ -24,20 +166,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const meeting = await prisma.qUAD_meetings.findUnique({
-      where: { id },
-      include: {
-        domain: {
-          select: { id: true, name: true, org_id: true },
-        },
-        action_items: {
-          orderBy: { created_at: 'asc' },
-        },
-        follow_ups: {
-          orderBy: { created_at: 'asc' },
-        },
-      },
-    });
+    const meeting = await getMeetingWithDetails(id);
 
     if (!meeting) {
       return NextResponse.json({ error: 'Meeting not found' }, { status: 404 });
@@ -110,22 +239,16 @@ export async function PATCH(
 
     // If confirm_all, mark all items as reviewed and confirmed
     if (confirm_all) {
-      await prisma.qUAD_meeting_action_items.updateMany({
-        where: { meeting_id: id },
-        data: {
-          ba_reviewed: true,
-          ba_confirmed: true,
-        },
+      await updateManyActionItems(id, {
+        ba_reviewed: true,
+        ba_confirmed: true,
       });
 
-      await prisma.qUAD_meetings.update({
-        where: { id },
-        data: {
-          mom_status: 'confirmed',
-          mom_confirmed_by: session.user.id,
-          mom_confirmed_at: new Date(),
-          mom_notes: mom_notes || null,
-        },
+      await updateMeeting(id, {
+        mom_status: 'confirmed',
+        mom_confirmed_by: session.user.id,
+        mom_confirmed_at: new Date(),
+        mom_notes: mom_notes || null,
       });
 
       return NextResponse.json({
@@ -146,7 +269,7 @@ export async function PATCH(
 
       if (!item_id) continue;
 
-      const updateData: Record<string, unknown> = {
+      const updateData: Partial<ActionItem> = {
         ba_reviewed: true,
       };
 
@@ -161,29 +284,21 @@ export async function PATCH(
         updateData.description = edited_text; // Update main description too
       }
 
-      await prisma.qUAD_meeting_action_items.update({
-        where: { id: item_id },
-        data: updateData,
-      });
+      await updateActionItem(item_id, updateData);
 
       results.push({ item_id, action: confirm ? 'confirmed' : reject ? 'rejected' : 'reviewed' });
     }
 
     // Check if all items are now reviewed
-    const unreviewedCount = await prisma.qUAD_meeting_action_items.count({
-      where: { meeting_id: id, ba_reviewed: false },
-    });
+    const unreviewedCount = await countUnreviewedActionItems(id);
 
     // Update meeting status
     const newMomStatus = unreviewedCount === 0 ? 'confirmed' : 'needs_review';
-    await prisma.qUAD_meetings.update({
-      where: { id },
-      data: {
-        mom_status: newMomStatus,
-        mom_confirmed_by: unreviewedCount === 0 ? session.user.id : null,
-        mom_confirmed_at: unreviewedCount === 0 ? new Date() : null,
-        mom_notes: mom_notes || null,
-      },
+    await updateMeeting(id, {
+      mom_status: newMomStatus,
+      mom_confirmed_by: unreviewedCount === 0 ? session.user.id : null,
+      mom_confirmed_at: unreviewedCount === 0 ? new Date() : null,
+      mom_notes: mom_notes || null,
     });
 
     return NextResponse.json({
@@ -210,21 +325,18 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const meeting = await prisma.qUAD_meetings.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { id: true, org_id: true } },
-        action_items: {
-          where: { ba_confirmed: true, status: 'pending' },
-        },
-      },
-    });
+    const meeting = await getMeetingForFollowUps(id);
 
     if (!meeting) {
       return NextResponse.json({ error: 'Meeting not found' }, { status: 404 });
     }
 
-    if (meeting.action_items.length === 0) {
+    // Filter for confirmed pending action items
+    const confirmedPendingItems = meeting.action_items.filter(
+      a => a.ba_confirmed === true && a.status === 'pending'
+    );
+
+    if (confirmedPendingItems.length === 0) {
       return NextResponse.json({
         error: 'No confirmed pending action items to propose tickets for',
       }, { status: 400 });
@@ -232,7 +344,7 @@ export async function POST(
 
     const proposedFollowups = [];
 
-    for (const actionItem of meeting.action_items) {
+    for (const actionItem of confirmedPendingItems) {
       // Determine ticket type from item type
       const typeMap: Record<string, string> = {
         'action': 'task',
@@ -249,22 +361,20 @@ export async function POST(
         : actionItem.description;
 
       // Try to get assignment suggestion
-      let assignmentSuggestion = null;
-      let alternativeAssignees = null;
+      let assignmentSuggestion: { user_id: string; user_name: string; score: number; reason: string } | null = null;
+      let alternativeAssignees: { user_id: string; user_name: string; score: number }[] | null = null;
 
       try {
         // Create a temp ticket to analyze for assignment (we won't save it)
-        const tempTicket = await prisma.qUAD_tickets.create({
-          data: {
-            domain_id: meeting.domain_id,
-            ticket_number: 'TEMP-' + Date.now(),
-            title: proposedTitle,
-            description: actionItem.description,
-            ticket_type: typeMap[actionItem.item_type] || 'task',
-            status: 'backlog',
-            priority: 'medium',
-            reporter_id: session.user.id,
-          },
+        const tempTicket = await createTicket({
+          domain_id: meeting.domain_id,
+          ticket_number: 'TEMP-' + Date.now(),
+          title: proposedTitle,
+          description: actionItem.description,
+          ticket_type: typeMap[actionItem.item_type] || 'task',
+          status: 'backlog',
+          priority: 'medium',
+          reporter_id: session.user.id,
         });
 
         try {
@@ -285,27 +395,25 @@ export async function POST(
         }
 
         // Delete the temp ticket
-        await prisma.qUAD_tickets.delete({ where: { id: tempTicket.id } });
+        await deleteTicket(tempTicket.id);
       } catch {
         // Couldn't create temp ticket
       }
 
       // Create follow-up proposal
-      const followUp = await prisma.qUAD_meeting_follow_ups.create({
-        data: {
-          meeting_id: id,
-          action_item_id: actionItem.id,
-          proposed_title: proposedTitle,
-          proposed_description: actionItem.description,
-          proposed_type: typeMap[actionItem.item_type] || 'task',
-          proposed_priority: 'medium',
-          proposed_story_points: 3,
-          proposed_assignee_id: assignmentSuggestion?.user_id || null,
-          assignment_reason: assignmentSuggestion?.reason || null,
-          alternative_assignees: alternativeAssignees || undefined,
-          status: 'proposed',
-          ai_confidence: Number(actionItem.ai_confidence) || 0.8,
-        },
+      const followUp = await createFollowUp({
+        meeting_id: id,
+        action_item_id: actionItem.id,
+        proposed_title: proposedTitle,
+        proposed_description: actionItem.description,
+        proposed_type: typeMap[actionItem.item_type] || 'task',
+        proposed_priority: 'medium',
+        proposed_story_points: 3,
+        proposed_assignee_id: assignmentSuggestion?.user_id || null,
+        assignment_reason: assignmentSuggestion?.reason || null,
+        alternative_assignees: alternativeAssignees || null,
+        status: 'proposed',
+        ai_confidence: Number(actionItem.ai_confidence) || 0.8,
       });
 
       proposedFollowups.push({
@@ -314,15 +422,12 @@ export async function POST(
         type: followUp.proposed_type,
         suggested_assignee: assignmentSuggestion?.user_name || 'Unassigned',
         assignment_reason: assignmentSuggestion?.reason || 'No developers available',
-        alternatives: alternativeAssignees?.map((a: { user_name: string }) => a.user_name) || [],
+        alternatives: alternativeAssignees?.map((a) => a.user_name) || [],
       });
     }
 
     // Update meeting to indicate follow-ups proposed
-    await prisma.qUAD_meetings.update({
-      where: { id },
-      data: { followups_proposed: true },
-    });
+    await updateMeeting(id, { followups_proposed: true });
 
     return NextResponse.json({
       success: true,

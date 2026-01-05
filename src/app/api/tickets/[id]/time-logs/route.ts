@@ -4,8 +4,77 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+}
+
+interface TimeLog {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  hours: number;
+  description: string | null;
+  logged_date: Date;
+  user?: User;
+}
+
+interface TicketWithDomain {
+  id: string;
+  domain: {
+    org_id: string;
+  };
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function stubFindTicketById(ticketId: string): Promise<TicketWithDomain | null> {
+  console.log('[STUB] prisma.qUAD_tickets.findUnique called with id:', ticketId);
+  return null;
+}
+
+async function stubFindTimeLogsByTicketId(ticketId: string): Promise<TimeLog[]> {
+  console.log('[STUB] prisma.qUAD_ticket_time_logs.findMany called with ticket_id:', ticketId);
+  return [];
+}
+
+async function stubFindUsersByIds(userIds: string[]): Promise<User[]> {
+  console.log('[STUB] prisma.qUAD_users.findMany called with ids:', userIds);
+  return [];
+}
+
+async function stubCreateTimeLog(data: { ticket_id: string; user_id: string; hours: number; description: string | null; logged_date: Date }): Promise<TimeLog> {
+  console.log('[STUB] prisma.qUAD_ticket_time_logs.create called with data:', JSON.stringify(data));
+  return {
+    id: 'stub-time-log-id',
+    ticket_id: data.ticket_id,
+    user_id: data.user_id,
+    hours: data.hours,
+    description: data.description,
+    logged_date: data.logged_date,
+  };
+}
+
+async function stubUpdateTicketActualHours(ticketId: string, totalHours: number): Promise<void> {
+  console.log('[STUB] prisma.qUAD_tickets.update called with id:', ticketId, 'actual_hours:', totalHours);
+}
+
+async function stubFindUserById(userId: string): Promise<User | null> {
+  console.log('[STUB] prisma.qUAD_users.findUnique called with id:', userId);
+  return null;
+}
 
 // GET: List time logs for a ticket
 export async function GET(
@@ -28,12 +97,7 @@ export async function GET(
     }
 
     // Verify ticket exists and belongs to user's organization
-    const ticket = await prisma.qUAD_tickets.findUnique({
-      where: { id: ticketId },
-      include: {
-        domain: { select: { org_id: true } }
-      }
-    });
+    const ticket = await stubFindTicketById(ticketId);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
@@ -43,17 +107,11 @@ export async function GET(
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    const timeLogs = await prisma.qUAD_ticket_time_logs.findMany({
-      where: { ticket_id: ticketId },
-      orderBy: { logged_date: 'desc' }
-    });
+    const timeLogs = await stubFindTimeLogsByTicketId(ticketId);
 
     // Fetch user details for each log
     const userIds = [...new Set(timeLogs.map(t => t.user_id))];
-    const users = await prisma.qUAD_users.findMany({
-      where: { id: { in: userIds } },
-      select: { id: true, email: true, full_name: true }
-    });
+    const users = await stubFindUsersByIds(userIds);
     const userMap = new Map(users.map(u => [u.id, u]));
 
     const logsWithUsers = timeLogs.map(log => ({
@@ -108,12 +166,7 @@ export async function POST(
     }
 
     // Verify ticket exists and belongs to user's organization
-    const ticket = await prisma.qUAD_tickets.findUnique({
-      where: { id: ticketId },
-      include: {
-        domain: { select: { org_id: true } }
-      }
-    });
+    const ticket = await stubFindTicketById(ticketId);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
@@ -141,32 +194,22 @@ export async function POST(
       );
     }
 
-    const timeLog = await prisma.qUAD_ticket_time_logs.create({
-      data: {
-        ticket_id: ticketId,
-        user_id: payload.userId,
-        hours,
-        description,
-        logged_date: logged_date ? new Date(logged_date) : new Date()
-      }
+    const timeLog = await stubCreateTimeLog({
+      ticket_id: ticketId,
+      user_id: payload.userId,
+      hours,
+      description,
+      logged_date: logged_date ? new Date(logged_date) : new Date()
     });
 
     // Update ticket's actual_hours
-    const allLogs = await prisma.qUAD_ticket_time_logs.findMany({
-      where: { ticket_id: ticketId }
-    });
-    const totalHours = allLogs.reduce((sum, log) => sum + Number(log.hours), 0);
+    const allLogs = await stubFindTimeLogsByTicketId(ticketId);
+    const totalHours = allLogs.reduce((sum, log) => sum + Number(log.hours), 0) + hours;
 
-    await prisma.qUAD_tickets.update({
-      where: { id: ticketId },
-      data: { actual_hours: totalHours }
-    });
+    await stubUpdateTicketActualHours(ticketId, totalHours);
 
     // Get user details
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: payload.userId },
-      select: { id: true, email: true, full_name: true }
-    });
+    const user = await stubFindUserById(payload.userId);
 
     return NextResponse.json({
       ...timeLog,

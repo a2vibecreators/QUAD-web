@@ -7,12 +7,75 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface Organization {
+  id: string;
+  name: string;
+  size: string | null;
+  users?: {
+    id: string;
+    email: string;
+    full_name: string | null;
+    role: string;
+    is_active: boolean;
+  }[];
+  domains?: {
+    id: string;
+    name: string;
+    domain_type: string | null;
+  }[];
+  _count?: {
+    users: number;
+    domains: number;
+  };
+}
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+// ============================================================================
+// Stub Functions
+// ============================================================================
+
+async function findOrganizationById(id: string): Promise<Organization | null> {
+  console.log('[STUB] findOrganizationById called with:', id);
+  // TODO: Implement via Java backend GET /organizations/{id}
+  return null;
+}
+
+async function findOrganizationWithRelations(id: string): Promise<Organization | null> {
+  console.log('[STUB] findOrganizationWithRelations called with:', id);
+  // TODO: Implement via Java backend GET /organizations/{id}?include=users,domains
+  return null;
+}
+
+async function updateOrganization(id: string, data: { name?: string; size?: string }): Promise<Organization> {
+  console.log('[STUB] updateOrganization called with:', id, JSON.stringify(data));
+  // TODO: Implement via Java backend PUT /organizations/{id}
+  return {
+    id,
+    name: data.name || 'Stub Organization',
+    size: data.size || null,
+  };
+}
+
+async function deleteOrganization(id: string): Promise<void> {
+  console.log('[STUB] deleteOrganization called with:', id);
+  // TODO: Implement via Java backend DELETE /organizations/{id}
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 // GET: Get organization by ID
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -36,30 +99,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const organization = await prisma.qUAD_organizations.findUnique({
-      where: { id },
-      include: {
-        users: {
-          select: {
-            id: true,
-            email: true,
-            full_name: true,
-            role: true,
-            is_active: true
-          }
-        },
-        domains: {
-          select: {
-            id: true,
-            name: true,
-            domain_type: true
-          }
-        },
-        _count: {
-          select: { users: true, domains: true }
-        }
-      }
-    });
+    const organization = await findOrganizationWithRelations(id);
 
     if (!organization) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
@@ -101,21 +141,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { name, size } = body;
 
     // Check if organization exists
-    const existing = await prisma.qUAD_organizations.findUnique({
-      where: { id }
-    });
+    const existing = await findOrganizationById(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
     // Update organization
-    const organization = await prisma.qUAD_organizations.update({
-      where: { id },
-      data: {
-        ...(name && { name }),
-        ...(size && { size })
-      }
+    const organization = await updateOrganization(id, {
+      ...(name && { name }),
+      ...(size && { size })
     });
 
     return NextResponse.json(organization);
@@ -151,18 +186,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if organization exists
-    const existing = await prisma.qUAD_organizations.findUnique({
-      where: { id }
-    });
+    const existing = await findOrganizationById(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
     // Delete organization (cascade will delete users, domains, etc.)
-    await prisma.qUAD_organizations.delete({
-      where: { id }
-    });
+    await deleteOrganization(id);
 
     return NextResponse.json({ message: 'Organization deleted successfully' });
   } catch (error) {

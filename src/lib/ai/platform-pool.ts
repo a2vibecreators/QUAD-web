@@ -14,179 +14,95 @@
  * 5. Self-sustaining growth model
  */
 
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 
 // Free tier credit grant (500 cents = $5)
 const FREE_TIER_GRANT_CENTS = 500;
 
 /**
  * Get or create the platform pool singleton
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function getOrCreatePlatformPool() {
-  let pool = await prisma.qUAD_platform_credit_pool.findUnique({
-    where: { id: 'platform_pool' },
-  });
+  // TODO: Call Java backend to get or create platform pool
+  console.log(`[PlatformPool] getOrCreatePlatformPool called`);
 
-  if (!pool) {
-    pool = await prisma.qUAD_platform_credit_pool.create({
-      data: {
-        id: 'platform_pool',
-        month_start: new Date(),
-      },
-    });
-  }
-
-  return pool;
+  // Return mock pool until backend ready
+  return {
+    id: 'platform_pool',
+    pool_balance_cents: 100000, // $1000 mock balance
+    total_purchased_cents: 100000,
+    total_consumed_cents: 0,
+    total_expired_cents: 0,
+    free_tier_allocated_cents: 0,
+    free_tier_consumed_cents: 0,
+    breakage_rate_percent: 0,
+    runway_days: 999,
+    paying_orgs_count: 0,
+    free_orgs_count: 0,
+    byok_orgs_count: 0,
+    month_start: new Date(),
+    month_purchased_cents: 0,
+    month_consumed_cents: 0,
+    month_expired_cents: 0,
+    month_free_allocated: 0,
+    pool_low_alert_sent: false,
+  };
 }
 
 /**
  * Record a purchase - user bought credits
  * This increases the pool's available funds
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function recordPurchase(
   orgId: string,
   orgName: string,
   amountCents: number
 ): Promise<void> {
-  const pool = await getOrCreatePlatformPool();
-
-  // Update pool totals
-  await prisma.qUAD_platform_credit_pool.update({
-    where: { id: 'platform_pool' },
-    data: {
-      total_purchased_cents: { increment: amountCents },
-      pool_balance_cents: { increment: amountCents },
-      month_purchased_cents: { increment: amountCents },
-      paying_orgs_count: { increment: 1 },
-    },
-  });
-
-  // Record transaction
-  await prisma.qUAD_platform_pool_transactions.create({
-    data: {
-      transaction_type: 'purchase',
-      org_id: orgId,
-      org_name: orgName,
-      amount_cents: amountCents,
-      pool_balance_after: pool.pool_balance_cents + amountCents,
-      description: `${orgName} purchased $${(amountCents / 100).toFixed(2)} credits`,
-    },
-  });
-
-  // Recalculate runway
-  await recalculateRunway();
+  // TODO: Call Java backend to record purchase
+  console.log(`[PlatformPool] recordPurchase for org: ${orgId}, amount: ${amountCents} cents`);
 }
 
 /**
  * Record consumption - actual AI API cost incurred
  * This decreases the pool (we paid the AI provider)
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function recordConsumption(
   orgId: string,
   amountCents: number,
   usageTransactionId?: string
 ): Promise<void> {
-  const pool = await getOrCreatePlatformPool();
-
-  await prisma.qUAD_platform_credit_pool.update({
-    where: { id: 'platform_pool' },
-    data: {
-      total_consumed_cents: { increment: amountCents },
-      pool_balance_cents: { decrement: amountCents },
-      month_consumed_cents: { increment: amountCents },
-    },
-  });
-
-  await prisma.qUAD_platform_pool_transactions.create({
-    data: {
-      transaction_type: 'consumption',
-      org_id: orgId,
-      amount_cents: -amountCents,
-      pool_balance_after: pool.pool_balance_cents - amountCents,
-      usage_transaction_id: usageTransactionId,
-      description: `AI API cost: $${(amountCents / 100).toFixed(4)}`,
-    },
-  });
+  // TODO: Call Java backend to record consumption
+  console.log(`[PlatformPool] recordConsumption for org: ${orgId}, amount: ${amountCents} cents`);
 }
 
 /**
  * Record expiry - credits expired unused (breakage = profit)
  * This doesn't change pool balance (already in pool), just tracks it
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function recordExpiry(
   orgId: string,
   orgName: string,
   amountCents: number
 ): Promise<void> {
-  const pool = await getOrCreatePlatformPool();
-
-  await prisma.qUAD_platform_credit_pool.update({
-    where: { id: 'platform_pool' },
-    data: {
-      total_expired_cents: { increment: amountCents },
-      month_expired_cents: { increment: amountCents },
-    },
-  });
-
-  await prisma.qUAD_platform_pool_transactions.create({
-    data: {
-      transaction_type: 'expiry',
-      org_id: orgId,
-      org_name: orgName,
-      amount_cents: amountCents, // Positive = stays in pool
-      pool_balance_after: pool.pool_balance_cents, // No change
-      description: `${orgName} credits expired: $${(amountCents / 100).toFixed(2)} (retained as breakage)`,
-    },
-  });
-
-  // Update breakage rate
-  await updateBreakageRate();
+  // TODO: Call Java backend to record expiry
+  console.log(`[PlatformPool] recordExpiry for org: ${orgId}, amount: ${amountCents} cents`);
 }
 
 /**
  * Grant free tier credits to a new org
  * This comes from the pool (funded by breakage)
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function grantFreeTierCredits(
   orgId: string,
   orgName: string
 ): Promise<{ granted: boolean; amountCents: number; reason?: string }> {
-  const pool = await getOrCreatePlatformPool();
-
-  // Check if pool has enough for free tier grant
-  if (pool.pool_balance_cents < FREE_TIER_GRANT_CENTS) {
-    console.warn('[Platform Pool] Insufficient funds for free tier grant');
-    return {
-      granted: false,
-      amountCents: 0,
-      reason: 'Platform pool has insufficient funds. Please try again later.',
-    };
-  }
-
-  // Deduct from pool
-  await prisma.qUAD_platform_credit_pool.update({
-    where: { id: 'platform_pool' },
-    data: {
-      free_tier_allocated_cents: { increment: FREE_TIER_GRANT_CENTS },
-      pool_balance_cents: { decrement: FREE_TIER_GRANT_CENTS },
-      month_free_allocated: { increment: FREE_TIER_GRANT_CENTS },
-      free_orgs_count: { increment: 1 },
-    },
-  });
-
-  await prisma.qUAD_platform_pool_transactions.create({
-    data: {
-      transaction_type: 'free_grant',
-      org_id: orgId,
-      org_name: orgName,
-      amount_cents: -FREE_TIER_GRANT_CENTS, // Negative = leaves pool
-      pool_balance_after: pool.pool_balance_cents - FREE_TIER_GRANT_CENTS,
-      description: `Free tier grant to ${orgName}: $${(FREE_TIER_GRANT_CENTS / 100).toFixed(2)}`,
-    },
-  });
-
-  // Recalculate runway
-  await recalculateRunway();
+  // TODO: Call Java backend to grant free tier credits
+  console.log(`[PlatformPool] grantFreeTierCredits for org: ${orgId}, name: ${orgName}`);
 
   return {
     granted: true,
@@ -196,71 +112,32 @@ export async function grantFreeTierCredits(
 
 /**
  * Record free tier usage (consumption from free user)
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function recordFreeTierUsage(
   orgId: string,
   amountCents: number
 ): Promise<void> {
-  await prisma.qUAD_platform_credit_pool.update({
-    where: { id: 'platform_pool' },
-    data: {
-      free_tier_consumed_cents: { increment: amountCents },
-    },
-  });
+  // TODO: Call Java backend to record free tier usage
+  console.log(`[PlatformPool] recordFreeTierUsage for org: ${orgId}, amount: ${amountCents} cents`);
 }
 
 /**
  * Update the historical breakage rate
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function updateBreakageRate(): Promise<void> {
-  const pool = await getOrCreatePlatformPool();
-
-  if (pool.total_purchased_cents > 0) {
-    const breakageRate = (pool.total_expired_cents / pool.total_purchased_cents) * 100;
-    await prisma.qUAD_platform_credit_pool.update({
-      where: { id: 'platform_pool' },
-      data: {
-        breakage_rate_percent: breakageRate,
-      },
-    });
-  }
+  // TODO: Call Java backend to update breakage rate
+  console.log(`[PlatformPool] updateBreakageRate called`);
 }
 
 /**
  * Recalculate how many days we can fund free tier
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function recalculateRunway(): Promise<void> {
-  const pool = await getOrCreatePlatformPool();
-
-  // Average daily free tier cost
-  const daysSinceMonthStart = Math.max(
-    1,
-    Math.ceil((Date.now() - pool.month_start.getTime()) / (24 * 60 * 60 * 1000))
-  );
-  const avgDailyFreeTierCost = pool.month_free_allocated / daysSinceMonthStart;
-
-  // Calculate runway
-  const runwayDays = avgDailyFreeTierCost > 0
-    ? Math.floor(pool.pool_balance_cents / avgDailyFreeTierCost)
-    : 999; // Effectively unlimited if no free tier grants yet
-
-  await prisma.qUAD_platform_credit_pool.update({
-    where: { id: 'platform_pool' },
-    data: {
-      runway_days: runwayDays,
-      pool_low_alert_sent: runwayDays < 30 ? pool.pool_low_alert_sent : false,
-    },
-  });
-
-  // Alert if runway is low
-  if (runwayDays < 30 && !pool.pool_low_alert_sent) {
-    console.warn(`[Platform Pool] LOW RUNWAY ALERT: Only ${runwayDays} days of free tier funding remaining`);
-    await prisma.qUAD_platform_credit_pool.update({
-      where: { id: 'platform_pool' },
-      data: { pool_low_alert_sent: true },
-    });
-    // TODO: Send email alert to admins
-  }
+  // TODO: Call Java backend to recalculate runway
+  console.log(`[PlatformPool] recalculateRunway called`);
 }
 
 /**
@@ -325,16 +202,9 @@ export async function getPoolHealth(): Promise<{
 
 /**
  * Reset monthly metrics (called by cron at start of each month)
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function resetMonthlyMetrics(): Promise<void> {
-  await prisma.qUAD_platform_credit_pool.update({
-    where: { id: 'platform_pool' },
-    data: {
-      month_start: new Date(),
-      month_purchased_cents: 0,
-      month_consumed_cents: 0,
-      month_expired_cents: 0,
-      month_free_allocated: 0,
-    },
-  });
+  // TODO: Call Java backend to reset monthly metrics
+  console.log(`[PlatformPool] resetMonthlyMetrics called`);
 }

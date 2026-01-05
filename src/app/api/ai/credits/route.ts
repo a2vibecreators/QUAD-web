@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { TOKEN_PRICING } from '@/lib/ai/providers';
 
 // Free tier: $5.00 = 500 cents
@@ -22,6 +22,101 @@ const FREE_TIER_CREDITS_CENTS = 500;
 
 // Haiku pricing for cost calculation
 const HAIKU_PRICING = TOKEN_PRICING['claude-3-5-haiku-20241022'];
+
+// Credit balance type
+interface CreditBalance {
+  id: string;
+  org_id: string;
+  credits_purchased_cents: number;
+  credits_remaining_cents: number;
+  credits_used_cents: number;
+  credits_expired_cents: number;
+  billing_period_start: Date;
+  billing_period_end: Date;
+  period_credits_limit: number;
+  period_credits_used: number;
+  tier_name: string;
+  tier_monthly_usd: number | null;
+  is_byok: boolean;
+  byok_provider: string | null;
+}
+
+// Credit transaction type
+interface CreditTransaction {
+  id: string;
+  org_id: string;
+  transaction_type: string;
+  amount_cents: number;
+  ticket_id: string | null;
+  ticket_number: string | null;
+  total_tokens: number | null;
+  description: string | null;
+  created_at: Date;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getCreditBalance(orgId: string): Promise<CreditBalance | null> {
+  console.log(`[Credits] getCreditBalance for org: ${orgId}`);
+  return null; // Return null until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createCreditBalance(orgId: string, data: Partial<CreditBalance>): Promise<CreditBalance> {
+  console.log(`[Credits] createCreditBalance for org: ${orgId}`);
+  const now = new Date();
+  const periodEnd = new Date(now);
+  periodEnd.setMonth(periodEnd.getMonth() + 1);
+  return {
+    id: 'mock-balance-id',
+    org_id: orgId,
+    credits_purchased_cents: FREE_TIER_CREDITS_CENTS,
+    credits_remaining_cents: FREE_TIER_CREDITS_CENTS,
+    credits_used_cents: 0,
+    credits_expired_cents: 0,
+    billing_period_start: now,
+    billing_period_end: periodEnd,
+    period_credits_limit: FREE_TIER_CREDITS_CENTS,
+    period_credits_used: 0,
+    tier_name: 'free',
+    tier_monthly_usd: 0,
+    is_byok: false,
+    byok_provider: null,
+    ...data,
+  };
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createCreditTransaction(data: Partial<CreditTransaction>): Promise<void> {
+  console.log(`[Credits] createCreditTransaction:`, data);
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getCreditTransactions(orgId: string, _filter: object): Promise<CreditTransaction[]> {
+  console.log(`[Credits] getCreditTransactions for org: ${orgId}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function updateCreditBalance(balanceId: string, data: Partial<CreditBalance>): Promise<CreditBalance> {
+  console.log(`[Credits] updateCreditBalance: ${balanceId}`, data);
+  return {
+    id: balanceId,
+    org_id: 'mock-org-id',
+    credits_purchased_cents: 1000,
+    credits_remaining_cents: 1000,
+    credits_used_cents: 0,
+    credits_expired_cents: 0,
+    billing_period_start: new Date(),
+    billing_period_end: new Date(),
+    period_credits_limit: 1000,
+    period_credits_used: 0,
+    tier_name: 'starter',
+    tier_monthly_usd: 10,
+    is_byok: false,
+    byok_provider: null,
+    ...data,
+  };
+}
 
 /**
  * GET /api/ai/credits
@@ -40,9 +135,7 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || 'current'; // current, month, all
 
     // Get or create credit balance
-    let balance = await prisma.qUAD_ai_credit_balances.findUnique({
-      where: { org_id: orgId },
-    });
+    let balance = await getCreditBalance(orgId);
 
     // If no balance exists, create one with free tier credits
     if (!balance) {
@@ -52,45 +145,35 @@ export async function GET(request: NextRequest) {
       periodEnd.setDate(1); // First of next month
       periodEnd.setHours(0, 0, 0, 0);
 
-      balance = await prisma.qUAD_ai_credit_balances.create({
-        data: {
-          org_id: orgId,
-          credits_purchased_cents: FREE_TIER_CREDITS_CENTS,
-          credits_remaining_cents: FREE_TIER_CREDITS_CENTS,
-          billing_period_start: now,
-          billing_period_end: periodEnd,
-          period_credits_limit: FREE_TIER_CREDITS_CENTS,
-          tier_name: 'free',
-          tier_monthly_usd: 0,
-        },
+      balance = await createCreditBalance(orgId, {
+        credits_purchased_cents: FREE_TIER_CREDITS_CENTS,
+        credits_remaining_cents: FREE_TIER_CREDITS_CENTS,
+        billing_period_start: now,
+        billing_period_end: periodEnd,
+        period_credits_limit: FREE_TIER_CREDITS_CENTS,
+        tier_name: 'free',
+        tier_monthly_usd: 0,
       });
 
       // Record the free tier credit grant
-      await prisma.qUAD_ai_credit_transactions.create({
-        data: {
-          balance_id: balance.id,
-          org_id: orgId,
-          transaction_type: 'bonus',
-          amount_cents: FREE_TIER_CREDITS_CENTS,
-          balance_after_cents: FREE_TIER_CREDITS_CENTS,
-          description: 'Welcome bonus: $5.00 free credits',
-        },
+      await createCreditTransaction({
+        id: 'mock-tx-id',
+        org_id: orgId,
+        transaction_type: 'bonus',
+        amount_cents: FREE_TIER_CREDITS_CENTS,
+        ticket_id: null,
+        ticket_number: null,
+        total_tokens: null,
+        description: 'Welcome bonus: $5.00 free credits',
+        created_at: new Date(),
       });
     }
 
     // Get recent transactions
-    const transactions = await prisma.qUAD_ai_credit_transactions.findMany({
-      where: {
-        org_id: orgId,
-        transaction_type: 'usage',
-        created_at: period === 'current'
-          ? { gte: balance.billing_period_start }
-          : period === 'month'
-          ? { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
-          : undefined,
-      },
-      orderBy: { created_at: 'desc' },
-      take: 100,
+    const transactions = await getCreditTransactions(orgId, {
+      transaction_type: 'usage',
+      period,
+      billing_period_start: balance.billing_period_start,
     });
 
     // Calculate per-ticket costs
@@ -254,9 +337,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, amountCents, paymentId, tier } = body;
 
-    let balance = await prisma.qUAD_ai_credit_balances.findUnique({
-      where: { org_id: orgId },
-    });
+    let balance = await getCreditBalance(orgId);
 
     const now = new Date();
 
@@ -273,40 +354,34 @@ export async function POST(request: NextRequest) {
           periodEnd.setDate(1);
           periodEnd.setHours(0, 0, 0, 0);
 
-          balance = await prisma.qUAD_ai_credit_balances.create({
-            data: {
-              org_id: orgId,
-              billing_period_start: now,
-              billing_period_end: periodEnd,
-              tier_name: tier || 'starter',
-            },
+          balance = await createCreditBalance(orgId, {
+            billing_period_start: now,
+            billing_period_end: periodEnd,
+            tier_name: tier || 'starter',
           });
         }
 
         // Add credits
-        const updatedBalance = await prisma.qUAD_ai_credit_balances.update({
-          where: { id: balance.id },
-          data: {
-            credits_purchased_cents: { increment: amountCents },
-            credits_remaining_cents: { increment: amountCents },
-            period_credits_limit: { increment: amountCents },
-            tier_name: tier || balance.tier_name,
-            tier_monthly_usd: tier === 'starter' ? 10 : tier === 'pro' ? 25 : tier === 'enterprise' ? 50 : balance.tier_monthly_usd,
-          },
+        const newRemaining = balance.credits_remaining_cents + amountCents;
+        const updatedBalance = await updateCreditBalance(balance.id, {
+          credits_purchased_cents: balance.credits_purchased_cents + amountCents,
+          credits_remaining_cents: newRemaining,
+          period_credits_limit: balance.period_credits_limit + amountCents,
+          tier_name: tier || balance.tier_name,
+          tier_monthly_usd: tier === 'starter' ? 10 : tier === 'pro' ? 25 : tier === 'enterprise' ? 50 : balance.tier_monthly_usd,
         });
 
         // Record transaction
-        await prisma.qUAD_ai_credit_transactions.create({
-          data: {
-            balance_id: balance.id,
-            org_id: orgId,
-            transaction_type: 'purchase',
-            amount_cents: amountCents,
-            balance_after_cents: updatedBalance.credits_remaining_cents,
-            payment_id: paymentId,
-            user_id: session.user.id,
-            description: `Purchased $${(amountCents / 100).toFixed(2)} credits`,
-          },
+        await createCreditTransaction({
+          id: 'mock-tx-id',
+          org_id: orgId,
+          transaction_type: 'purchase',
+          amount_cents: amountCents,
+          ticket_id: null,
+          ticket_number: null,
+          total_tokens: null,
+          description: `Purchased $${(amountCents / 100).toFixed(2)} credits`,
+          created_at: new Date(),
         });
 
         return NextResponse.json({
@@ -325,14 +400,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Update to BYOK mode
-        await prisma.qUAD_ai_credit_balances.update({
-          where: { id: balance?.id },
-          data: {
+        if (balance) {
+          await updateCreditBalance(balance.id, {
             is_byok: true,
             byok_provider: provider,
             period_credits_limit: 0, // Unlimited when BYOK
-          },
-        });
+          });
+        }
 
         // Store API key in BYOK config (encrypted storage would be in QUAD_ai_provider_config)
         // This is just setting the flag - actual key storage is separate

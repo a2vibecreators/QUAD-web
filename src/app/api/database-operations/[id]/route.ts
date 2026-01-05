@@ -7,11 +7,121 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface DatabaseApproval {
+  id: string;
+  operation_id: string;
+  approver_role: string;
+  approver_id: string;
+  decision: string;
+  comments: string | null;
+  decided_at: Date | null;
+}
+
+interface DatabaseOperation {
+  id: string;
+  domain_id: string;
+  operation_type: string;
+  source_env: string | null;
+  target_env: string | null;
+  tables_included: string[];
+  anonymize_pii: boolean;
+  pii_fields_masked: string[];
+  sample_config: Record<string, unknown> | null;
+  status: string;
+  requires_approval: boolean;
+  required_approvers: string[];
+  initiated_by: string;
+  started_at: Date | null;
+  completed_at: Date | null;
+  execution_log: string | null;
+  record_count: number | null;
+  error_message: string | null;
+  created_at: Date;
+  domain?: Domain;
+  approvals?: DatabaseApproval[];
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function findDatabaseOperationById(
+  operationId: string
+): Promise<(DatabaseOperation & { domain: Domain; approvals: DatabaseApproval[] }) | null> {
+  console.log(`[DatabaseOperations] findDatabaseOperationById stub called: ${operationId}`);
+  return null;
+}
+
+async function updateDatabaseApproval(
+  approvalId: string,
+  data: Partial<DatabaseApproval>
+): Promise<DatabaseApproval> {
+  console.log(`[DatabaseOperations] updateDatabaseApproval stub called: ${approvalId}`, data);
+  return {
+    id: approvalId,
+    operation_id: 'mock-operation-id',
+    approver_role: 'DBA',
+    approver_id: data.approver_id || 'mock-user-id',
+    decision: data.decision || 'pending',
+    comments: data.comments || null,
+    decided_at: data.decided_at || null,
+  };
+}
+
+async function findApprovalsByOperationId(operationId: string): Promise<DatabaseApproval[]> {
+  console.log(`[DatabaseOperations] findApprovalsByOperationId stub called: ${operationId}`);
+  return [];
+}
+
+async function updateDatabaseOperation(
+  operationId: string,
+  data: Partial<DatabaseOperation>
+): Promise<DatabaseOperation> {
+  console.log(`[DatabaseOperations] updateDatabaseOperation stub called: ${operationId}`, data);
+  return {
+    id: operationId,
+    domain_id: 'mock-domain-id',
+    operation_type: 'copy_data',
+    source_env: null,
+    target_env: null,
+    tables_included: [],
+    anonymize_pii: false,
+    pii_fields_masked: [],
+    sample_config: null,
+    status: data.status || 'pending',
+    requires_approval: false,
+    required_approvers: [],
+    initiated_by: 'mock-user-id',
+    started_at: data.started_at || null,
+    completed_at: data.completed_at || null,
+    execution_log: data.execution_log || null,
+    record_count: data.record_count || null,
+    error_message: data.error_message || null,
+    created_at: new Date(),
+  };
+}
+
+async function deleteDatabaseOperation(operationId: string): Promise<void> {
+  console.log(`[DatabaseOperations] deleteDatabaseOperation stub called: ${operationId}`);
 }
 
 // GET: Get operation details
@@ -30,15 +140,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const operation = await prisma.qUAD_database_operations.findUnique({
-      where: { id },
-      include: {
-        domain: {
-          select: { id: true, name: true, org_id: true }
-        },
-        approvals: true
-      }
-    });
+    const operation = await findDatabaseOperationById(id);
 
     if (!operation) {
       return NextResponse.json({ error: 'Operation not found' }, { status: 404 });
@@ -79,13 +181,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'action is required' }, { status: 400 });
     }
 
-    const operation = await prisma.qUAD_database_operations.findUnique({
-      where: { id },
-      include: {
-        domain: { select: { org_id: true } },
-        approvals: true
-      }
-    });
+    const operation = await findDatabaseOperationById(id);
 
     if (!operation) {
       return NextResponse.json({ error: 'Operation not found' }, { status: 404 });
@@ -102,7 +198,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Find the approval record
-      const approval = operation.approvals.find(a => a.approver_role === approver_role);
+      const approval = operation.approvals?.find(a => a.approver_role === approver_role);
       if (!approval) {
         return NextResponse.json(
           { error: `No approval pending for role: ${approver_role}` },
@@ -118,20 +214,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Update the approval
-      await prisma.qUAD_database_approvals.update({
-        where: { id: approval.id },
-        data: {
-          approver_id: payload.userId,
-          decision: action === 'approve' ? 'approved' : 'rejected',
-          comments,
-          decided_at: new Date()
-        }
+      await updateDatabaseApproval(approval.id, {
+        approver_id: payload.userId,
+        decision: action === 'approve' ? 'approved' : 'rejected',
+        comments,
+        decided_at: new Date()
       });
 
       // Check if operation is now fully approved or rejected
-      const updatedApprovals = await prisma.qUAD_database_approvals.findMany({
-        where: { operation_id: id }
-      });
+      const updatedApprovals = await findApprovalsByOperationId(id);
 
       const allApproved = updatedApprovals.every(a => a.decision === 'approved');
       const anyRejected = updatedApprovals.some(a => a.decision === 'rejected');
@@ -139,19 +230,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       let newStatus = operation.status;
       if (anyRejected) {
         newStatus = 'failed';
-        await prisma.qUAD_database_operations.update({
-          where: { id },
-          data: {
-            status: 'failed',
-            error_message: `Rejected by ${approver_role}: ${comments || 'No reason provided'}`
-          }
+        await updateDatabaseOperation(id, {
+          status: 'failed',
+          error_message: `Rejected by ${approver_role}: ${comments || 'No reason provided'}`
         });
       } else if (allApproved) {
         newStatus = 'pending';
-        await prisma.qUAD_database_operations.update({
-          where: { id },
-          data: { status: 'pending' }
-        });
+        await updateDatabaseOperation(id, { status: 'pending' });
       }
 
       return NextResponse.json({
@@ -179,12 +264,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Mark as in_progress
-      await prisma.qUAD_database_operations.update({
-        where: { id },
-        data: {
-          status: 'in_progress',
-          started_at: new Date()
-        }
+      await updateDatabaseOperation(id, {
+        status: 'in_progress',
+        started_at: new Date()
       });
 
       // In a real implementation, this would:
@@ -214,19 +296,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
 
       // Mark as completed
-      await prisma.qUAD_database_operations.update({
-        where: { id },
-        data: {
-          status: 'completed',
-          completed_at: new Date(),
-          execution_log: executionLog.join('\n'),
-          record_count: 1000 // Simulated
-        }
+      await updateDatabaseOperation(id, {
+        status: 'completed',
+        completed_at: new Date(),
+        execution_log: executionLog.join('\n'),
+        record_count: 1000 // Simulated
       });
 
-      const result = await prisma.qUAD_database_operations.findUnique({
-        where: { id }
-      });
+      const result = await findDatabaseOperationById(id);
 
       return NextResponse.json({
         message: 'Operation executed successfully',
@@ -257,10 +334,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const operation = await prisma.qUAD_database_operations.findUnique({
-      where: { id },
-      include: { domain: { select: { org_id: true } } }
-    });
+    const operation = await findDatabaseOperationById(id);
 
     if (!operation) {
       return NextResponse.json({ error: 'Operation not found' }, { status: 404 });
@@ -279,9 +353,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete the operation
-    await prisma.qUAD_database_operations.delete({
-      where: { id }
-    });
+    await deleteDatabaseOperation(id);
 
     return NextResponse.json({ message: 'Operation cancelled successfully' });
   } catch (error) {

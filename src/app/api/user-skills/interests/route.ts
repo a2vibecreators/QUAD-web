@@ -15,7 +15,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
+
+// Types
+interface UserSkillInterest {
+  id: string;
+  skill_name: string;
+  skill_category: string | null;
+  proficiency_level: number;
+  interest_level: string | null;
+  wants_to_learn: boolean;
+  updated_at?: Date;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserSkillsWithInterests(userId: string): Promise<UserSkillInterest[]> {
+  console.log(`[UserInterests] getUserSkillsWithInterests for: ${userId}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function findUserSkillByName(userId: string, skillName: string): Promise<UserSkillInterest | null> {
+  console.log(`[UserInterests] findUserSkillByName: ${userId}, ${skillName}`);
+  return null;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function updateUserSkillInterest(id: string, data: Partial<UserSkillInterest>): Promise<UserSkillInterest> {
+  console.log(`[UserInterests] updateUserSkillInterest: ${id}`, data);
+  return { id, skill_name: '', skill_category: null, proficiency_level: 1, interest_level: null, wants_to_learn: false };
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrgId(userId: string): Promise<string | null> {
+  console.log(`[UserInterests] getUserOrgId for: ${userId}`);
+  return 'mock-org-id';
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createUserSkillWithInterest(data: {
+  user_id: string;
+  org_id: string;
+  skill_name: string;
+  skill_category: string;
+  proficiency_level: number;
+  interest_level: string;
+  wants_to_learn: boolean;
+  source: string;
+}): Promise<UserSkillInterest> {
+  console.log(`[UserInterests] createUserSkillWithInterest:`, data);
+  return { id: 'mock-id', skill_name: data.skill_name, skill_category: data.skill_category, proficiency_level: data.proficiency_level, interest_level: data.interest_level, wants_to_learn: data.wants_to_learn };
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,18 +78,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('user_id') || session.user.id;
 
     // Get all skills with interest info
-    const userSkills = await prisma.qUAD_user_skills.findMany({
-      where: { user_id: userId },
-      select: {
-        id: true,
-        skill_name: true,
-        skill_category: true,
-        proficiency_level: true,
-        interest_level: true,
-        wants_to_learn: true,
-      },
-      orderBy: [{ interest_level: 'desc' }, { skill_name: 'asc' }],
-    });
+    const userSkills = await getUserSkillsWithInterests(userId);
 
     // Group by interest level
     const byInterest = {
@@ -102,42 +141,29 @@ export async function PUT(request: NextRequest) {
       }
 
       // Update existing skill
-      const existing = await prisma.qUAD_user_skills.findFirst({
-        where: {
-          user_id: session.user.id,
-          skill_name: { equals: skill_name, mode: 'insensitive' },
-        },
-      });
+      const existing = await findUserSkillByName(session.user.id, skill_name);
 
       if (existing) {
-        const updated = await prisma.qUAD_user_skills.update({
-          where: { id: existing.id },
-          data: {
-            interest_level: interest_level || existing.interest_level,
-            wants_to_learn: wants_to_learn !== undefined ? wants_to_learn : existing.wants_to_learn,
-            updated_at: new Date(),
-          },
+        const updated = await updateUserSkillInterest(existing.id, {
+          interest_level: interest_level || existing.interest_level,
+          wants_to_learn: wants_to_learn !== undefined ? wants_to_learn : existing.wants_to_learn,
+          updated_at: new Date(),
         });
         results.push({ action: 'updated', skill: skill_name, interest_level: updated.interest_level });
       } else {
         // Create new skill entry with interest (proficiency defaults to 1)
-        const user = await prisma.qUAD_users.findUnique({
-          where: { id: session.user.id },
-          select: { org_id: true },
-        });
+        const orgId = await getUserOrgId(session.user.id);
 
-        if (user?.org_id) {
-          const created = await prisma.qUAD_user_skills.create({
-            data: {
-              user_id: session.user.id,
-              org_id: user.org_id,
-              skill_name,
-              skill_category: 'technical',
-              proficiency_level: 1, // Start as beginner
-              interest_level: interest_level || 'high',
-              wants_to_learn: wants_to_learn !== undefined ? wants_to_learn : true,
-              source: 'self_declared',
-            },
+        if (orgId) {
+          const created = await createUserSkillWithInterest({
+            user_id: session.user.id,
+            org_id: orgId,
+            skill_name,
+            skill_category: 'technical',
+            proficiency_level: 1, // Start as beginner
+            interest_level: interest_level || 'high',
+            wants_to_learn: wants_to_learn !== undefined ? wants_to_learn : true,
+            source: 'self_declared',
           });
           results.push({ action: 'created', skill: skill_name, interest_level: created.interest_level });
         }
@@ -179,24 +205,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Find and update
-    const existing = await prisma.qUAD_user_skills.findFirst({
-      where: {
-        user_id: session.user.id,
-        skill_name: { equals: skill_name, mode: 'insensitive' },
-      },
-    });
+    const existing = await findUserSkillByName(session.user.id, skill_name);
 
     if (!existing) {
       return NextResponse.json({ error: 'Skill not found. Add the skill first.' }, { status: 404 });
     }
 
-    const updated = await prisma.qUAD_user_skills.update({
-      where: { id: existing.id },
-      data: {
-        interest_level: interest_level || existing.interest_level,
-        wants_to_learn: wants_to_learn !== undefined ? wants_to_learn : existing.wants_to_learn,
-        updated_at: new Date(),
-      },
+    const updated = await updateUserSkillInterest(existing.id, {
+      interest_level: interest_level || existing.interest_level,
+      wants_to_learn: wants_to_learn !== undefined ? wants_to_learn : existing.wants_to_learn,
+      updated_at: new Date(),
     });
 
     // Explain what this means for assignment

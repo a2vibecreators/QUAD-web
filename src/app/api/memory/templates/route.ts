@@ -8,7 +8,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
+
+// Types
+interface MemoryTemplate {
+  id: string;
+  template_name: string;
+  memory_level: string;
+  template_type: string;
+  content_template: string;
+  sections: string[];
+  is_default: boolean;
+  is_active: boolean;
+  times_used: number;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getMemoryTemplates(level?: string | null, type?: string | null): Promise<MemoryTemplate[]> {
+  console.log(`[MemoryTemplates] getMemoryTemplates for level: ${level}, type: ${type}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function unsetDefaultTemplates(memoryLevel: string): Promise<void> {
+  console.log(`[MemoryTemplates] unsetDefaultTemplates for level: ${memoryLevel}`);
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function createMemoryTemplate(data: Partial<MemoryTemplate>): Promise<MemoryTemplate> {
+  console.log(`[MemoryTemplates] createMemoryTemplate:`, data);
+  return {
+    id: 'mock-id',
+    template_name: data.template_name || '',
+    memory_level: data.memory_level || '',
+    template_type: data.template_type || 'default',
+    content_template: data.content_template || '',
+    sections: data.sections || [],
+    is_default: data.is_default || false,
+    is_active: true,
+    times_used: 0,
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,17 +61,7 @@ export async function GET(request: NextRequest) {
     const level = searchParams.get('level');
     const type = searchParams.get('type');
 
-    const where: Record<string, unknown> = { is_active: true };
-    if (level) where.memory_level = level;
-    if (type) where.template_type = type;
-
-    const templates = await prisma.qUAD_memory_templates.findMany({
-      where,
-      orderBy: [
-        { is_default: 'desc' },
-        { times_used: 'desc' },
-      ],
-    });
+    const templates = await getMemoryTemplates(level, type);
 
     // Group by level
     const byLevel: Record<string, typeof templates> = {};
@@ -85,21 +115,16 @@ export async function POST(request: NextRequest) {
 
     // If setting as default, unset other defaults for this level
     if (is_default) {
-      await prisma.qUAD_memory_templates.updateMany({
-        where: { memory_level, is_default: true },
-        data: { is_default: false },
-      });
+      await unsetDefaultTemplates(memory_level);
     }
 
-    const template = await prisma.qUAD_memory_templates.create({
-      data: {
-        template_name,
-        memory_level,
-        template_type: template_type || 'default',
-        content_template,
-        sections: sections || [],
-        is_default: is_default || false,
-      },
+    const template = await createMemoryTemplate({
+      template_name,
+      memory_level,
+      template_type: template_type || 'default',
+      content_template,
+      sections: sections || [],
+      is_default: is_default || false,
     });
 
     return NextResponse.json({

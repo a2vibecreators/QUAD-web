@@ -3,12 +3,13 @@
  *
  * Returns detailed setup completion status for the organization.
  * Used by the setup wizard to show progress.
+ *
+ * NOTE: Updated to use session data instead of Prisma.
  */
 
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
 import { getSetupStatus, getNextRequiredStep } from '@/lib/integrations';
 
 export async function GET() {
@@ -19,13 +20,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
+    // Get user's org from session (set by JWT callback from Java backend)
+    const orgId = session.user.companyId;
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json(
         { error: 'Organization not found' },
         { status: 404 }
@@ -33,17 +31,17 @@ export async function GET() {
     }
 
     // Get setup status
-    const status = await getSetupStatus(user.org_id);
+    const status = await getSetupStatus(orgId);
 
     // Get next required step if not complete
     const nextStep = status.isComplete
       ? null
-      : await getNextRequiredStep(user.org_id);
+      : await getNextRequiredStep(orgId);
 
     return NextResponse.json({
       ...status,
       nextStep,
-      orgId: user.org_id,
+      orgId,
     });
   } catch (error) {
     console.error('Error fetching setup status:', error);

@@ -5,8 +5,84 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface RiskFactor {
+  id: string;
+  domain_id: string;
+  risk_type: string;
+  risk_name: string;
+  description: string | null;
+  probability: number;
+  impact: number;
+  risk_score: number;
+  risk_level: string;
+  status: string;
+  mitigation_plan: string | null;
+  owner_user_id: string | null;
+  review_due_at: Date | null;
+  resolved_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+// Stub functions for database operations
+async function findRiskFactorById(id: string): Promise<RiskFactor | null> {
+  console.log('[STUB] findRiskFactorById called with id:', id);
+  return null;
+}
+
+async function findDomainByIdAndOrg(domainId: string, orgId: string): Promise<Domain | null> {
+  console.log('[STUB] findDomainByIdAndOrg called with domainId:', domainId, 'orgId:', orgId);
+  return null;
+}
+
+async function findUserById(userId: string): Promise<User | null> {
+  console.log('[STUB] findUserById called with userId:', userId);
+  return null;
+}
+
+async function updateRiskFactor(id: string, data: Partial<RiskFactor>): Promise<RiskFactor> {
+  console.log('[STUB] updateRiskFactor called with id:', id, 'data:', data);
+  return {
+    id,
+    domain_id: data.domain_id || '',
+    risk_type: data.risk_type || '',
+    risk_name: data.risk_name || '',
+    description: data.description || null,
+    probability: data.probability || 3,
+    impact: data.impact || 3,
+    risk_score: data.risk_score || 9,
+    risk_level: data.risk_level || 'medium',
+    status: data.status || 'identified',
+    mitigation_plan: data.mitigation_plan || null,
+    owner_user_id: data.owner_user_id || null,
+    review_due_at: data.review_due_at || null,
+    resolved_at: data.resolved_at || null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+}
+
+async function deleteRiskFactor(id: string): Promise<void> {
+  console.log('[STUB] deleteRiskFactor called with id:', id);
+}
 
 // GET: Get risk factor details
 export async function GET(
@@ -27,18 +103,14 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const risk = await prisma.qUAD_risk_factors.findUnique({
-      where: { id }
-    });
+    const risk = await findRiskFactorById(id);
 
     if (!risk) {
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
     }
 
     // Verify domain belongs to org
-    const domain = await prisma.qUAD_domains.findFirst({
-      where: { id: risk.domain_id, org_id: payload.companyId }
-    });
+    const domain = await findDomainByIdAndOrg(risk.domain_id, payload.companyId);
 
     if (!domain) {
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
@@ -47,10 +119,7 @@ export async function GET(
     // Get owner name if assigned
     let owner = null;
     if (risk.owner_user_id) {
-      owner = await prisma.qUAD_users.findUnique({
-        where: { id: risk.owner_user_id },
-        select: { id: true, full_name: true, email: true }
-      });
+      owner = await findUserById(risk.owner_user_id);
     }
 
     return NextResponse.json({
@@ -99,17 +168,13 @@ export async function PUT(
     } = body;
 
     // Find risk and verify access
-    const existingRisk = await prisma.qUAD_risk_factors.findUnique({
-      where: { id }
-    });
+    const existingRisk = await findRiskFactorById(id);
 
     if (!existingRisk) {
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
     }
 
-    const domain = await prisma.qUAD_domains.findFirst({
-      where: { id: existingRisk.domain_id, org_id: payload.companyId }
-    });
+    const domain = await findDomainByIdAndOrg(existingRisk.domain_id, payload.companyId);
 
     if (!domain) {
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
@@ -137,24 +202,26 @@ export async function PUT(
       else newLevel = 'low';
     }
 
-    const risk = await prisma.qUAD_risk_factors.update({
-      where: { id },
-      data: {
-        ...(risk_name && { risk_name }),
-        ...(description !== undefined && { description }),
-        ...(probability !== undefined && { probability }),
-        ...(impact !== undefined && { impact }),
-        risk_score: newScore,
-        risk_level: newLevel,
-        ...(status && { status }),
-        ...(status === 'resolved' && { resolved_at: new Date() }),
-        ...(mitigation_plan !== undefined && { mitigation_plan }),
-        ...(owner_user_id !== undefined && { owner_user_id }),
-        ...(review_due_at !== undefined && {
-          review_due_at: review_due_at ? new Date(review_due_at) : null
-        })
-      }
-    });
+    const updateData: Partial<RiskFactor> = {
+      risk_score: newScore,
+      risk_level: newLevel,
+    };
+
+    if (risk_name) updateData.risk_name = risk_name;
+    if (description !== undefined) updateData.description = description;
+    if (probability !== undefined) updateData.probability = probability;
+    if (impact !== undefined) updateData.impact = impact;
+    if (status) {
+      updateData.status = status;
+      if (status === 'resolved') updateData.resolved_at = new Date();
+    }
+    if (mitigation_plan !== undefined) updateData.mitigation_plan = mitigation_plan;
+    if (owner_user_id !== undefined) updateData.owner_user_id = owner_user_id;
+    if (review_due_at !== undefined) {
+      updateData.review_due_at = review_due_at ? new Date(review_due_at) : null;
+    }
+
+    const risk = await updateRiskFactor(id, updateData);
 
     return NextResponse.json({ risk });
 
@@ -184,25 +251,19 @@ export async function DELETE(
     }
 
     // Find risk and verify access
-    const existingRisk = await prisma.qUAD_risk_factors.findUnique({
-      where: { id }
-    });
+    const existingRisk = await findRiskFactorById(id);
 
     if (!existingRisk) {
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
     }
 
-    const domain = await prisma.qUAD_domains.findFirst({
-      where: { id: existingRisk.domain_id, org_id: payload.companyId }
-    });
+    const domain = await findDomainByIdAndOrg(existingRisk.domain_id, payload.companyId);
 
     if (!domain) {
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
     }
 
-    await prisma.qUAD_risk_factors.delete({
-      where: { id }
-    });
+    await deleteRiskFactor(id);
 
     return NextResponse.json({ message: 'Risk deleted successfully' });
 

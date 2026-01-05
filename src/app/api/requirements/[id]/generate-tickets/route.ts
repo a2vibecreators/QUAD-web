@@ -14,9 +14,82 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
 import { assignTicket, recordAssignment } from '@/lib/services/assignment-service';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// TypeScript Interfaces
+// ============================================================================
+
+interface Domain {
+  id: string;
+  org_id: string;
+  ticket_prefix: string | null;
+  name: string;
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  description: string | null;
+  sequence_order: number;
+}
+
+interface ExistingTicket {
+  id: string;
+  title: string;
+}
+
+interface Requirement {
+  id: string;
+  domain_id: string;
+  title: string;
+  description: string | null;
+  source_type: string;
+  domain: Domain;
+  milestones: Milestone[];
+  tickets: ExistingTicket[];
+}
+
+interface Cycle {
+  id: string;
+  domain_id: string;
+}
+
+interface AIOperation {
+  id: string;
+  domain_id: string;
+  operation_type: string;
+  input_summary: string;
+  model_used: string;
+  status: string;
+  triggered_by: string;
+  started_at: Date;
+}
+
+interface Ticket {
+  id: string;
+  domain_id: string;
+  cycle_id: string | null;
+  source_requirement_id: string;
+  source_milestone_id: string | null;
+  ai_generated: boolean;
+  ticket_number: string;
+  title: string;
+  description: string;
+  acceptance_criteria: string;
+  ticket_type: string;
+  status: string;
+  priority: string;
+  story_points: number;
+  ai_confidence: number;
+  ai_implementation_plan: string | null;
+  reporter_id: string;
+  assigned_to?: string | null;
+}
 
 // AI-generated ticket structure
 interface AITicket {
@@ -30,6 +103,93 @@ interface AITicket {
   ai_implementation_plan?: string;
   milestone_reference?: string; // Which milestone this relates to
 }
+
+// ============================================================================
+// Stub Functions
+// ============================================================================
+
+async function stubFindUniqueRequirement(
+  id: string
+): Promise<Requirement | null> {
+  console.log('[STUB] findUniqueRequirement called with id:', id);
+  return null;
+}
+
+async function stubFindUniqueCycle(id: string): Promise<Cycle | null> {
+  console.log('[STUB] findUniqueCycle called with id:', id);
+  return null;
+}
+
+async function stubCreateAIOperation(
+  data: Record<string, unknown>
+): Promise<AIOperation> {
+  console.log('[STUB] createAIOperation called with data:', data);
+  return {
+    id: 'stub-ai-operation-id',
+    domain_id: data.domain_id as string,
+    operation_type: data.operation_type as string,
+    input_summary: data.input_summary as string,
+    model_used: data.model_used as string,
+    status: data.status as string,
+    triggered_by: data.triggered_by as string,
+    started_at: data.started_at as Date
+  };
+}
+
+async function stubFindFirstTicket(
+  domainId: string
+): Promise<{ ticket_number: string } | null> {
+  console.log('[STUB] findFirstTicket called with domainId:', domainId);
+  return null;
+}
+
+async function stubCreateTicket(data: Record<string, unknown>): Promise<Ticket> {
+  console.log('[STUB] createTicket called with data:', data);
+  return {
+    id: `stub-ticket-${Date.now()}`,
+    domain_id: data.domain_id as string,
+    cycle_id: data.cycle_id as string | null,
+    source_requirement_id: data.source_requirement_id as string,
+    source_milestone_id: data.source_milestone_id as string | null,
+    ai_generated: data.ai_generated as boolean,
+    ticket_number: data.ticket_number as string,
+    title: data.title as string,
+    description: data.description as string,
+    acceptance_criteria: data.acceptance_criteria as string,
+    ticket_type: data.ticket_type as string,
+    status: data.status as string,
+    priority: data.priority as string,
+    story_points: data.story_points as number,
+    ai_confidence: data.ai_confidence as number,
+    ai_implementation_plan: data.ai_implementation_plan as string | null,
+    reporter_id: data.reporter_id as string
+  };
+}
+
+async function stubUpdateTicketAssignment(
+  id: string,
+  assignedTo: string | null
+): Promise<void> {
+  console.log('[STUB] updateTicketAssignment called with id:', id, 'assignedTo:', assignedTo);
+}
+
+async function stubUpdateAIOperationCompleted(
+  id: string,
+  data: Record<string, unknown>
+): Promise<void> {
+  console.log('[STUB] updateAIOperationCompleted called with id:', id, 'data:', data);
+}
+
+async function stubUpdateAIOperationFailed(
+  id: string,
+  errorMessage: string
+): Promise<void> {
+  console.log('[STUB] updateAIOperationFailed called with id:', id, 'error:', errorMessage);
+}
+
+// ============================================================================
+// AI Ticket Generation (Simulated)
+// ============================================================================
 
 // Simulated AI ticket generation (replace with actual AI service call)
 async function generateTicketsWithAI(
@@ -248,6 +408,10 @@ async function generateTicketsWithAI(
   };
 }
 
+// ============================================================================
+// API Handler
+// ============================================================================
+
 // POST: Generate tickets from requirement
 export async function POST(
   request: NextRequest,
@@ -278,25 +442,7 @@ export async function POST(
     }
 
     // Fetch requirement with milestones
-    const requirement = await prisma.qUAD_requirements.findUnique({
-      where: { id },
-      include: {
-        domain: {
-          select: {
-            id: true,
-            org_id: true,
-            ticket_prefix: true,
-            name: true
-          }
-        },
-        milestones: {
-          orderBy: { sequence_order: 'asc' }
-        },
-        tickets: {
-          select: { id: true, title: true }
-        }
-      }
-    });
+    const requirement = await stubFindUniqueRequirement(id);
 
     if (!requirement) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
@@ -320,25 +466,21 @@ export async function POST(
 
     // If cycle_id provided, verify it exists
     if (cycleId) {
-      const cycle = await prisma.qUAD_cycles.findUnique({
-        where: { id: cycleId }
-      });
+      const cycle = await stubFindUniqueCycle(cycleId);
       if (!cycle || cycle.domain_id !== requirement.domain_id) {
         return NextResponse.json({ error: 'Cycle not found' }, { status: 404 });
       }
     }
 
     // Track AI operation
-    const aiOperation = await prisma.qUAD_ai_operations.create({
-      data: {
-        domain_id: requirement.domain_id,
-        operation_type: 'generate_tickets',
-        input_summary: `BA Agent: Generating tickets from requirement "${requirement.title}"`,
-        model_used: 'quad-ba-agent-v1', // Will be replaced with actual model
-        status: 'processing',
-        triggered_by: payload.userId,
-        started_at: new Date()
-      }
+    const aiOperation = await stubCreateAIOperation({
+      domain_id: requirement.domain_id,
+      operation_type: 'generate_tickets',
+      input_summary: `BA Agent: Generating tickets from requirement "${requirement.title}"`,
+      model_used: 'quad-ba-agent-v1', // Will be replaced with actual model
+      status: 'processing',
+      triggered_by: payload.userId,
+      started_at: new Date()
     });
 
     try {
@@ -356,10 +498,7 @@ export async function POST(
 
       // Get last ticket number for this domain
       const ticketPrefix = requirement.domain.ticket_prefix || 'TICKET';
-      const lastTicket = await prisma.qUAD_tickets.findFirst({
-        where: { domain_id: requirement.domain_id },
-        orderBy: { created_at: 'desc' }
-      });
+      const lastTicket = await stubFindFirstTicket(requirement.domain_id);
 
       let ticketNum = 1;
       if (lastTicket?.ticket_number) {
@@ -386,34 +525,29 @@ export async function POST(
           }
         }
 
-        const ticket = await prisma.qUAD_tickets.create({
-          data: {
-            domain_id: requirement.domain_id,
-            cycle_id: cycleId,
-            source_requirement_id: requirement.id,
-            source_milestone_id: milestoneId,
-            ai_generated: true,
-            ticket_number: ticketNumber,
-            title: t.title,
-            description: t.description,
-            acceptance_criteria: t.acceptance_criteria,
-            ticket_type: t.ticket_type,
-            status: 'backlog', // Always start in backlog for human review
-            priority: t.priority,
-            story_points: t.story_points,
-            ai_confidence: t.ai_confidence,
-            ai_implementation_plan: t.ai_implementation_plan || null,
-            reporter_id: payload.userId
-          }
+        const ticket = await stubCreateTicket({
+          domain_id: requirement.domain_id,
+          cycle_id: cycleId,
+          source_requirement_id: requirement.id,
+          source_milestone_id: milestoneId,
+          ai_generated: true,
+          ticket_number: ticketNumber,
+          title: t.title,
+          description: t.description,
+          acceptance_criteria: t.acceptance_criteria,
+          ticket_type: t.ticket_type,
+          status: 'backlog', // Always start in backlog for human review
+          priority: t.priority,
+          story_points: t.story_points,
+          ai_confidence: t.ai_confidence,
+          ai_implementation_plan: t.ai_implementation_plan || null,
+          reporter_id: payload.userId
         });
 
         // Intelligent assignment for each ticket
         try {
           const assignment = await assignTicket(ticket.id, requirement.domain_id, payload.companyId);
-          await prisma.qUAD_tickets.update({
-            where: { id: ticket.id },
-            data: { assigned_to: assignment.assigned_to }
-          });
+          await stubUpdateTicketAssignment(ticket.id, assignment.assigned_to);
           await recordAssignment(ticket.id, assignment);
           (ticket as Record<string, unknown>).assigned_to = assignment.assigned_to;
           assignmentResults.push({
@@ -436,14 +570,11 @@ export async function POST(
       }
 
       // Update AI operation as completed
-      await prisma.qUAD_ai_operations.update({
-        where: { id: aiOperation.id },
-        data: {
-          status: 'completed',
-          output_summary: analysis.summary,
-          confidence: Math.min(...analysis.tickets.map(t => t.ai_confidence)),
-          completed_at: new Date()
-        }
+      await stubUpdateAIOperationCompleted(aiOperation.id, {
+        status: 'completed',
+        output_summary: analysis.summary,
+        confidence: Math.min(...analysis.tickets.map(t => t.ai_confidence)),
+        completed_at: new Date()
       });
 
       // Count how many were auto-assigned
@@ -483,14 +614,10 @@ export async function POST(
 
     } catch (analysisError) {
       // Update AI operation as failed
-      await prisma.qUAD_ai_operations.update({
-        where: { id: aiOperation.id },
-        data: {
-          status: 'failed',
-          error_message: analysisError instanceof Error ? analysisError.message : 'Unknown error',
-          completed_at: new Date()
-        }
-      });
+      await stubUpdateAIOperationFailed(
+        aiOperation.id,
+        analysisError instanceof Error ? analysisError.message : 'Unknown error'
+      );
 
       throw analysisError;
     }

@@ -5,8 +5,122 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+interface RoleUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  is_active: boolean;
+}
+
+interface Role {
+  id: string;
+  org_id: string;
+  role_code: string;
+  role_name: string;
+  description?: string;
+  can_manage_company?: boolean;
+  can_manage_users: boolean;
+  can_manage_domains: boolean;
+  can_manage_flows: boolean;
+  can_view_all_metrics: boolean;
+  can_manage_circles: boolean;
+  can_manage_resources: boolean;
+  q_participation?: string;
+  u_participation?: string;
+  a_participation?: string;
+  d_participation?: string;
+  color_code?: string;
+  icon_name?: string;
+  display_order?: number;
+  hierarchy_level?: number;
+  is_system_role: boolean;
+  is_active: boolean;
+  users?: RoleUser[];
+  _count?: {
+    users: number;
+  };
+}
+
+interface RoleUpdateData {
+  role_name?: string;
+  description?: string;
+  can_manage_company?: boolean;
+  can_manage_users?: boolean;
+  can_manage_domains?: boolean;
+  can_manage_flows?: boolean;
+  can_view_all_metrics?: boolean;
+  can_manage_circles?: boolean;
+  can_manage_resources?: boolean;
+  q_participation?: string;
+  u_participation?: string;
+  a_participation?: string;
+  d_participation?: string;
+  color_code?: string;
+  icon_name?: string;
+  display_order?: number;
+  hierarchy_level?: number;
+  is_active?: boolean;
+}
+
+// ============================================================================
+// Stub Functions - Replace with Java backend calls
+// ============================================================================
+
+async function findRoleById(id: string): Promise<Role | null> {
+  console.log('[STUB] findRoleById called with id:', id);
+  // TODO: Call Java backend GET /roles/{id}
+  return null;
+}
+
+async function findRoleByIdSimple(id: string): Promise<{ id: string; org_id: string; is_system_role: boolean } | null> {
+  console.log('[STUB] findRoleByIdSimple called with id:', id);
+  // TODO: Call Java backend GET /roles/{id}
+  return null;
+}
+
+async function findRoleByIdWithCount(id: string): Promise<(Role & { _count: { users: number } }) | null> {
+  console.log('[STUB] findRoleByIdWithCount called with id:', id);
+  // TODO: Call Java backend GET /roles/{id}?include_count=true
+  return null;
+}
+
+async function updateRole(id: string, data: RoleUpdateData): Promise<Role> {
+  console.log('[STUB] updateRole called with id:', id, 'data:', data);
+  // TODO: Call Java backend PUT /roles/{id}
+  return {
+    id,
+    org_id: 'stub-org-id',
+    role_code: 'STUB_ROLE',
+    role_name: data.role_name ?? 'Stub Role',
+    description: data.description,
+    can_manage_users: data.can_manage_users ?? false,
+    can_manage_domains: data.can_manage_domains ?? false,
+    can_manage_flows: data.can_manage_flows ?? false,
+    can_view_all_metrics: data.can_view_all_metrics ?? false,
+    can_manage_circles: data.can_manage_circles ?? false,
+    can_manage_resources: data.can_manage_resources ?? false,
+    is_system_role: false,
+    is_active: data.is_active ?? true,
+  };
+}
+
+async function deleteRole(id: string): Promise<void> {
+  console.log('[STUB] deleteRole called with id:', id);
+  // TODO: Call Java backend DELETE /roles/{id}
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -29,22 +143,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const role = await prisma.qUAD_roles.findUnique({
-      where: { id },
-      include: {
-        users: {
-          select: {
-            id: true,
-            email: true,
-            full_name: true,
-            is_active: true
-          }
-        },
-        _count: {
-          select: { users: true }
-        }
-      }
-    });
+    const role = await findRoleById(id);
 
     if (!role) {
       return NextResponse.json({ error: 'Role not found' }, { status: 404 });
@@ -88,9 +187,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if role exists and belongs to company
-    const existing = await prisma.qUAD_roles.findUnique({
-      where: { id }
-    });
+    const existing = await findRoleByIdSimple(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Role not found' }, { status: 404 });
@@ -138,7 +235,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Build update data
-    const updateData: Record<string, unknown> = {};
+    const updateData: RoleUpdateData = {};
 
     // Allow updating most fields
     if (role_name !== undefined) updateData.role_name = role_name;
@@ -162,10 +259,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Note: role_code cannot be changed after creation
 
-    const role = await prisma.qUAD_roles.update({
-      where: { id },
-      data: updateData
-    });
+    const role = await updateRole(id, updateData);
 
     return NextResponse.json(role);
   } catch (error) {
@@ -200,14 +294,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if role exists and belongs to company
-    const existing = await prisma.qUAD_roles.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: { users: true }
-        }
-      }
-    });
+    const existing = await findRoleByIdWithCount(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Role not found' }, { status: 404 });
@@ -233,9 +320,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    await prisma.qUAD_roles.delete({
-      where: { id }
-    });
+    await deleteRole(id);
 
     return NextResponse.json({ message: 'Role deleted successfully' });
   } catch (error) {

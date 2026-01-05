@@ -9,8 +9,34 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface Domain {
+  id: string;
+}
+
+interface Ticket {
+  id: string;
+  assigned_to: string | null;
+  status: string;
+  story_points: number | null;
+}
+
+interface User {
+  id: string;
+  full_name: string | null;
+  email: string;
+  role: string;
+}
+
+interface OrgMember {
+  user_id: string;
+  user: User;
+}
 
 interface TeamMemberWorkload {
   user_id: string;
@@ -24,6 +50,27 @@ interface TeamMemberWorkload {
   completion_rate: number;
   workload_status: 'light' | 'normal' | 'heavy' | 'overloaded';
   in_progress_tickets: number;
+}
+
+// Stub functions for database operations
+async function stubFindDomains(orgId: string): Promise<Domain[]> {
+  console.log(`[STUB] findDomains called with orgId: ${orgId}`);
+  return [];
+}
+
+async function stubFindTickets(domainIds: string[], cycleId: string | null): Promise<Ticket[]> {
+  console.log(`[STUB] findTickets called with domainIds: ${domainIds}, cycleId: ${cycleId}`);
+  return [];
+}
+
+async function stubFindOrgMembers(orgId: string): Promise<OrgMember[]> {
+  console.log(`[STUB] findOrgMembers called with orgId: ${orgId}`);
+  return [];
+}
+
+async function stubCountUnassignedTickets(domainIds: string[]): Promise<number> {
+  console.log(`[STUB] countUnassignedTickets called with domainIds: ${domainIds}`);
+  return 0;
 }
 
 // GET: Team workload
@@ -47,49 +94,14 @@ export async function GET(request: NextRequest) {
     const cycleId = searchParams.get('cycle_id'); // Optional: filter by active cycle
 
     // Get all domains in organization
-    const orgDomains = await prisma.qUAD_domains.findMany({
-      where: {
-        org_id: payload.companyId,
-        is_deleted: false
-      },
-      select: { id: true }
-    });
+    const orgDomains = await stubFindDomains(payload.companyId);
     const domainIds = domainId ? [domainId] : orgDomains.map(d => d.id);
 
-    // Build ticket where clause
-    const ticketWhere: Record<string, unknown> = {
-      domain_id: { in: domainIds },
-      assigned_to: { not: null }
-    };
-    if (cycleId) {
-      ticketWhere.cycle_id = cycleId;
-    }
-
     // Get all tickets with assignments
-    const tickets = await prisma.qUAD_tickets.findMany({
-      where: ticketWhere,
-      select: {
-        id: true,
-        assigned_to: true,
-        status: true,
-        story_points: true
-      }
-    });
+    const tickets = await stubFindTickets(domainIds, cycleId);
 
     // Get organization members
-    const members = await prisma.qUAD_org_members.findMany({
-      where: { org_id: payload.companyId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            full_name: true,
-            email: true,
-            role: true
-          }
-        }
-      }
-    });
+    const members = await stubFindOrgMembers(payload.companyId);
 
     // Calculate workload per member
     const workloadData: TeamMemberWorkload[] = members.map(m => {
@@ -135,13 +147,7 @@ export async function GET(request: NextRequest) {
     // Summary statistics
     const totalAssigned = workloadData.reduce((sum, w) => sum + w.tickets_assigned, 0);
     const totalCompleted = workloadData.reduce((sum, w) => sum + w.tickets_completed, 0);
-    const unassignedTickets = await prisma.qUAD_tickets.count({
-      where: {
-        domain_id: { in: domainIds },
-        assigned_to: null,
-        status: { not: 'done' }
-      }
-    });
+    const unassignedTickets = await stubCountUnassignedTickets(domainIds);
 
     // Workload distribution for pie chart
     const workloadDistribution = [

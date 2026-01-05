@@ -4,8 +4,85 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface AdoptionMatrix {
+  skill_level: number;
+  trust_level: number;
+}
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  org_id: string;
+  adoption_matrix: AdoptionMatrix | null;
+}
+
+interface CircleMember {
+  user: Pick<User, 'id' | 'email' | 'full_name' | 'adoption_matrix'>;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+  org_id: string;
+}
+
+interface Circle {
+  id: string;
+  domain_id: string;
+  circle_number: number;
+  circle_name: string;
+  description: string | null;
+  lead_user_id: string | null;
+  is_active: boolean;
+  domain: Pick<Domain, 'id' | 'name'>;
+  lead: Pick<User, 'id' | 'email' | 'full_name'> | null;
+  members: CircleMember[];
+  _count: { members: number };
+}
+
+// Stub functions
+async function stubFindOrgDomains(orgId: string): Promise<{ id: string }[]> {
+  console.log(`[STUB] Finding domains for org: ${orgId}`);
+  return [];
+}
+
+async function stubFindCircles(_where: Record<string, unknown>): Promise<Circle[]> {
+  console.log(`[STUB] Finding circles with filter:`, _where);
+  return [];
+}
+
+async function stubFindDomainById(domainId: string): Promise<Domain | null> {
+  console.log(`[STUB] Finding domain by ID: ${domainId}`);
+  return null;
+}
+
+async function stubFindCircleByDomainAndNumber(domainId: string, circleNumber: number): Promise<Circle | null> {
+  console.log(`[STUB] Finding circle ${circleNumber} in domain ${domainId}`);
+  return null;
+}
+
+async function stubFindUserById(userId: string): Promise<User | null> {
+  console.log(`[STUB] Finding user by ID: ${userId}`);
+  return null;
+}
+
+async function stubCreateCircle(data: {
+  domain_id: string;
+  circle_number: number;
+  circle_name: string;
+  description?: string;
+  lead_user_id?: string;
+}): Promise<Circle | null> {
+  console.log(`[STUB] Creating circle:`, data);
+  return null;
+}
 
 // GET: Get circles
 export async function GET(request: NextRequest) {
@@ -28,10 +105,7 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('is_active');
 
     // Get organization's domains
-    const orgDomains = await prisma.qUAD_domains.findMany({
-      where: { org_id: payload.companyId },
-      select: { id: true }
-    });
+    const orgDomains = await stubFindOrgDomains(payload.companyId);
     const domainIds = orgDomains.map(d => d.id);
 
     // Build where clause
@@ -43,38 +117,7 @@ export async function GET(request: NextRequest) {
       where.is_active = isActive === 'true';
     }
 
-    const circles = await prisma.qUAD_circles.findMany({
-      where,
-      include: {
-        domain: {
-          select: { id: true, name: true }
-        },
-        lead: {
-          select: { id: true, email: true, full_name: true }
-        },
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                email: true,
-                full_name: true,
-                adoption_matrix: {
-                  select: { skill_level: true, trust_level: true }
-                }
-              }
-            }
-          }
-        },
-        _count: {
-          select: { members: true }
-        }
-      },
-      orderBy: [
-        { domain_id: 'asc' },
-        { circle_number: 'asc' }
-      ]
-    });
+    const circles = await stubFindCircles(where);
 
     return NextResponse.json({ circles });
   } catch (error) {
@@ -118,20 +161,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify domain exists and belongs to user's company
-    const domain = await prisma.qUAD_domains.findUnique({
-      where: { id: domain_id }
-    });
+    const domain = await stubFindDomainById(domain_id);
 
     if (!domain || domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
     // Check if circle_number already exists in domain
-    const existing = await prisma.qUAD_circles.findUnique({
-      where: {
-        domain_id_circle_number: { domain_id, circle_number }
-      }
-    });
+    const existing = await stubFindCircleByDomainAndNumber(domain_id, circle_number);
 
     if (existing) {
       return NextResponse.json(
@@ -142,26 +179,18 @@ export async function POST(request: NextRequest) {
 
     // If lead_user_id provided, verify they're in same company
     if (lead_user_id) {
-      const leadUser = await prisma.qUAD_users.findUnique({
-        where: { id: lead_user_id }
-      });
+      const leadUser = await stubFindUserById(lead_user_id);
       if (!leadUser || leadUser.org_id !== payload.companyId) {
         return NextResponse.json({ error: 'Lead user not found' }, { status: 404 });
       }
     }
 
-    const circle = await prisma.qUAD_circles.create({
-      data: {
-        domain_id,
-        circle_number,
-        circle_name,
-        description,
-        lead_user_id
-      },
-      include: {
-        domain: { select: { id: true, name: true } },
-        lead: { select: { id: true, email: true, full_name: true } }
-      }
+    const circle = await stubCreateCircle({
+      domain_id,
+      circle_number,
+      circle_name,
+      description,
+      lead_user_id
     });
 
     return NextResponse.json(circle, { status: 201 });

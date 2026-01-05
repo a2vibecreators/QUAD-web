@@ -7,8 +7,30 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { getProviderConfig, type MeetingProvider } from '@/lib/integrations';
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrg(userId: string): Promise<string | null> {
+  console.log(`[MeetingStatus] getUserOrg for user: ${userId}`);
+  return 'mock-org-id';
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getOrgIntegrations(orgId: string): Promise<{
+  id: string;
+  provider: string;
+  provider_name: string;
+  is_configured: boolean;
+  is_enabled: boolean;
+  account_email: string | null;
+  sync_status: string | null;
+  last_sync_at: Date | null;
+  setup_completed_at: Date | null;
+}[]> {
+  console.log(`[MeetingStatus] getOrgIntegrations for org: ${orgId}`);
+  return []; // Return empty until backend ready
+}
 
 export async function GET() {
   try {
@@ -19,12 +41,9 @@ export async function GET() {
     }
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrg(session.user.id);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json(
         { error: 'Organization not found' },
         { status: 404 }
@@ -32,20 +51,7 @@ export async function GET() {
     }
 
     // Get all integrations for this org
-    const integrations = await prisma.qUAD_meeting_integrations.findMany({
-      where: { org_id: user.org_id },
-      select: {
-        id: true,
-        provider: true,
-        provider_name: true,
-        is_configured: true,
-        is_enabled: true,
-        account_email: true,
-        sync_status: true,
-        last_sync_at: true,
-        setup_completed_at: true,
-      },
-    });
+    const integrations = await getOrgIntegrations(orgId);
 
     // Enhance with provider config
     const enhancedIntegrations = integrations.map(integration => {

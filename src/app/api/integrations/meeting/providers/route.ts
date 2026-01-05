@@ -7,12 +7,31 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import {
   getAllProviders,
   PROVIDER_DISPLAY_ORDER,
-  type MeetingProvider,
 } from '@/lib/integrations';
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrg(userId: string): Promise<string | null> {
+  console.log(`[MeetingProviders] getUserOrg for user: ${userId}`);
+  // Return mock org ID from session - actual org lookup via Java backend later
+  return 'mock-org-id';
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getConfiguredIntegrations(orgId: string): Promise<{
+  provider: string;
+  is_configured: boolean;
+  is_enabled: boolean;
+  account_email: string | null;
+  sync_status: string | null;
+  last_sync_at: Date | null;
+}[]> {
+  console.log(`[MeetingProviders] getConfiguredIntegrations for org: ${orgId}`);
+  return []; // Return empty until backend ready
+}
 
 export async function GET() {
   try {
@@ -23,12 +42,9 @@ export async function GET() {
     }
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrg(session.user.id);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
@@ -36,17 +52,7 @@ export async function GET() {
     const allProviders = getAllProviders();
 
     // Get configured integrations for this org
-    const configuredIntegrations = await prisma.qUAD_meeting_integrations.findMany({
-      where: { org_id: user.org_id },
-      select: {
-        provider: true,
-        is_configured: true,
-        is_enabled: true,
-        account_email: true,
-        sync_status: true,
-        last_sync_at: true,
-      },
-    });
+    const configuredIntegrations = await getConfiguredIntegrations(orgId);
 
     // Create a map of configured providers
     const configuredMap = new Map(

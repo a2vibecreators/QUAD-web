@@ -11,8 +11,138 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface Domain {
+  id: string;
+  name: string;
+}
+
+interface GroupByResult {
+  _count: { id: number };
+}
+
+interface TicketStatusGroup extends GroupByResult {
+  status: string;
+}
+
+interface TicketPriorityGroup extends GroupByResult {
+  priority: string;
+}
+
+interface TicketTypeGroup extends GroupByResult {
+  ticket_type: string;
+}
+
+interface RequirementStatusGroup extends GroupByResult {
+  status: string;
+}
+
+interface AIOperationStatusGroup extends GroupByResult {
+  status: string;
+}
+
+interface Ticket {
+  id: string;
+  status: string;
+  story_points: number | null;
+}
+
+interface Cycle {
+  id: string;
+  name: string;
+  cycle_number: number;
+  start_date: Date;
+  end_date: Date;
+  domain: { name: string };
+  tickets: Ticket[];
+}
+
+interface DatabaseOperation {
+  id: string;
+  operation_type: string;
+  status: string;
+  created_at: Date;
+}
+
+interface RecentTicket {
+  id: string;
+  ticket_number: string;
+  title: string;
+  status: string;
+  updated_at: Date;
+  domain: { name: string };
+}
+
+// Stub functions for database operations
+async function stubFindDomains(orgId: string): Promise<Domain[]> {
+  console.log(`[STUB] findDomains called with orgId: ${orgId}`);
+  return [];
+}
+
+async function stubGroupTicketsByStatus(domainIds: string[]): Promise<TicketStatusGroup[]> {
+  console.log(`[STUB] groupTicketsByStatus called with domainIds: ${domainIds}`);
+  return [];
+}
+
+async function stubGroupTicketsByPriority(domainIds: string[]): Promise<TicketPriorityGroup[]> {
+  console.log(`[STUB] groupTicketsByPriority called with domainIds: ${domainIds}`);
+  return [];
+}
+
+async function stubGroupTicketsByType(domainIds: string[]): Promise<TicketTypeGroup[]> {
+  console.log(`[STUB] groupTicketsByType called with domainIds: ${domainIds}`);
+  return [];
+}
+
+async function stubGroupRequirementsByStatus(domainIds: string[]): Promise<RequirementStatusGroup[]> {
+  console.log(`[STUB] groupRequirementsByStatus called with domainIds: ${domainIds}`);
+  return [];
+}
+
+async function stubFindActiveCycles(domainIds: string[]): Promise<Cycle[]> {
+  console.log(`[STUB] findActiveCycles called with domainIds: ${domainIds}`);
+  return [];
+}
+
+async function stubGroupAIOperationsByStatus(domainIds: string[]): Promise<AIOperationStatusGroup[]> {
+  console.log(`[STUB] groupAIOperationsByStatus called with domainIds: ${domainIds}`);
+  return [];
+}
+
+async function stubFindDatabaseOperations(domainIds: string[]): Promise<DatabaseOperation[]> {
+  console.log(`[STUB] findDatabaseOperations called with domainIds: ${domainIds}`);
+  return [];
+}
+
+async function stubCountTickets(domainIds: string[]): Promise<number> {
+  console.log(`[STUB] countTickets called with domainIds: ${domainIds}`);
+  return 0;
+}
+
+async function stubCountOpenTickets(domainIds: string[]): Promise<number> {
+  console.log(`[STUB] countOpenTickets called with domainIds: ${domainIds}`);
+  return 0;
+}
+
+async function stubCountRequirements(domainIds: string[]): Promise<number> {
+  console.log(`[STUB] countRequirements called with domainIds: ${domainIds}`);
+  return 0;
+}
+
+async function stubCountPendingApprovals(domainIds: string[]): Promise<number> {
+  console.log(`[STUB] countPendingApprovals called with domainIds: ${domainIds}`);
+  return 0;
+}
+
+async function stubFindRecentTickets(domainIds: string[]): Promise<RecentTicket[]> {
+  console.log(`[STUB] findRecentTickets called with domainIds: ${domainIds}`);
+  return [];
+}
 
 // GET: Dashboard metrics
 export async function GET(request: NextRequest) {
@@ -34,21 +164,11 @@ export async function GET(request: NextRequest) {
     const domainId = searchParams.get('domain_id'); // Optional: filter by domain
 
     // Get all domains in organization
-    const orgDomains = await prisma.qUAD_domains.findMany({
-      where: {
-        org_id: payload.companyId,
-        is_deleted: false
-      },
-      select: { id: true, name: true }
-    });
+    const orgDomains = await stubFindDomains(payload.companyId);
     const domainIds = domainId ? [domainId] : orgDomains.map(d => d.id);
 
     // 1. Tickets by Status (for pie chart)
-    const ticketsByStatus = await prisma.qUAD_tickets.groupBy({
-      by: ['status'],
-      where: { domain_id: { in: domainIds } },
-      _count: { id: true }
-    });
+    const ticketsByStatus = await stubGroupTicketsByStatus(domainIds);
 
     const statusData = ticketsByStatus.map(t => ({
       label: t.status,
@@ -57,11 +177,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // 2. Tickets by Priority (for pie chart)
-    const ticketsByPriority = await prisma.qUAD_tickets.groupBy({
-      by: ['priority'],
-      where: { domain_id: { in: domainIds } },
-      _count: { id: true }
-    });
+    const ticketsByPriority = await stubGroupTicketsByPriority(domainIds);
 
     const priorityData = ticketsByPriority.map(t => ({
       label: t.priority,
@@ -70,11 +186,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // 3. Tickets by Type (for pie chart)
-    const ticketsByType = await prisma.qUAD_tickets.groupBy({
-      by: ['ticket_type'],
-      where: { domain_id: { in: domainIds } },
-      _count: { id: true }
-    });
+    const ticketsByType = await stubGroupTicketsByType(domainIds);
 
     const typeData = ticketsByType.map(t => ({
       label: t.ticket_type,
@@ -83,11 +195,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // 4. Requirements by Status (for pie chart)
-    const requirementsByStatus = await prisma.qUAD_requirements.groupBy({
-      by: ['status'],
-      where: { domain_id: { in: domainIds } },
-      _count: { id: true }
-    });
+    const requirementsByStatus = await stubGroupRequirementsByStatus(domainIds);
 
     const requirementsData = requirementsByStatus.map(r => ({
       label: r.status,
@@ -96,24 +204,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // 5. Active Cycles with Progress
-    const activeCycles = await prisma.qUAD_cycles.findMany({
-      where: {
-        domain_id: { in: domainIds },
-        status: { in: ['active', 'in_progress'] }
-      },
-      include: {
-        domain: { select: { name: true } },
-        tickets: {
-          select: {
-            id: true,
-            status: true,
-            story_points: true
-          }
-        }
-      },
-      orderBy: { start_date: 'desc' },
-      take: 5
-    });
+    const activeCycles = await stubFindActiveCycles(domainIds);
 
     const cyclesProgress = activeCycles.map(c => {
       const totalTickets = c.tickets.length;
@@ -138,11 +229,7 @@ export async function GET(request: NextRequest) {
     });
 
     // 6. AI Operations Summary
-    const aiOperations = await prisma.qUAD_ai_operations.groupBy({
-      by: ['status'],
-      where: { domain_id: { in: domainIds } },
-      _count: { id: true }
-    });
+    const aiOperations = await stubGroupAIOperationsByStatus(domainIds);
 
     const aiOperationsData = aiOperations.map(a => ({
       status: a.status,
@@ -150,55 +237,16 @@ export async function GET(request: NextRequest) {
     }));
 
     // 7. Database Operations Summary (if any)
-    const dbOperations = await prisma.qUAD_database_operations.findMany({
-      where: { domain_id: { in: domainIds } },
-      select: {
-        id: true,
-        operation_type: true,
-        status: true,
-        created_at: true
-      },
-      orderBy: { created_at: 'desc' },
-      take: 5
-    });
+    const dbOperations = await stubFindDatabaseOperations(domainIds);
 
     // 8. Summary Counts
-    const totalTickets = await prisma.qUAD_tickets.count({
-      where: { domain_id: { in: domainIds } }
-    });
-
-    const openTickets = await prisma.qUAD_tickets.count({
-      where: {
-        domain_id: { in: domainIds },
-        status: { notIn: ['done', 'blocked'] }
-      }
-    });
-
-    const totalRequirements = await prisma.qUAD_requirements.count({
-      where: { domain_id: { in: domainIds } }
-    });
-
-    const pendingApprovals = await prisma.qUAD_approvals.count({
-      where: {
-        domain_id: { in: domainIds },
-        status: 'pending'
-      }
-    });
+    const totalTickets = await stubCountTickets(domainIds);
+    const openTickets = await stubCountOpenTickets(domainIds);
+    const totalRequirements = await stubCountRequirements(domainIds);
+    const pendingApprovals = await stubCountPendingApprovals(domainIds);
 
     // 9. Recent Activity (last 10 items)
-    const recentTickets = await prisma.qUAD_tickets.findMany({
-      where: { domain_id: { in: domainIds } },
-      select: {
-        id: true,
-        ticket_number: true,
-        title: true,
-        status: true,
-        updated_at: true,
-        domain: { select: { name: true } }
-      },
-      orderBy: { updated_at: 'desc' },
-      take: 10
-    });
+    const recentTickets = await stubFindRecentTickets(domainIds);
 
     const recentActivity = recentTickets.map(t => ({
       type: 'ticket',

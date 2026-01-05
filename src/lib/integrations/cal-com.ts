@@ -3,9 +3,9 @@
  *
  * Handles API key authentication and Cal.com API operations.
  * Cal.com is open-source and can be self-hosted or used via cal.com SaaS.
+ *
+ * NOTE: Database operations stubbed out - will implement via Java backend when ready.
  */
-
-import { prisma } from '@/lib/prisma';
 
 // Cal.com API endpoints
 const CAL_COM_API_BASE = process.env.CAL_COM_API_URL || 'https://api.cal.com/v1';
@@ -242,6 +242,7 @@ export class CalComService {
 
   /**
    * Save integration to database
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async saveIntegration(
     orgId: string,
@@ -249,107 +250,27 @@ export class CalComService {
     apiKey: string,
     userInfo: CalComUser
   ): Promise<void> {
-    await prisma.qUAD_meeting_integrations.upsert({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'cal_com',
-        },
-      },
-      update: {
-        api_key: apiKey, // In production, encrypt this
-        account_email: userInfo.email,
-        is_configured: true,
-        is_enabled: true,
-        setup_completed_at: new Date(),
-        setup_completed_by: userId,
-        sync_status: 'success',
-        last_sync_at: new Date(),
-      },
-      create: {
-        org_id: orgId,
-        provider: 'cal_com',
-        provider_name: 'Cal.com',
-        api_key: apiKey,
-        account_email: userInfo.email,
-        is_configured: true,
-        is_enabled: true,
-        setup_completed_at: new Date(),
-        setup_completed_by: userId,
-        sync_status: 'success',
-        last_sync_at: new Date(),
-      },
-    });
-
-    // Update org setup status
-    await prisma.qUAD_org_setup_status.upsert({
-      where: { org_id: orgId },
-      update: {
-        meeting_provider_configured: true,
-        calendar_connected: true,
-      },
-      create: {
-        org_id: orgId,
-        meeting_provider_configured: true,
-        calendar_connected: true,
-      },
-    });
+    console.log(`[CalCom] saveIntegration for org: ${orgId}, user: ${userId}, email: ${userInfo.email}`);
+    // TODO: Call Java backend to save integration
   }
 
   /**
    * Get integration from database
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async getIntegration(orgId: string): Promise<{ apiKey: string; email: string } | null> {
-    const integration = await prisma.qUAD_meeting_integrations.findUnique({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'cal_com',
-        },
-      },
-    });
-
-    if (!integration?.api_key) {
-      return null;
-    }
-
-    return {
-      apiKey: integration.api_key,
-      email: integration.account_email || '',
-    };
+    console.log(`[CalCom] getIntegration for org: ${orgId}`);
+    // TODO: Call Java backend to get stored credentials
+    return null;
   }
 
   /**
    * Disconnect integration
+   * TODO: Implement via Java backend when endpoints are ready
    */
   async disconnect(orgId: string): Promise<void> {
-    await prisma.qUAD_meeting_integrations.delete({
-      where: {
-        org_id_provider: {
-          org_id: orgId,
-          provider: 'cal_com',
-        },
-      },
-    });
-
-    // Check if other meeting providers are still connected
-    const remainingIntegrations = await prisma.qUAD_meeting_integrations.count({
-      where: {
-        org_id: orgId,
-        is_configured: true,
-      },
-    });
-
-    // Update setup status if no integrations remain
-    if (remainingIntegrations === 0) {
-      await prisma.qUAD_org_setup_status.update({
-        where: { org_id: orgId },
-        data: {
-          meeting_provider_configured: false,
-          calendar_connected: false,
-        },
-      });
-    }
+    console.log(`[CalCom] disconnect for org: ${orgId}`);
+    // TODO: Call Java backend to delete integration
   }
 
   /**

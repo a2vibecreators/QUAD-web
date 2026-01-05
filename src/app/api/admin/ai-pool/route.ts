@@ -10,8 +10,96 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { getPoolHealth } from '@/lib/ai/platform-pool';
+
+// Types
+interface OrgMembership {
+  user_id: string;
+  role: string;
+  is_active: boolean;
+}
+
+interface PoolTransaction {
+  id: string;
+  transaction_type: string;
+  org_name: string | null;
+  amount_cents: number;
+  pool_balance_after: number;
+  description: string | null;
+  created_at: Date;
+}
+
+interface OrgUsageGroup {
+  org_id: string;
+  _sum: { amount_cents: number | null; total_tokens: number | null };
+  _count: { id: number };
+}
+
+interface UserUsageGroup {
+  user_id: string | null;
+  _sum: { amount_cents: number | null; total_tokens: number | null };
+  _count: { id: number };
+}
+
+interface Organization {
+  id: string;
+  name: string;
+}
+
+interface CreditBalance {
+  org_id: string;
+  tier_name: string;
+  is_byok: boolean;
+}
+
+interface User {
+  id: string;
+  full_name: string | null;
+  email: string;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserMemberships(userId: string): Promise<OrgMembership[]> {
+  console.log(`[AdminAIPool] getUserMemberships for user: ${userId}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getRecentPoolTransactions(limit: number): Promise<PoolTransaction[]> {
+  console.log(`[AdminAIPool] getRecentPoolTransactions limit: ${limit}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getOrgCreditUsageGrouped(since: Date): Promise<OrgUsageGroup[]> {
+  console.log(`[AdminAIPool] getOrgCreditUsageGrouped since: ${since.toISOString()}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getOrganizationsByIds(orgIds: string[]): Promise<Organization[]> {
+  console.log(`[AdminAIPool] getOrganizationsByIds: ${orgIds.length} orgs`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getCreditBalancesByOrgIds(orgIds: string[]): Promise<CreditBalance[]> {
+  console.log(`[AdminAIPool] getCreditBalancesByOrgIds: ${orgIds.length} orgs`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserCreditUsageGrouped(since: Date): Promise<UserUsageGroup[]> {
+  console.log(`[AdminAIPool] getUserCreditUsageGrouped since: ${since.toISOString()}`);
+  return []; // Return empty until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUsersByIds(userIds: string[]): Promise<User[]> {
+  console.log(`[AdminAIPool] getUsersByIds: ${userIds.length} users`);
+  return []; // Return empty until backend ready
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,12 +109,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user is admin (has ADMIN or OWNER role in any org)
-    const userMemberships = await prisma.qUAD_org_members.findMany({
-      where: {
-        user_id: session.user.id,
-        is_active: true,
-      },
-    });
+    const userMemberships = await getUserMemberships(session.user.id);
 
     const isAdmin = userMemberships.some(
       (m) => m.role === 'ADMIN' || m.role === 'OWNER'
@@ -40,42 +123,19 @@ export async function GET(request: NextRequest) {
     const health = await getPoolHealth();
 
     // Get recent transactions
-    const recentTransactions = await prisma.qUAD_platform_pool_transactions.findMany({
-      orderBy: { created_at: 'desc' },
-      take: 50,
-    });
+    const recentTransactions = await getRecentPoolTransactions(50);
 
-    // Get per-org usage breakdown
-    const orgUsage = await prisma.qUAD_ai_credit_transactions.groupBy({
-      by: ['org_id'],
-      where: {
-        transaction_type: 'usage',
-        created_at: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-        },
-      },
-      _sum: {
-        amount_cents: true,
-        total_tokens: true,
-      },
-      _count: {
-        id: true,
-      },
-    });
+    // Get per-org usage breakdown (last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const orgUsage = await getOrgCreditUsageGrouped(thirtyDaysAgo);
 
     // Get org names
     const orgIds = orgUsage.map((o) => o.org_id);
-    const orgs = await prisma.qUAD_organizations.findMany({
-      where: { id: { in: orgIds } },
-      select: { id: true, name: true },
-    });
+    const orgs = await getOrganizationsByIds(orgIds);
     const orgNameMap = new Map(orgs.map((o) => [o.id, o.name]));
 
     // Get org tiers
-    const orgBalances = await prisma.qUAD_ai_credit_balances.findMany({
-      where: { org_id: { in: orgIds } },
-      select: { org_id: true, tier_name: true, is_byok: true },
-    });
+    const orgBalances = await getCreditBalancesByOrgIds(orgIds);
     const orgTierMap = new Map(orgBalances.map((b) => [b.org_id, { tier: b.tier_name, isByok: b.is_byok }]));
 
     const orgBreakdown = orgUsage
@@ -92,30 +152,11 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.totalCostCents - a.totalCostCents);
 
     // Get per-user usage breakdown
-    const userUsage = await prisma.qUAD_ai_credit_transactions.groupBy({
-      by: ['user_id'],
-      where: {
-        transaction_type: 'usage',
-        user_id: { not: null },
-        created_at: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        },
-      },
-      _sum: {
-        amount_cents: true,
-        total_tokens: true,
-      },
-      _count: {
-        id: true,
-      },
-    });
+    const userUsage = await getUserCreditUsageGrouped(thirtyDaysAgo);
 
     // Get user names
     const userIds = userUsage.map((u) => u.user_id).filter(Boolean) as string[];
-    const users = await prisma.qUAD_users.findMany({
-      where: { id: { in: userIds } },
-      select: { id: true, full_name: true, email: true },
-    });
+    const users = await getUsersByIds(userIds);
     const userNameMap = new Map(users.map((u) => [u.id, { name: u.full_name, email: u.email }]));
 
     const userBreakdown = userUsage

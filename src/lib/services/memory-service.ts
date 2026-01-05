@@ -10,7 +10,7 @@
  * Goal: 1-100 HTTP calls per ticket, not 1000+ token dumps
  */
 
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import crypto from 'crypto';
 
 // Token estimation (rough: 1 token ≈ 4 characters)
@@ -76,181 +76,64 @@ interface IterativeResponse {
 /**
  * Get initial context for an AI session
  * Uses keyword matching + importance scoring to send minimal but sufficient context
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function getInitialContext(
   context: RetrievalContext,
   keywords: string[],
   maxTokens: number = 4000
 ): Promise<RetrievalResult> {
-  const { orgId, domainId, projectId, circleId, userId, sessionType, triggerEntityType, triggerEntityId } = context;
+  const { userId, sessionType } = context;
 
-  // Step 1: Get all applicable memory documents (hierarchical)
-  const documents = await getHierarchicalDocuments(orgId, domainId, projectId, circleId, userId);
+  // TODO: Call Java backend to get initial context
+  console.log(`[MemoryService] getInitialContext for user: ${userId}, session: ${sessionType}, keywords: ${keywords.join(', ')}`);
 
-  // Step 2: Get chunks that match keywords OR have high importance
-  const matchedChunks = await getMatchingChunks(
-    documents.map(d => d.id),
-    keywords,
-    maxTokens
-  );
-
-  // Step 3: Apply context rules (org-specific overrides)
-  const ruledChunks = await applyContextRules(orgId, sessionType, keywords, matchedChunks);
-
-  // Step 4: Create context session for tracking
-  const session = await prisma.qUAD_context_sessions.create({
-    data: {
-      org_id: orgId,
-      user_id: userId,
-      session_type: sessionType,
-      trigger_entity_type: triggerEntityType,
-      trigger_entity_id: triggerEntityId,
-      context_sent: {
-        initial: ruledChunks.map(c => c.chunkId),
-        keywords_searched: keywords,
-        iterations: [],
-      },
-      initial_context_tokens: ruledChunks.reduce((sum, c) => sum + c.tokenCount, 0),
-      total_context_tokens: ruledChunks.reduce((sum, c) => sum + c.tokenCount, 0),
-    },
-  });
-
-  // Step 5: Update chunk retrieval stats
-  await updateChunkStats(ruledChunks.map(c => c.chunkId), 'retrieved');
-
+  // Return empty result until backend ready
+  const sessionId = crypto.randomUUID();
   return {
-    sessionId: session.id,
-    chunks: ruledChunks,
-    totalTokens: ruledChunks.reduce((sum, c) => sum + c.tokenCount, 0),
-    hierarchyIncluded: [...new Set(ruledChunks.map(c => c.level))] as MemoryLevel[],
-    keywordsMatched: [...new Set(ruledChunks.flatMap(c => c.keywords.filter(k => keywords.includes(k.toLowerCase()))))],
+    sessionId,
+    chunks: [],
+    totalTokens: 0,
+    hierarchyIncluded: [],
+    keywordsMatched: [],
   };
 }
 
 /**
  * Handle iterative context request - when AI says "I need more info"
  * This is the "puzzle piece" logic
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function handleIterativeRequest(
   request: IterativeRequest
 ): Promise<IterativeResponse> {
   const { sessionId, aiRequestText, requestType, keywords: providedKeywords } = request;
 
-  // Step 1: Get session to know what we already sent
-  const session = await prisma.qUAD_context_sessions.findUnique({
-    where: { id: sessionId },
-  });
+  // TODO: Call Java backend to handle iterative request
+  console.log(`[MemoryService] handleIterativeRequest for session: ${sessionId}, type: ${requestType}`);
 
-  if (!session) {
-    throw new Error('Session not found');
-  }
-
-  const contextSent = session.context_sent as { initial: string[]; iterations: { chunks_sent: string[] }[] };
-  const alreadySentChunkIds = [
-    ...contextSent.initial,
-    ...contextSent.iterations.flatMap(i => i.chunks_sent || []),
-  ];
-
-  // Step 2: Parse AI's request to extract keywords
   const extractedKeywords = providedKeywords || extractKeywordsFromRequest(aiRequestText);
 
-  // Step 3: Find chunks that match but weren't already sent
-  const allDocuments = await prisma.qUAD_memory_documents.findMany({
-    where: { org_id: session.org_id, is_active: true },
-    select: { id: true },
-  });
-
-  const newChunks = await getMatchingChunks(
-    allDocuments.map(d => d.id),
-    extractedKeywords,
-    2000, // Smaller token limit for iterative
-    alreadySentChunkIds
-  );
-
-  // Step 4: Record this context request
-  await prisma.qUAD_context_requests.create({
-    data: {
-      session_id: sessionId,
-      iteration_number: contextSent.iterations.length + 1,
-      request_type: requestType,
-      ai_request_text: aiRequestText,
-      parsed_request: { keywords: extractedKeywords, type: requestType },
-      response_chunks: newChunks.map(c => c.chunkId),
-      response_tokens: newChunks.reduce((sum, c) => sum + c.tokenCount, 0),
-      was_sufficient: newChunks.length > 0,
-      missing_category: newChunks.length === 0 ? requestType : null,
-    },
-  });
-
-  // Step 5: Update session with new iteration
-  await prisma.qUAD_context_sessions.update({
-    where: { id: sessionId },
-    data: {
-      iteration_count: { increment: 1 },
-      total_context_tokens: { increment: newChunks.reduce((sum, c) => sum + c.tokenCount, 0) },
-      context_sent: {
-        ...contextSent,
-        iterations: [
-          ...contextSent.iterations,
-          {
-            request: aiRequestText,
-            keywords: extractedKeywords,
-            chunks_sent: newChunks.map(c => c.chunkId),
-          },
-        ],
-      },
-    },
-  });
-
-  // Step 6: Update chunk stats
-  if (newChunks.length > 0) {
-    await updateChunkStats(newChunks.map(c => c.chunkId), 'retrieved');
-    // Mark previous chunks as "insufficient" since AI needed more
-    await updateChunkStats(alreadySentChunkIds, 'insufficient');
-  }
-
   return {
-    additionalChunks: newChunks,
-    totalNewTokens: newChunks.reduce((sum, c) => sum + c.tokenCount, 0),
-    wasFound: newChunks.length > 0,
-    suggestion: newChunks.length === 0
-      ? `Could not find information about: ${extractedKeywords.join(', ')}. Consider adding this to memory.`
-      : undefined,
+    additionalChunks: [],
+    totalNewTokens: 0,
+    wasFound: false,
+    suggestion: `Could not find information about: ${extractedKeywords.join(', ')}. Consider adding this to memory.`,
   };
 }
 
 /**
  * Mark session as complete and record success/failure
  * This feeds back into the learning system
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function completeSession(
   sessionId: string,
   wasSuccessful: boolean,
   notes?: string
 ): Promise<void> {
-  const session = await prisma.qUAD_context_sessions.findUnique({
-    where: { id: sessionId },
-  });
-
-  if (!session) return;
-
-  const contextSent = session.context_sent as { initial: string[] };
-
-  await prisma.qUAD_context_sessions.update({
-    where: { id: sessionId },
-    data: {
-      completed_at: new Date(),
-      was_successful: wasSuccessful,
-      success_notes: wasSuccessful ? notes : null,
-      failure_notes: !wasSuccessful ? notes : null,
-    },
-  });
-
-  // Update chunk helpfulness based on outcome
-  if (wasSuccessful && session.iteration_count === 1) {
-    // Initial context was sufficient - mark all initial chunks as helpful
-    await updateChunkStats(contextSent.initial, 'helpful');
-  }
+  // TODO: Call Java backend to complete session
+  console.log(`[MemoryService] completeSession: ${sessionId}, success: ${wasSuccessful}, notes: ${notes}`);
 }
 
 // =============================================================================
@@ -259,6 +142,7 @@ export async function completeSession(
 
 /**
  * Create or update a memory document
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function upsertMemoryDocument(
   orgId: string,
@@ -269,57 +153,16 @@ export async function upsertMemoryDocument(
   updatedBy: string
 ): Promise<string> {
   const documentKey = generateDocumentKey(level, orgId, levelEntityId);
-  const contentHash = crypto.createHash('sha256').update(content).digest('hex');
-  const wordCount = content.split(/\s+/).length;
-  const tokenEstimate = estimateTokens(content);
 
-  // Parse sections from markdown
-  const sections = parseSectionsFromMarkdown(content);
+  // TODO: Call Java backend to upsert memory document
+  console.log(`[MemoryService] upsertMemoryDocument for org: ${orgId}, level: ${level}, key: ${documentKey}`);
 
-  const entityId = levelEntityId || '_global_'; // Use placeholder for null entity IDs
-
-  const doc = await prisma.qUAD_memory_documents.upsert({
-    where: {
-      org_id_memory_level_level_entity_id: {
-        org_id: orgId,
-        memory_level: level,
-        level_entity_id: entityId,
-      },
-    },
-    create: {
-      org_id: orgId,
-      memory_level: level,
-      level_entity_id: entityId,
-      document_key: documentKey,
-      title,
-      content,
-      content_hash: contentHash,
-      word_count: wordCount,
-      token_estimate: tokenEstimate,
-      sections,
-      last_updated_by: updatedBy,
-    },
-    update: {
-      title,
-      content,
-      content_hash: contentHash,
-      word_count: wordCount,
-      token_estimate: tokenEstimate,
-      sections,
-      last_updated_by: updatedBy,
-      version: { increment: 1 },
-      updated_at: new Date(),
-    },
-  });
-
-  // Re-chunk the document
-  await rechunkDocument(doc.id, content, sections);
-
-  return doc.id;
+  return crypto.randomUUID(); // Return mock ID until backend ready
 }
 
 /**
  * Generate initial memory from template for a new org/domain/project
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function initializeMemoryFromTemplate(
   orgId: string,
@@ -329,46 +172,17 @@ export async function initializeMemoryFromTemplate(
   placeholders: Record<string, string>,
   createdBy: string
 ): Promise<string> {
-  // Get template
-  const template = await prisma.qUAD_memory_templates.findFirst({
-    where: {
-      memory_level: level,
-      template_type: templateType,
-      is_active: true,
-    },
-    orderBy: { is_default: 'desc' },
-  });
+  // TODO: Call Java backend to get template and initialize memory
+  console.log(`[MemoryService] initializeMemoryFromTemplate for org: ${orgId}, level: ${level}, template: ${templateType}`);
 
-  if (!template) {
-    // Create minimal memory if no template
-    const minimalContent = `# ${placeholders.name || 'Memory'}\n\n*This memory will be populated as the system learns about this ${level}.*\n`;
-    return upsertMemoryDocument(orgId, level, levelEntityId, `${placeholders.name || level} Memory`, minimalContent, createdBy);
-  }
-
-  // Replace placeholders in template
-  let content = template.content_template;
-  for (const [key, value] of Object.entries(placeholders)) {
-    content = content.replace(new RegExp(`{{${key}}}`, 'g'), value);
-  }
-
-  // Update template usage
-  await prisma.qUAD_memory_templates.update({
-    where: { id: template.id },
-    data: { times_used: { increment: 1 } },
-  });
-
-  return upsertMemoryDocument(
-    orgId,
-    level,
-    levelEntityId,
-    `${placeholders.name || level} Memory`,
-    content,
-    createdBy
-  );
+  // Create minimal memory until backend ready
+  const minimalContent = `# ${placeholders.name || 'Memory'}\n\n*This memory will be populated as the system learns about this ${level}.*\n`;
+  return upsertMemoryDocument(orgId, level, levelEntityId, `${placeholders.name || level} Memory`, minimalContent, createdBy);
 }
 
 /**
  * Queue a memory update from an event (ticket closed, meeting completed, etc.)
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function queueMemoryUpdate(
   orgId: string,
@@ -380,19 +194,8 @@ export async function queueMemoryUpdate(
   sectionId?: string,
   keywords?: string[]
 ): Promise<void> {
-  await prisma.qUAD_memory_update_queue.create({
-    data: {
-      org_id: orgId,
-      source_type: sourceType,
-      source_entity_id: sourceEntityId,
-      target_memory_level: targetLevel,
-      update_type: updateType,
-      section_id: sectionId,
-      content_to_add: content,
-      keywords_found: keywords || [],
-      priority: updateType === 'regenerate' ? 80 : 50,
-    },
-  });
+  // TODO: Call Java backend to queue memory update
+  console.log(`[MemoryService] queueMemoryUpdate for org: ${orgId}, source: ${sourceType}, target: ${targetLevel}`);
 }
 
 // =============================================================================
@@ -401,6 +204,7 @@ export async function queueMemoryUpdate(
 
 /**
  * Get all memory documents in the hierarchy (org → domain → project → circle → user)
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function getHierarchicalDocuments(
   orgId: string,
@@ -409,49 +213,14 @@ async function getHierarchicalDocuments(
   circleId?: string,
   userId?: string
 ): Promise<{ id: string; level: MemoryLevel; token_estimate: number }[]> {
-  const conditions: { memory_level: MemoryLevel; level_entity_id: string | null }[] = [
-    { memory_level: 'org', level_entity_id: null },
-  ];
-
-  if (domainId) {
-    conditions.push({ memory_level: 'domain', level_entity_id: domainId });
-  }
-  if (projectId) {
-    conditions.push({ memory_level: 'project', level_entity_id: projectId });
-  }
-  if (circleId) {
-    conditions.push({ memory_level: 'circle', level_entity_id: circleId });
-  }
-  if (userId) {
-    conditions.push({ memory_level: 'user', level_entity_id: userId });
-  }
-
-  const documents = await prisma.qUAD_memory_documents.findMany({
-    where: {
-      org_id: orgId,
-      is_active: true,
-      OR: conditions,
-    },
-    select: {
-      id: true,
-      memory_level: true,
-      token_estimate: true,
-    },
-    orderBy: [
-      // Order by hierarchy level
-      { memory_level: 'asc' },
-    ],
-  });
-
-  return documents.map(d => ({
-    id: d.id,
-    level: d.memory_level as MemoryLevel,
-    token_estimate: d.token_estimate,
-  }));
+  // TODO: Call Java backend to get hierarchical documents
+  console.log(`[MemoryService] getHierarchicalDocuments for org: ${orgId}`);
+  return []; // Return empty until backend ready
 }
 
 /**
  * Get chunks that match keywords, prioritizing by importance and match quality
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function getMatchingChunks(
   documentIds: string[],
@@ -459,102 +228,14 @@ async function getMatchingChunks(
   maxTokens: number,
   excludeChunkIds: string[] = []
 ): Promise<ContextChunk[]> {
-  if (documentIds.length === 0 || keywords.length === 0) {
-    return [];
-  }
-
-  // First, get keyword matches
-  const keywordMatches = await prisma.qUAD_memory_keywords.findMany({
-    where: {
-      keyword: { in: keywords.map(k => k.toLowerCase()), mode: 'insensitive' },
-      chunk_id: { notIn: excludeChunkIds },
-    },
-    select: {
-      chunk_id: true,
-      keyword: true,
-      importance: true,
-    },
-  });
-
-  // Group by chunk_id and calculate match score
-  const chunkScores: Record<string, { matchCount: number; totalImportance: number; keywords: string[] }> = {};
-  for (const match of keywordMatches) {
-    if (!chunkScores[match.chunk_id]) {
-      chunkScores[match.chunk_id] = { matchCount: 0, totalImportance: 0, keywords: [] };
-    }
-    chunkScores[match.chunk_id].matchCount++;
-    chunkScores[match.chunk_id].totalImportance += match.importance;
-    chunkScores[match.chunk_id].keywords.push(match.keyword);
-  }
-
-  // Get the actual chunks
-  const matchedChunkIds = Object.keys(chunkScores);
-
-  // Also include high-importance chunks from the same documents (even without keyword match)
-  const importantChunks = await prisma.qUAD_memory_chunks.findMany({
-    where: {
-      document_id: { in: documentIds },
-      id: { notIn: excludeChunkIds },
-      importance: { gte: 8 }, // Very important chunks
-    },
-    select: { id: true },
-  });
-
-  const allChunkIds = [...new Set([...matchedChunkIds, ...importantChunks.map(c => c.id)])];
-
-  if (allChunkIds.length === 0) {
-    return [];
-  }
-
-  // Fetch chunk details
-  const chunks = await prisma.qUAD_memory_chunks.findMany({
-    where: { id: { in: allChunkIds } },
-    include: {
-      document: {
-        select: {
-          memory_level: true,
-        },
-      },
-    },
-  });
-
-  // Score and sort chunks
-  const scoredChunks = chunks.map(chunk => {
-    const keywordScore = chunkScores[chunk.id]?.totalImportance || 0;
-    const importanceScore = chunk.importance * 10;
-    const helpfulnessBonus = (Number(chunk.helpfulness_score) || 0.5) * 20;
-    const totalScore = keywordScore + importanceScore + helpfulnessBonus;
-
-    return {
-      chunkId: chunk.id,
-      content: chunk.content,
-      section: chunk.section_path || chunk.section_id || 'General',
-      level: chunk.document.memory_level as MemoryLevel,
-      importance: chunk.importance,
-      tokenCount: chunk.token_count,
-      keywords: chunk.keywords || [],
-      score: totalScore,
-    };
-  });
-
-  // Sort by score (descending) and select until token limit
-  scoredChunks.sort((a, b) => b.score - a.score);
-
-  const selected: ContextChunk[] = [];
-  let totalTokens = 0;
-
-  for (const chunk of scoredChunks) {
-    if (totalTokens + chunk.tokenCount <= maxTokens) {
-      selected.push(chunk);
-      totalTokens += chunk.tokenCount;
-    }
-  }
-
-  return selected;
+  // TODO: Call Java backend to get matching chunks
+  console.log(`[MemoryService] getMatchingChunks for docs: ${documentIds.length}, keywords: ${keywords.join(', ')}`);
+  return []; // Return empty until backend ready
 }
 
 /**
  * Apply org-specific context rules
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function applyContextRules(
   orgId: string,
@@ -562,69 +243,22 @@ async function applyContextRules(
   keywords: string[],
   chunks: ContextChunk[]
 ): Promise<ContextChunk[]> {
-  const rules = await prisma.qUAD_context_rules.findMany({
-    where: {
-      org_id: orgId,
-      is_active: true,
-    },
-    orderBy: { priority: 'desc' },
-  });
-
-  let result = [...chunks];
-
-  for (const rule of rules) {
-    const conditions = rule.trigger_conditions as { session_types?: string[]; keywords?: string[] };
-    const action = rule.action_config as { chunks_to_include?: string[]; chunks_to_exclude?: string[]; max_tokens?: number };
-
-    // Check if rule applies
-    const sessionMatches = !conditions.session_types || conditions.session_types.includes(sessionType);
-    const keywordMatches = !conditions.keywords || conditions.keywords.some(k => keywords.includes(k));
-
-    if (sessionMatches && keywordMatches) {
-      if (rule.rule_type === 'exclude' && action.chunks_to_exclude) {
-        result = result.filter(c => !action.chunks_to_exclude?.includes(c.section));
-      }
-      // Add more rule types as needed
-    }
-  }
-
-  return result;
+  // TODO: Call Java backend to apply context rules
+  console.log(`[MemoryService] applyContextRules for org: ${orgId}, session: ${sessionType}`);
+  return chunks; // Return unchanged until backend ready
 }
 
 /**
  * Update chunk statistics for learning
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function updateChunkStats(
   chunkIds: string[],
   statType: 'retrieved' | 'helpful' | 'insufficient'
 ): Promise<void> {
-  if (chunkIds.length === 0) return;
-
-  const updateData: Record<string, { increment: number }> = {};
-  if (statType === 'retrieved') updateData.times_retrieved = { increment: 1 };
-  if (statType === 'helpful') updateData.times_helpful = { increment: 1 };
-  if (statType === 'insufficient') updateData.times_insufficient = { increment: 1 };
-
-  await prisma.qUAD_memory_chunks.updateMany({
-    where: { id: { in: chunkIds } },
-    data: updateData,
-  });
-
-  // Recalculate helpfulness scores
-  const chunks = await prisma.qUAD_memory_chunks.findMany({
-    where: { id: { in: chunkIds } },
-    select: { id: true, times_retrieved: true, times_helpful: true },
-  });
-
-  for (const chunk of chunks) {
-    if (chunk.times_retrieved > 0) {
-      await prisma.qUAD_memory_chunks.update({
-        where: { id: chunk.id },
-        data: {
-          helpfulness_score: chunk.times_helpful / chunk.times_retrieved,
-        },
-      });
-    }
+  // TODO: Call Java backend to update chunk stats
+  if (chunkIds.length > 0) {
+    console.log(`[MemoryService] updateChunkStats: ${chunkIds.length} chunks, type: ${statType}`);
   }
 }
 
@@ -755,90 +389,20 @@ function extractKeywordsFromRequest(request: string): string[] {
 
 /**
  * Re-chunk a document into searchable pieces
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function rechunkDocument(
   documentId: string,
   content: string,
   sections: { id: string; title: string; line_start: number; line_end: number; keywords: string[] }[]
 ): Promise<void> {
-  // Delete existing chunks
-  await prisma.qUAD_memory_chunks.deleteMany({
-    where: { document_id: documentId },
-  });
-
-  // Delete existing keywords
-  const oldChunks = await prisma.qUAD_memory_chunks.findMany({
-    where: { document_id: documentId },
-    select: { id: true },
-  });
-  if (oldChunks.length > 0) {
-    await prisma.qUAD_memory_keywords.deleteMany({
-      where: { chunk_id: { in: oldChunks.map(c => c.id) } },
-    });
-  }
-
-  const lines = content.split('\n');
-  const TARGET_CHUNK_TOKENS = 500;
-
-  let chunkIndex = 0;
-
-  for (const section of sections) {
-    const sectionLines = lines.slice(section.line_start, section.line_end + 1);
-    const sectionContent = sectionLines.join('\n');
-    const sectionTokens = estimateTokens(sectionContent);
-
-    // If section is small enough, keep as one chunk
-    if (sectionTokens <= TARGET_CHUNK_TOKENS * 1.5) {
-      await createChunkWithKeywords(
-        documentId,
-        chunkIndex++,
-        section.id,
-        section.title,
-        sectionContent,
-        section.keywords
-      );
-    } else {
-      // Split section into multiple chunks
-      let currentChunk = '';
-      let currentTokens = 0;
-
-      for (const line of sectionLines) {
-        const lineTokens = estimateTokens(line);
-
-        if (currentTokens + lineTokens > TARGET_CHUNK_TOKENS && currentChunk) {
-          await createChunkWithKeywords(
-            documentId,
-            chunkIndex++,
-            section.id,
-            section.title,
-            currentChunk,
-            extractKeywordsFromText(currentChunk)
-          );
-          currentChunk = line;
-          currentTokens = lineTokens;
-        } else {
-          currentChunk += (currentChunk ? '\n' : '') + line;
-          currentTokens += lineTokens;
-        }
-      }
-
-      // Save remaining content
-      if (currentChunk) {
-        await createChunkWithKeywords(
-          documentId,
-          chunkIndex++,
-          section.id,
-          section.title,
-          currentChunk,
-          extractKeywordsFromText(currentChunk)
-        );
-      }
-    }
-  }
+  // TODO: Call Java backend to rechunk document
+  console.log(`[MemoryService] rechunkDocument for doc: ${documentId}, sections: ${sections.length}`);
 }
 
 /**
  * Create a chunk and its keyword index
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function createChunkWithKeywords(
   documentId: string,
@@ -848,35 +412,8 @@ async function createChunkWithKeywords(
   content: string,
   keywords: string[]
 ): Promise<void> {
-  const chunk = await prisma.qUAD_memory_chunks.create({
-    data: {
-      document_id: documentId,
-      chunk_index: chunkIndex,
-      section_id: sectionId,
-      section_path: sectionPath,
-      content,
-      content_hash: crypto.createHash('sha256').update(content).digest('hex'),
-      token_count: estimateTokens(content),
-      keywords,
-      importance: calculateImportance(content, sectionId),
-    },
-  });
-
-  // Create keyword entries
-  const keywordEntries = keywords.map(keyword => ({
-    chunk_id: chunk.id,
-    keyword,
-    keyword_type: categorizekeyword(keyword),
-    importance: 5,
-    bigrams: [] as string[],
-    trigrams: [] as string[],
-  }));
-
-  if (keywordEntries.length > 0) {
-    await prisma.qUAD_memory_keywords.createMany({
-      data: keywordEntries,
-    });
-  }
+  // TODO: Call Java backend to create chunk with keywords
+  console.log(`[MemoryService] createChunkWithKeywords for doc: ${documentId}, section: ${sectionId}`);
 }
 
 /**

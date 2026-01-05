@@ -3,9 +3,10 @@
  *
  * Tracks and manages the onboarding completion status for organizations.
  * Used by middleware to block access until setup is complete.
+ *
+ * NOTE: Simplified to not use Prisma. Currently returns defaults.
+ * TODO: Implement proper setup tracking via Java backend when endpoints are ready.
  */
-
-import { prisma } from '@/lib/prisma';
 
 export interface SetupStatus {
   isComplete: boolean;
@@ -42,9 +43,8 @@ const OPTIONAL_STEPS = [
 
 type RequiredStep = (typeof REQUIRED_STEPS)[number];
 type OptionalStep = (typeof OPTIONAL_STEPS)[number];
-type SetupStep = RequiredStep | OptionalStep;
 
-const STEP_LABELS: Record<SetupStep, string> = {
+const STEP_LABELS: Record<RequiredStep | OptionalStep, string> = {
   meeting_provider_configured: 'Connect Meeting Provider',
   calendar_connected: 'Sync Calendar',
   ai_tier_selected: 'Select AI Tier',
@@ -56,191 +56,82 @@ const STEP_LABELS: Record<SetupStep, string> = {
 
 /**
  * Get setup status for an organization
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function getSetupStatus(orgId: string): Promise<SetupStatus> {
-  const status = await prisma.qUAD_org_setup_status.findUnique({
-    where: { org_id: orgId },
-  });
+  console.log(`[getSetupStatus] Checking setup for org: ${orgId}`);
 
-  // Check AI tier selection from ai_provider_config
-  const aiConfig = await prisma.qUAD_ai_provider_config.findUnique({
-    where: { org_id: orgId },
-  });
-  const aiTierSelected = !!aiConfig;
-
-  // Check if domain exists
-  const domainCount = await prisma.qUAD_domains.count({
-    where: { org_id: orgId, is_deleted: false },
-  });
-  const firstDomainCreated = domainCount > 0;
-
-  // Check if circle exists
-  const circleCount = await prisma.qUAD_circles.count({
-    where: {
-      domain: {
-        org_id: orgId,
-        is_deleted: false,
-      },
-    },
-  });
-  const firstCircleCreated = circleCount > 0;
-
-  const details = {
-    meetingProviderConfigured: status?.meeting_provider_configured ?? false,
-    calendarConnected: status?.calendar_connected ?? false,
-    aiTierSelected,
-    firstDomainCreated,
-    firstCircleCreated,
-    gitProviderConnected: status?.git_provider_connected ?? false,
-    slackConnected: status?.slack_connected ?? false,
-  };
-
-  // Calculate completed steps
-  const completedSteps: string[] = [];
-  const pendingSteps: string[] = [];
-
-  for (const step of REQUIRED_STEPS) {
-    const isComplete = getStepValue(step, details);
-    if (isComplete) {
-      completedSteps.push(STEP_LABELS[step]);
-    } else {
-      pendingSteps.push(STEP_LABELS[step]);
-    }
-  }
-
-  // Check required steps completion
-  const requiredComplete = REQUIRED_STEPS.every(step => getStepValue(step, details));
-
-  // Calculate progress (required steps only)
-  const completedCount = REQUIRED_STEPS.filter(step => getStepValue(step, details)).length;
-  const progress = Math.round((completedCount / REQUIRED_STEPS.length) * 100);
-
+  // For now, return setup as complete to not block users
+  // TODO: Implement proper setup tracking via Java backend
   return {
-    isComplete: requiredComplete,
-    completedSteps,
-    pendingSteps,
-    progress,
-    details,
-    setupStartedAt: status?.setup_started_at ?? null,
-    setupCompletedAt: requiredComplete ? (status?.setup_completed_at ?? new Date()) : null,
+    isComplete: true,
+    completedSteps: Object.values(STEP_LABELS),
+    pendingSteps: [],
+    progress: 100,
+    details: {
+      meetingProviderConfigured: true,
+      calendarConnected: true,
+      aiTierSelected: true,
+      firstDomainCreated: true,
+      firstCircleCreated: true,
+      gitProviderConnected: false,
+      slackConnected: false,
+    },
+    setupStartedAt: new Date(),
+    setupCompletedAt: new Date(),
   };
-}
-
-/**
- * Helper to get step value from details object
- */
-function getStepValue(
-  step: SetupStep,
-  details: SetupStatus['details']
-): boolean {
-  const mapping: Record<SetupStep, keyof SetupStatus['details']> = {
-    meeting_provider_configured: 'meetingProviderConfigured',
-    calendar_connected: 'calendarConnected',
-    ai_tier_selected: 'aiTierSelected',
-    first_domain_created: 'firstDomainCreated',
-    first_circle_created: 'firstCircleCreated',
-    git_provider_connected: 'gitProviderConnected',
-    slack_connected: 'slackConnected',
-  };
-
-  return details[mapping[step]];
 }
 
 /**
  * Check if setup is complete (for middleware)
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function isSetupComplete(orgId: string): Promise<boolean> {
-  const status = await getSetupStatus(orgId);
-  return status.isComplete;
+  // For now, always return true to not block users
+  console.log(`[isSetupComplete] Returning true for org: ${orgId}`);
+  return true;
 }
 
 /**
  * Mark a step as complete
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function markStepComplete(
   orgId: string,
   step: RequiredStep | OptionalStep
 ): Promise<void> {
-  const data: Record<string, boolean | Date> = {
-    [step]: true,
-  };
-
-  await prisma.qUAD_org_setup_status.upsert({
-    where: { org_id: orgId },
-    update: data,
-    create: {
-      org_id: orgId,
-      ...data,
-    },
-  });
-
-  // Check if all required steps are now complete
-  const status = await getSetupStatus(orgId);
-  if (status.isComplete) {
-    await prisma.qUAD_org_setup_status.update({
-      where: { org_id: orgId },
-      data: { setup_completed_at: new Date() },
-    });
-  }
+  console.log(`[markStepComplete] Marking step ${step} complete for org: ${orgId}`);
+  // TODO: Call Java backend to persist this
 }
 
 /**
  * Initialize setup status for new organization
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function initializeSetupStatus(orgId: string): Promise<void> {
-  await prisma.qUAD_org_setup_status.upsert({
-    where: { org_id: orgId },
-    update: {},
-    create: {
-      org_id: orgId,
-      setup_started_at: new Date(),
-    },
-  });
+  console.log(`[initializeSetupStatus] Initializing setup for org: ${orgId}`);
+  // TODO: Call Java backend to create setup record
 }
 
 /**
  * Get next required step for setup wizard
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function getNextRequiredStep(orgId: string): Promise<{
   step: string;
   label: string;
   url: string;
 } | null> {
-  const status = await getSetupStatus(orgId);
-
-  if (status.isComplete) {
-    return null;
-  }
-
-  // Return first incomplete required step
-  if (!status.details.aiTierSelected) {
-    return {
-      step: 'ai_tier_selected',
-      label: 'Select AI Tier',
-      url: '/setup/ai-tier',
-    };
-  }
-
-  if (!status.details.meetingProviderConfigured) {
-    return {
-      step: 'meeting_provider_configured',
-      label: 'Connect Meeting Provider',
-      url: '/setup/meetings',
-    };
-  }
-
+  console.log(`[getNextRequiredStep] Checking next step for org: ${orgId}`);
+  // For now, return null (setup complete)
   return null;
 }
 
 /**
  * Reset setup status (for testing)
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function resetSetupStatus(orgId: string): Promise<void> {
-  await prisma.qUAD_org_setup_status.delete({
-    where: { org_id: orgId },
-  }).catch(() => {
-    // Ignore if doesn't exist
-  });
-
-  await initializeSetupStatus(orgId);
+  console.log(`[resetSetupStatus] Resetting setup for org: ${orgId}`);
+  // TODO: Call Java backend to reset
 }

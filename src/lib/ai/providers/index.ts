@@ -10,7 +10,7 @@
 import { claudeProvider } from './claude';
 import { openaiProvider } from './openai';
 import { AIMessage, AIConfig, AIResponse, AIStreamChunk, AIProvider } from './types';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 
 export * from './types';
 export { claudeProvider } from './claude';
@@ -25,33 +25,16 @@ const providers: Record<string, AIProvider> = {
 /**
  * Get API key for a provider
  * Priority: BYOK (org's key) > Platform key (env var)
+ * TODO: Implement BYOK via Java backend when endpoints are ready
  */
 async function getApiKey(
   orgId: string,
   provider: string
 ): Promise<string | null> {
-  // 1. Check for BYOK key in org's AI config
-  const aiConfig = await prisma.qUAD_ai_configs.findUnique({
-    where: { org_id: orgId },
-  });
+  // TODO: Call Java backend to check for BYOK key
+  console.log(`[AIProviders] getApiKey for org: ${orgId}, provider: ${provider}`);
 
-  if (aiConfig) {
-    // Check for provider-specific key reference
-    const keyRef =
-      provider === 'claude'
-        ? aiConfig.anthropic_key_ref
-        : provider === 'openai'
-          ? aiConfig.openai_key_ref
-          : null;
-
-    if (keyRef) {
-      // TODO: Decrypt key from vault
-      // For now, the key_ref IS the key (will add vault later)
-      return keyRef;
-    }
-  }
-
-  // 2. Fall back to platform keys (env vars)
+  // Fall back to platform keys (env vars)
   if (provider === 'claude') {
     return process.env.ANTHROPIC_API_KEY || null;
   }
@@ -64,6 +47,7 @@ async function getApiKey(
 
 /**
  * Get routing config for an activity type
+ * TODO: Implement via Java backend when endpoints are ready
  */
 async function getActivityRouting(
   orgId: string,
@@ -74,24 +58,9 @@ async function getActivityRouting(
   maxTokens: number;
   temperature: number;
 } | null> {
-  const routing = await prisma.qUAD_ai_activity_routing.findFirst({
-    where: {
-      org_id: orgId,
-      activity_type: activityType,
-      is_active: true,
-    },
-  });
-
-  if (routing) {
-    return {
-      provider: routing.provider,
-      model: routing.model_id,
-      maxTokens: routing.max_tokens_input,
-      temperature: Number(routing.temperature),
-    };
-  }
-
-  return null;
+  // TODO: Call Java backend to get activity routing
+  console.log(`[AIProviders] getActivityRouting for org: ${orgId}, activity: ${activityType}`);
+  return null; // Use defaults until backend ready
 }
 
 /**

@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import {
   getProviderConfig,
   GoogleCalendarService,
@@ -17,6 +17,23 @@ import {
 
 interface RouteContext {
   params: Promise<{ provider: string }>;
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getUserOrg(userId: string): Promise<string | null> {
+  console.log(`[MeetingDisconnect] getUserOrg for user: ${userId}`);
+  return 'mock-org-id';
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function getIntegration(orgId: string, provider: string): Promise<{ id: string } | null> {
+  console.log(`[MeetingDisconnect] getIntegration for org: ${orgId}, provider: ${provider}`);
+  return null; // Return null until backend ready
+}
+
+// TODO: Implement via Java backend when endpoints are ready
+async function deleteIntegration(integrationId: string): Promise<void> {
+  console.log(`[MeetingDisconnect] deleteIntegration: ${integrationId}`);
 }
 
 export async function POST(
@@ -42,12 +59,9 @@ export async function POST(
     }
 
     // Get user's org
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: session.user.id },
-      select: { org_id: true },
-    });
+    const orgId = await getUserOrg(session.user.id);
 
-    if (!user?.org_id) {
+    if (!orgId) {
       return NextResponse.json(
         { error: 'Organization not found' },
         { status: 404 }
@@ -55,14 +69,7 @@ export async function POST(
     }
 
     // Check if integration exists
-    const integration = await prisma.qUAD_meeting_integrations.findUnique({
-      where: {
-        org_id_provider: {
-          org_id: user.org_id,
-          provider: provider,
-        },
-      },
-    });
+    const integration = await getIntegration(orgId, provider);
 
     if (!integration) {
       return NextResponse.json(
@@ -75,21 +82,19 @@ export async function POST(
     switch (provider) {
       case 'google_calendar': {
         const googleService = new GoogleCalendarService();
-        await googleService.disconnect(user.org_id);
+        await googleService.disconnect(orgId);
         break;
       }
 
       case 'cal_com': {
         const calService = new CalComService();
-        await calService.disconnect(user.org_id);
+        await calService.disconnect(orgId);
         break;
       }
 
       default:
         // Generic disconnect
-        await prisma.qUAD_meeting_integrations.delete({
-          where: { id: integration.id },
-        });
+        await deleteIntegration(integration.id);
     }
 
     return NextResponse.json({

@@ -9,7 +9,7 @@
  *   const index = await getCodebaseIndex(orgId, 'quadframework')
  */
 
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -131,57 +131,8 @@ export async function generateCodebaseIndex(
   }
 
   // 8. Save to database
-  await prisma.qUAD_codebase_indexes.upsert({
-    where: {
-      org_id_repo_name_branch: {
-        org_id: orgId,
-        repo_name: repoName,
-        branch: 'main'
-      }
-    },
-    update: {
-      repo_url: repoUrl,
-      commit_hash: commitHash,
-      tables_summary: index.tables,
-      apis_summary: index.apis,
-      files_summary: index.files,
-      components_summary: index.components,
-      patterns_summary: index.patterns,
-      architecture_summary: index.architecture,
-      total_tokens: totalTokens,
-      token_savings_percent: tokenSavingsPercent,
-      file_count: fileCount,
-      table_count: Object.keys(index.tables).length,
-      api_count: Object.keys(index.apis).length,
-      loc_count: locCount,
-      last_synced_at: new Date(),
-      sync_status: 'synced',
-      sync_error: null
-    },
-    create: {
-      org_id: orgId,
-      repo_name: repoName,
-      repo_url: repoUrl,
-      branch: 'main',
-      commit_hash: commitHash,
-      tables_summary: index.tables,
-      apis_summary: index.apis,
-      files_summary: index.files,
-      components_summary: index.components,
-      patterns_summary: index.patterns,
-      architecture_summary: index.architecture,
-      total_tokens: totalTokens,
-      token_savings_percent: tokenSavingsPercent,
-      file_count: fileCount,
-      table_count: Object.keys(index.tables).length,
-      api_count: Object.keys(index.apis).length,
-      loc_count: locCount,
-      last_synced_at: new Date(),
-      sync_status: 'synced'
-    }
-  });
-
-  console.log(`[Indexer] Index saved. Tokens: ${totalTokens} (${tokenSavingsPercent}% savings)`);
+  // TODO: Call Java backend to save codebase index
+  console.log(`[Indexer] Index generated. Tokens: ${totalTokens} (${tokenSavingsPercent}% savings)`);
 
   return {
     fileCount,
@@ -195,31 +146,15 @@ export async function generateCodebaseIndex(
 
 /**
  * Get codebase index for AI context
+ * TODO: Implement via Java backend when endpoints are ready
  */
 export async function getCodebaseIndex(
   orgId: string,
   repoName: string
 ): Promise<CodebaseIndex | null> {
-  const record = await prisma.qUAD_codebase_indexes.findUnique({
-    where: {
-      org_id_repo_name_branch: {
-        org_id: orgId,
-        repo_name: repoName,
-        branch: 'main'
-      }
-    }
-  });
-
-  if (!record) return null;
-
-  return {
-    tables: (record.tables_summary as Record<string, string>) || {},
-    apis: (record.apis_summary as Record<string, string>) || {},
-    files: (record.files_summary as Record<string, string>) || {},
-    components: (record.components_summary as Record<string, string>) || {},
-    patterns: (record.patterns_summary as Record<string, string>) || {},
-    architecture: record.architecture_summary || ''
-  };
+  // TODO: Call Java backend to get codebase index
+  console.log(`[Indexer] getCodebaseIndex for org: ${orgId}, repo: ${repoName}`);
+  return null; // Return null until backend ready
 }
 
 /**

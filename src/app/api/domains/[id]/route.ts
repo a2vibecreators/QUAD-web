@@ -5,8 +5,115 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface DomainParent {
+  id: string;
+  name: string;
+  path: string | null;
+}
+
+interface SubDomain {
+  id: string;
+  name: string;
+  domain_type: string | null;
+  is_deleted: boolean;
+  _count: { members: number; flows: number };
+}
+
+interface DomainMember {
+  user: {
+    id: string;
+    email: string;
+    full_name: string | null;
+    role: string;
+  };
+}
+
+interface DomainResource {
+  id: string;
+  resource_type: string;
+  resource_name: string;
+  resource_status: string;
+}
+
+interface DomainCircle {
+  id: string;
+  circle_number: number;
+  circle_name: string;
+  is_active: boolean;
+}
+
+interface DomainCreator {
+  id: string;
+  email: string;
+  full_name: string | null;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+  domain_type: string | null;
+  org_id: string;
+  path: string | null;
+  parent_domain_id: string | null;
+  is_deleted: boolean;
+  deleted_at: Date | null;
+  deleted_by: string | null;
+  created_by: string;
+  parent_domain: DomainParent | null;
+  sub_domains: SubDomain[];
+  members: DomainMember[];
+  resources: DomainResource[];
+  circles: DomainCircle[];
+  creator: DomainCreator | null;
+  _count: {
+    members: number;
+    resources: number;
+    flows: number;
+    circles: number;
+    sub_domains: number;
+  };
+}
+
+// Stub functions
+async function stubFindDomainById(id: string, _includeDeleted: boolean): Promise<Domain | null> {
+  console.log(`[STUB] Finding domain by ID: ${id}`);
+  return null;
+}
+
+async function stubFindDomainSimple(id: string): Promise<Pick<Domain, 'id' | 'org_id' | 'path' | 'parent_domain_id' | 'name' | 'is_deleted' | 'created_by'> | null> {
+  console.log(`[STUB] Finding domain (simple) by ID: ${id}`);
+  return null;
+}
+
+async function stubFindDomainWithCreator(id: string): Promise<(Pick<Domain, 'id' | 'org_id' | 'is_deleted' | 'created_by'> & { creator: DomainCreator | null; _count: { sub_domains: number } }) | null> {
+  console.log(`[STUB] Finding domain with creator by ID: ${id}`);
+  return null;
+}
+
+async function stubUpdateDomain(id: string, data: Partial<Domain>): Promise<Domain | null> {
+  console.log(`[STUB] Updating domain ${id} with data:`, data);
+  return null;
+}
+
+async function stubFindSubDomains(parentDomainId: string): Promise<{ id: string }[]> {
+  console.log(`[STUB] Finding sub-domains for parent: ${parentDomainId}`);
+  return [];
+}
+
+async function stubSoftDeleteDomain(domainId: string, deletedBy: string): Promise<void> {
+  console.log(`[STUB] Soft-deleting domain ${domainId} by user ${deletedBy}`);
+}
+
+async function stubRestoreDomain(domainId: string): Promise<Domain | null> {
+  console.log(`[STUB] Restoring domain: ${domainId}`);
+  return null;
+}
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -33,59 +140,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { searchParams } = new URL(request.url);
     const includeDeleted = searchParams.get('include_deleted') === 'true' && payload.role === 'ADMIN';
 
-    const domain = await prisma.qUAD_domains.findUnique({
-      where: { id },
-      include: {
-        parent_domain: {
-          select: { id: true, name: true, path: true }
-        },
-        sub_domains: {
-          where: includeDeleted ? {} : { is_deleted: false },
-          select: {
-            id: true,
-            name: true,
-            domain_type: true,
-            is_deleted: true,
-            _count: { select: { members: true, flows: true } }
-          }
-        },
-        members: {
-          include: {
-            user: {
-              select: { id: true, email: true, full_name: true, role: true }
-            }
-          }
-        },
-        resources: {
-          select: {
-            id: true,
-            resource_type: true,
-            resource_name: true,
-            resource_status: true
-          }
-        },
-        circles: {
-          select: {
-            id: true,
-            circle_number: true,
-            circle_name: true,
-            is_active: true
-          }
-        },
-        creator: {
-          select: { id: true, email: true, full_name: true }
-        },
-        _count: {
-          select: {
-            members: true,
-            resources: true,
-            flows: true,
-            circles: true,
-            sub_domains: true
-          }
-        }
-      }
-    });
+    const domain = await stubFindDomainById(id, includeDeleted);
 
     if (!domain) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
@@ -134,9 +189,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if domain exists
-    const existing = await prisma.qUAD_domains.findUnique({
-      where: { id }
-    });
+    const existing = await stubFindDomainSimple(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
@@ -155,9 +208,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (parent_domain_id === null) {
         newPath = `/${name || existing.name}`;
       } else {
-        const parentDomain = await prisma.qUAD_domains.findUnique({
-          where: { id: parent_domain_id }
-        });
+        const parentDomain = await stubFindDomainSimple(parent_domain_id);
         if (parentDomain && parentDomain.org_id === payload.companyId) {
           newPath = `${parentDomain.path || ''}/${name || existing.name}`;
         }
@@ -169,14 +220,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       newPath = pathParts.join('/');
     }
 
-    const domain = await prisma.qUAD_domains.update({
-      where: { id },
-      data: {
-        ...(name && { name }),
-        ...(domain_type !== undefined && { domain_type }),
-        ...(parent_domain_id !== undefined && { parent_domain_id }),
-        path: newPath
-      }
+    const domain = await stubUpdateDomain(id, {
+      ...(name && { name }),
+      ...(domain_type !== undefined && { domain_type }),
+      ...(parent_domain_id !== undefined && { parent_domain_id }),
+      path: newPath
     });
 
     return NextResponse.json(domain);
@@ -192,10 +240,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // Helper: Recursively soft-delete domain and all sub-domains
 async function softDeleteDomainTree(domainId: string, deletedBy: string): Promise<number> {
   // Get all sub-domains first
-  const subDomains = await prisma.qUAD_domains.findMany({
-    where: { parent_domain_id: domainId, is_deleted: false },
-    select: { id: true }
-  });
+  const subDomains = await stubFindSubDomains(domainId);
 
   let deletedCount = 0;
 
@@ -205,14 +250,7 @@ async function softDeleteDomainTree(domainId: string, deletedBy: string): Promis
   }
 
   // Soft-delete this domain
-  await prisma.qUAD_domains.update({
-    where: { id: domainId },
-    data: {
-      is_deleted: true,
-      deleted_at: new Date(),
-      deleted_by: deletedBy
-    }
-  });
+  await stubSoftDeleteDomain(domainId, deletedBy);
 
   return deletedCount + 1;
 }
@@ -235,13 +273,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if domain exists
-    const existing = await prisma.qUAD_domains.findUnique({
-      where: { id },
-      include: {
-        creator: { select: { id: true, email: true } },
-        _count: { select: { sub_domains: true } }
-      }
-    });
+    const existing = await stubFindDomainWithCreator(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
@@ -330,9 +362,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if domain exists and is deleted
-    const existing = await prisma.qUAD_domains.findUnique({
-      where: { id }
-    });
+    const existing = await stubFindDomainSimple(id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
@@ -347,14 +377,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Restore domain
-    const domain = await prisma.qUAD_domains.update({
-      where: { id },
-      data: {
-        is_deleted: false,
-        deleted_at: null,
-        deleted_by: null
-      }
-    });
+    const domain = await stubRestoreDomain(id);
 
     return NextResponse.json({
       message: 'Domain restored successfully',

@@ -11,7 +11,7 @@
  * - 'hybrid': Smart mix - keywords for obvious, Gemini for ambiguous (93% accurate)
  */
 
-import { prisma } from '@/lib/prisma';
+// NOTE: Prisma removed - using stubs until Java backend ready
 
 // =============================================================================
 // TYPES
@@ -344,15 +344,9 @@ export async function classifyHybrid(
  * Get org's classification mode from settings
  */
 async function getOrgClassificationMode(orgId: string): Promise<ClassificationMode> {
-  try {
-    const settings = await prisma.qUAD_ai_configs.findUnique({
-      where: { org_id: orgId },
-      select: { classification_mode: true },
-    });
-    return (settings?.classification_mode as ClassificationMode) || 'hybrid';
-  } catch {
-    return 'hybrid'; // Default to hybrid
-  }
+  // TODO: Implement via Java backend when endpoints are ready
+  console.log(`[TaskClassifier] getOrgClassificationMode for org: ${orgId}`);
+  return 'hybrid'; // Default to hybrid
 }
 
 /**

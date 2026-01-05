@@ -5,8 +5,71 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
+
+// TODO: All database operations in this file need to be implemented via Java backend
+
+// TypeScript interfaces for data types
+interface AdoptionMatrix {
+  skill_level: number;
+  trust_level: number;
+}
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  is_active: boolean;
+  org_id: string;
+  adoption_matrix: AdoptionMatrix | null;
+}
+
+interface DomainMember {
+  id: string;
+  user_id: string;
+  domain_id: string;
+  role: string;
+  allocation_percentage: number;
+  created_at: Date;
+  user: Pick<User, 'id' | 'email' | 'full_name' | 'role' | 'is_active'> & { adoption_matrix: AdoptionMatrix | null };
+}
+
+interface Domain {
+  id: string;
+  org_id: string;
+}
+
+// Stub functions
+async function stubFindDomainById(domainId: string): Promise<Domain | null> {
+  console.log(`[STUB] Finding domain by ID: ${domainId}`);
+  return null;
+}
+
+async function stubFindDomainMembers(domainId: string): Promise<DomainMember[]> {
+  console.log(`[STUB] Finding members for domain: ${domainId}`);
+  return [];
+}
+
+async function stubFindUserById(userId: string): Promise<User | null> {
+  console.log(`[STUB] Finding user by ID: ${userId}`);
+  return null;
+}
+
+async function stubFindDomainMembership(userId: string, domainId: string): Promise<DomainMember | null> {
+  console.log(`[STUB] Finding domain membership for user ${userId} in domain ${domainId}`);
+  return null;
+}
+
+async function stubCreateDomainMember(data: { user_id: string; domain_id: string; role: string; allocation_percentage: number }): Promise<DomainMember | null> {
+  console.log(`[STUB] Creating domain member:`, data);
+  return null;
+}
+
+async function stubDeleteDomainMember(userId: string, domainId: string): Promise<void> {
+  console.log(`[STUB] Deleting domain member: user ${userId} from domain ${domainId}`);
+}
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -30,32 +93,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify domain exists and belongs to user's organization
-    const domain = await prisma.qUAD_domains.findUnique({
-      where: { id: domainId }
-    });
+    const domain = await stubFindDomainById(domainId);
 
     if (!domain || domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
-    const members = await prisma.qUAD_domain_members.findMany({
-      where: { domain_id: domainId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            full_name: true,
-            role: true,
-            is_active: true,
-            adoption_matrix: {
-              select: { skill_level: true, trust_level: true }
-            }
-          }
-        }
-      },
-      orderBy: { created_at: 'asc' }
-    });
+    const members = await stubFindDomainMembers(domainId);
 
     return NextResponse.json({ members });
   } catch (error) {
@@ -90,9 +134,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify domain exists and belongs to user's organization
-    const domain = await prisma.qUAD_domains.findUnique({
-      where: { id: domainId }
-    });
+    const domain = await stubFindDomainById(domainId);
 
     if (!domain || domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
@@ -109,20 +151,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify user exists and is in same company
-    const user = await prisma.qUAD_users.findUnique({
-      where: { id: user_id }
-    });
+    const user = await stubFindUserById(user_id);
 
     if (!user || user.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Check if already a member
-    const existing = await prisma.qUAD_domain_members.findUnique({
-      where: {
-        user_id_domain_id: { user_id, domain_id: domainId }
-      }
-    });
+    const existing = await stubFindDomainMembership(user_id, domainId);
 
     if (existing) {
       return NextResponse.json(
@@ -131,18 +167,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const member = await prisma.qUAD_domain_members.create({
-      data: {
-        user_id,
-        domain_id: domainId,
-        role: role || 'DEVELOPER',
-        allocation_percentage: allocation_percentage || 100
-      },
-      include: {
-        user: {
-          select: { id: true, email: true, full_name: true }
-        }
-      }
+    const member = await stubCreateDomainMember({
+      user_id,
+      domain_id: domainId,
+      role: role || 'DEVELOPER',
+      allocation_percentage: allocation_percentage || 100
     });
 
     return NextResponse.json(member, { status: 201 });
@@ -188,20 +217,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify domain exists and belongs to user's organization
-    const domain = await prisma.qUAD_domains.findUnique({
-      where: { id: domainId }
-    });
+    const domain = await stubFindDomainById(domainId);
 
     if (!domain || domain.org_id !== payload.companyId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
     // Check membership exists
-    const existing = await prisma.qUAD_domain_members.findUnique({
-      where: {
-        user_id_domain_id: { user_id: userId, domain_id: domainId }
-      }
-    });
+    const existing = await stubFindDomainMembership(userId, domainId);
 
     if (!existing) {
       return NextResponse.json(
@@ -210,11 +233,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    await prisma.qUAD_domain_members.delete({
-      where: {
-        user_id_domain_id: { user_id: userId, domain_id: domainId }
-      }
-    });
+    await stubDeleteDomainMember(userId, domainId);
 
     return NextResponse.json({ message: 'Member removed from domain' });
   } catch (error) {
