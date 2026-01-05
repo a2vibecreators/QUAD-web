@@ -103,10 +103,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (existingUser) {
-          // Account linking: User exists, allow OAuth sign-in regardless of original auth method
+          // Account linking: User exists, redirect directly to dashboard
           console.log(`Account linking: ${user.email} signed in via ${account.provider} (existing user)`);
-          // User exists, allow sign-in (NextAuth will create session)
-          return true;
+          // Existing user - skip signup flow, go directly to dashboard
+          return '/dashboard';
         }
 
         // New user - redirect to unified signup page with OAuth params
