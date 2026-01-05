@@ -35,22 +35,22 @@ case "$ENV" in
     dev)
         PORT=14001
         DB_PORT=14201
-        DB_HOST="postgres-dev"
+        DB_HOST="quad-db-dev"
         DB_NAME="quad_dev_db"
         DB_PASS="quad_dev_pass"
         DOMAIN="dev.quadframe.work"
-        NETWORK="docker_dev-network"
-        CONTAINER="quadframework-web-dev"
+        NETWORK="dev-network"
+        CONTAINER="quad-web-dev"
         ;;
     qa)
         PORT=15001
         DB_PORT=15201
-        DB_HOST="postgres-qa"
+        DB_HOST="quad-db-qa"
         DB_NAME="quad_qa_db"
         DB_PASS="quad_qa_pass"
         DOMAIN="qa.quadframe.work"
-        NETWORK="docker_qa-network"
-        CONTAINER="quadframework-web-qa"
+        NETWORK="qa-network"
+        CONTAINER="quad-web-qa"
         ;;
     prod)
         print_status "PROD uses GCP Cloud Run"
@@ -80,7 +80,7 @@ deploy_web() {
     cd "$WEB_DIR"
 
     # Build image
-    docker build -t quadframework-web:${ENV} .
+    docker build -t quad-web:${ENV} .
 
     # Stop existing container
     docker stop $CONTAINER 2>/dev/null || true
@@ -108,7 +108,7 @@ deploy_web() {
         -e GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}" \
         -e GITHUB_CLIENT_ID="${GITHUB_CLIENT_ID:-}" \
         -e GITHUB_CLIENT_SECRET="${GITHUB_CLIENT_SECRET:-}" \
-        quadframework-web:${ENV}
+        quad-web:${ENV}
 
     print_status "Container started: $CONTAINER"
     print_status "URL: https://${DOMAIN}"

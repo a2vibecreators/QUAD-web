@@ -205,11 +205,23 @@ function SignupContent() {
           }
 
           if (data.success) {
-            // Sign in with OAuth provider to create proper session
-            await signIn(verifiedUser.provider, {
-              callbackUrl: '/dashboard',
-              redirect: true,
+            // Create session without OAuth redirect (fixes double redirect issue)
+            const sessionResponse = await fetch('/api/auth/create-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: formData.email,
+                provider: verifiedUser.provider,
+              }),
             });
+
+            const sessionData = await sessionResponse.json();
+            if (!sessionResponse.ok) {
+              throw new Error(sessionData.error || 'Failed to create session');
+            }
+
+            // Redirect to dashboard (session cookie is set)
+            router.push('/dashboard');
             return;
           }
         } else {
