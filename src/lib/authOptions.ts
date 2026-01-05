@@ -10,7 +10,7 @@ import AzureADProvider from "next-auth/providers/azure-ad";
 import OktaProvider from "next-auth/providers/okta";
 import Auth0Provider from "next-auth/providers/auth0";
 import jwt from "jsonwebtoken";
-import { query } from "@/lib/db";
+import { getUserByEmail, getOrganization, getUsers } from "@/lib/java-backend";
 
 // JWT configuration for access tokens
 const JWT_SECRET = process.env.JWT_SECRET || 'quad-platform-secret-change-in-production';
@@ -83,90 +83,41 @@ export const authOptions: NextAuthOptions = {
 
       try {
         // Check if user exists by email - this enables account linking
-        // If user signed up with email/password and later uses OAuth with same email,
-        // they will be linked by email and allowed to sign in
-        const existingUser = await query(
-          'SELECT id, company_id, role, password_hash FROM "QUAD_users" WHERE email = $1',
-          [user.email]
-        );
-
-        if (existingUser.rows.length > 0) {
-          const dbUser = existingUser.rows[0] as { id: string; password_hash: string };
-
-          // Account linking: User exists, allow OAuth sign-in regardless of original auth method
-          // This links OAuth provider to existing account
-          console.log(`Account linking: ${user.email} signed in via ${account.provider} (existing user)`);
-
-          await query(
-            `UPDATE "QUAD_users" SET updated_at = NOW() WHERE email = $1`,
-            [user.email]
-          );
-          return true;
-        }
-
-        // New user - check if they belong to existing organization by email domain
-        const emailDomain = user.email.split('@')[1];
-
-        // Look for organization with matching admin email domain
-        const orgResult = await query(
-          `SELECT id FROM "QUAD_organizations"
-           WHERE admin_email LIKE $1 AND is_active = true`,
-          [`%@${emailDomain}`]
-        );
-
-        if (orgResult.rows.length > 0) {
-          // Organization exists - add user as team member
-          const org = orgResult.rows[0] as { id: string };
-
-          // Check user count for free tier limit (5 users)
-          const userCountResult = await query<{ count: string }>(
-            'SELECT COUNT(*) as count FROM "QUAD_users" WHERE company_id = $1',
-            [org.id]
-          );
-
-          const userCount = parseInt(userCountResult.rows[0].count);
-
-          if (userCount >= 5) {
-            // Check if org has paid plan
-            const orgPlanResult = await query<{ size: string }>(
-              'SELECT size FROM "QUAD_organizations" WHERE id = $1',
-              [org.id]
-            );
-
-            // For now, allow if size is not 'startup' (pro/enterprise plans)
-            if (orgPlanResult.rows[0]?.size === 'startup') {
-              console.log(`Sign-in rejected: Free tier limit (5 users) reached for ${user.email}`);
-              return '/upgrade?reason=user-limit'; // Redirect to upgrade page
-            }
+        let existingUser;
+        try {
+          console.log(`[OAuth signIn] Checking if user exists: ${user.email}`);
+          existingUser = await getUserByEmail(user.email);
+          console.log('[OAuth signIn] User found:', existingUser);
+        } catch (error: any) {
+          console.log('[OAuth signIn] getUserByEmail error:', error.message);
+          // User doesn't exist (404 error) - continue to new user flow
+          if (error.message?.includes('404') ||
+              error.message?.includes('not found') ||
+              error.message?.includes('User not found')) {
+            console.log('[OAuth signIn] User not found (404) - treating as new user');
+            existingUser = null;
+          } else {
+            console.error('[OAuth signIn] Unexpected error - rejecting sign-in:', error);
+            throw error;
           }
-
-          // Add user with minimal required fields (no oauth columns in schema)
-          await query(
-            `INSERT INTO "QUAD_users" (
-              company_id, email, password_hash, full_name, role, is_active, email_verified
-            ) VALUES ($1, $2, $3, $4, 'DEVELOPER', true, true)`,
-            [
-              org.id,
-              user.email,
-              'oauth-' + account.provider, // Placeholder hash for OAuth users
-              user.name,
-            ]
-          );
-          return true;
-        } else {
-          // No organization found - redirect to signup with OAuth data
-          // User is already verified by Google/GitHub, so skip OTP
-          console.log(`New OAuth user: ${user.email} via ${account.provider} - redirecting to signup`);
-          const params = new URLSearchParams({
-            oauth: 'true',
-            provider: account.provider,
-            email: user.email || '',
-            name: user.name || '',
-          });
-          // Note: orgType will be read from sessionStorage on the client side
-          // since we can't access it from the server callback
-          return '/auth/signup?' + params.toString();
         }
+
+        if (existingUser) {
+          // Account linking: User exists, allow OAuth sign-in regardless of original auth method
+          console.log(`Account linking: ${user.email} signed in via ${account.provider} (existing user)`);
+          // User exists, allow sign-in (NextAuth will create session)
+          return true;
+        }
+
+        // New user - redirect to unified signup page with OAuth params
+        console.log(`New OAuth user: ${user.email} via ${account.provider} - redirecting to signup`);
+        const params = new URLSearchParams({
+          oauth: 'true',
+          provider: account.provider,
+          email: user.email || '',
+          name: user.name || '',
+        });
+        return '/auth/signup?' + params.toString();
 
       } catch (error) {
         console.error('Sign-in callback error:', error);
@@ -178,51 +129,38 @@ export const authOptions: NextAuthOptions = {
      * Add custom user data to JWT token
      */
     async jwt({ token, user, account }) {
-      if (account && user) {
-        // Fetch user data from database (using correct QUAD_ table names)
-        const userResult = await query(
-          `SELECT id, company_id, role, full_name FROM "QUAD_users" WHERE email = $1`,
-          [user.email]
-        );
+      if (account && user && user.email) {
+        try {
+          // Fetch user data from Java backend
+          const dbUser = await getUserByEmail(user.email);
 
-        if (userResult.rows.length > 0) {
-          const dbUser = userResult.rows[0] as { id: string; company_id: string; role: string; full_name: string };
-          token.userId = dbUser.id;
-          token.companyId = dbUser.company_id;
-          token.role = dbUser.role;
-          token.fullName = dbUser.full_name;
+          if (dbUser) {
+            token.userId = dbUser.id;
+            token.companyId = dbUser.companyId; // Same as orgId
+            token.role = dbUser.role;
+            token.fullName = dbUser.fullName;
 
-          // Fetch domain membership (if exists)
-          const domainResult = await query(
-            `SELECT
-              dm.domain_id,
-              dm.role as domain_role,
-              dm.allocation_percentage
-            FROM "QUAD_domain_members" dm
-            WHERE dm.user_id = $1
-            ORDER BY dm.created_at ASC
-            LIMIT 1`,
-            [dbUser.id]
-          );
+            // TODO: Fetch domain membership from Java backend when endpoint exists
+            // For now, domain info will be null for new users
+            token.domainId = null;
+            token.domainRole = null;
+            token.allocationPercentage = null;
 
-          if (domainResult.rows.length > 0) {
-            const domainMembership = domainResult.rows[0] as { domain_id: string; domain_role: string; allocation_percentage: number };
-            token.domainId = domainMembership.domain_id;
-            token.domainRole = domainMembership.domain_role;
-            token.allocationPercentage = domainMembership.allocation_percentage;
+            // Generate access token for API calls
+            token.accessToken = jwt.sign(
+              {
+                userId: dbUser.id,
+                companyId: token.companyId,
+                email: user.email,
+                role: dbUser.role,
+              },
+              JWT_SECRET,
+              { expiresIn: JWT_EXPIRES_IN }
+            );
           }
-
-          // Generate access token for API calls
-          token.accessToken = jwt.sign(
-            {
-              userId: dbUser.id,
-              companyId: dbUser.company_id,
-              email: user.email,
-              role: dbUser.role,
-            },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
-          );
+        } catch (error) {
+          console.error('[JWT callback] Error fetching user data:', error);
+          // Don't throw - return token without user data to avoid breaking auth flow
         }
       }
       return token;

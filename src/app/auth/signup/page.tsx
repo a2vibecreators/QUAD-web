@@ -185,54 +185,63 @@ function SignupContent() {
         }
       } else {
         // Startup/Business: Instant signup
-        const response = await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: formData.email,
-            fullName: formData.fullName,
-            companyName: formData.companyName || `${formData.fullName}'s Team`,
-            orgType: formData.orgType,
-            // Pass verified info - if verified (OAuth or email), skip OTP
-            isOAuth: verifiedUser.isOAuth,
-            oauthProvider: verifiedUser.provider,
-            // For email-verified users, mark as pre-verified
-            isEmailVerified: verifiedUser.isVerified && !verifiedUser.isOAuth,
-          }),
-        });
 
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Signup failed');
-        }
-
-        // OAuth signup - user already verified, sign in directly via OAuth
-        if (data.success && verifiedUser.isOAuth) {
-          // Sign in with OAuth provider to create proper session
-          await signIn(verifiedUser.provider, {
-            callbackUrl: '/setup',
-            redirect: true,
+        // OAuth users: Use complete-oauth-signup endpoint
+        if (verifiedUser.isOAuth) {
+          const response = await fetch('/api/auth/complete-oauth-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              provider: verifiedUser.provider,
+              email: formData.email,
+              fullName: formData.fullName,
+              orgType: formData.orgType,
+            }),
           });
-          return;
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || 'OAuth signup failed');
+          }
+
+          if (data.success) {
+            // Sign in with OAuth provider to create proper session
+            await signIn(verifiedUser.provider, {
+              callbackUrl: '/dashboard',
+              redirect: true,
+            });
+            return;
+          }
+        } else {
+          // Regular signup: Use standard signup endpoint
+          const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: formData.email,
+              fullName: formData.fullName,
+              companyName: formData.companyName || `${formData.fullName}'s Team`,
+              orgType: formData.orgType,
+              // For email-verified users, mark as pre-verified
+              isEmailVerified: verifiedUser.isVerified,
+            }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || 'Signup failed');
+          }
         }
 
-        // Email-verified signup - store token and go to setup
-        if (data.success && verifiedUser.isVerified && data.data?.token) {
-          localStorage.setItem('auth_token', data.data.token);
-          router.push('/setup');
-          return;
-        }
-
-        // Redirect to verify page for passwordless signup (non-verified)
+        // Passwordless signup - redirect to verify page to enter OTP
         if (data.success && data.requiresVerification) {
           router.push(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
           return;
         }
 
-        // Auto login for password-based signup (legacy)
-        if (data.success && data.autoLogin && data.data?.token) {
-          // Store token and redirect to setup
-          localStorage.setItem('auth_token', data.data.token);
+        // Password-based signup with token - auto login
+        if (data.success && data.token) {
+          localStorage.setItem('auth_token', data.token);
           router.push('/setup');
           return;
         }
@@ -310,11 +319,13 @@ function SignupContent() {
               <button
                 key={type.id}
                 onClick={() => handleTypeSelect(type.id)}
+                disabled={type.id === 'business' || type.id === 'enterprise'}
                 className={`
                   relative bg-white rounded-2xl p-6 text-left transition-all duration-300
                   border-2 ${type.borderColor}
                   hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1
                   focus:outline-none focus:ring-4 focus:ring-blue-500/50
+                  ${(type.id === 'business' || type.id === 'enterprise') ? 'opacity-50 cursor-not-allowed hover:scale-100 hover:translate-y-0' : ''}
                 `}
               >
                 {/* Icon */}
@@ -487,7 +498,7 @@ function SignupContent() {
                 onChange={handleChange}
                 readOnly={verifiedUser.isVerified}
                 placeholder="you@company.com"
-                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
                   verifiedUser.isVerified ? 'bg-gray-100 cursor-not-allowed' : ''
                 }`}
               />
@@ -515,7 +526,7 @@ function SignupContent() {
                 onChange={handleChange}
                 readOnly={verifiedUser.isOAuth}
                 placeholder="John Smith"
-                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
                   verifiedUser.isOAuth ? 'bg-gray-100 cursor-not-allowed' : ''
                 }`}
               />
@@ -534,7 +545,7 @@ function SignupContent() {
                 value={formData.companyName}
                 onChange={handleChange}
                 placeholder={formData.orgType === 'startup' ? 'Optional - we can create one for you' : 'Acme Inc.'}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               />
             </div>
 
@@ -672,12 +683,12 @@ function SignupContent() {
 
           {/* Message */}
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {isEnterprise ? 'Request Submitted!' : 'Check Your Email!'}
+            {isEnterprise ? 'Request Submitted!' : 'Account Created!'}
           </h2>
           <p className="text-gray-600 mb-6">
             {isEnterprise
               ? `We've received your enterprise access request and will contact you at ${formData.email} within 24 hours.`
-              : `We've sent a sign-in link to ${formData.email}. Click the link to access your new QUAD account.`}
+              : `We've sent a 6-digit verification code to ${formData.email}. Enter the code on the next page to activate your account.`}
           </p>
 
           {/* What's Next */}
@@ -703,15 +714,15 @@ function SignupContent() {
                 <>
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-0.5">1.</span>
-                    <span>Check your inbox for the magic link</span>
+                    <span>Check your email for the 6-digit code</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-0.5">2.</span>
-                    <span>Click the link to sign in</span>
+                    <span>Enter your email and the code to sign in</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-0.5">3.</span>
-                    <span>Start creating your first project!</span>
+                    <span>Complete setup and start building!</span>
                   </li>
                 </>
               )}
@@ -727,14 +738,14 @@ function SignupContent() {
               hover:shadow-lg hover:scale-[1.02]
             `}
           >
-            {isEnterprise ? 'Back to Home' : 'Go to Login'}
+            {isEnterprise ? 'Back to Home' : 'Continue to Login'}
           </button>
 
-          {/* Didn't receive email */}
+          {/* Didn't receive code */}
           {!isEnterprise && (
             <p className="mt-4 text-sm text-gray-500">
-              Didn't receive the email?{' '}
-              <button className="text-blue-600 hover:underline">Resend</button>
+              Didn't receive the code?{' '}
+              <button className="text-blue-600 hover:underline">Resend Code</button>
             </p>
           )}
         </div>
