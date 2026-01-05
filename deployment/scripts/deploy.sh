@@ -103,7 +103,11 @@ deploy_web() {
         -e DATABASE_URL="postgresql://quad_user:${DB_PASS}@${DB_HOST}:5432/${DB_NAME}" \
         -e NEXTAUTH_URL="https://${DOMAIN}" \
         -e NEXTAUTH_SECRET="${NEXTAUTH_SECRET:-changeme}" \
-        -e QUAD_API_URL="http://quadframework-api-${ENV}:8080/api" \
+        -e QUAD_API_URL="${QUAD_API_URL:-http://quad-services-${ENV}:8080}" \
+        -e GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}" \
+        -e GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}" \
+        -e GITHUB_CLIENT_ID="${GITHUB_CLIENT_ID:-}" \
+        -e GITHUB_CLIENT_SECRET="${GITHUB_CLIENT_SECRET:-}" \
         quadframework-web:${ENV}
 
     print_status "Container started: $CONTAINER"
