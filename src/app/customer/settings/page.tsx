@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  MASSMUTUAL_FEATURES,
+  CUSTOMER_FEATURES,
   getDefaultEnabledState,
   type Part,
   type Category,
   type Feature,
-} from "@/config/massmutual-features";
+} from "@/config/customer-features";
 
 // Preset definitions - QUAD math terminology with collaborative subtitles
 const PRESETS = {
@@ -83,7 +83,7 @@ const MUST_HAVE_KEYS = [
   "providerAgnostic",
   "tokenOptimization",
   "aiFailover",
-  // Cloud Strategy (for MassMutual AWS)
+  // Cloud Strategy (for Customer)
   "cloudAgnostic",
   "multiCloudSupport",
   "awsIntegration",
@@ -134,7 +134,7 @@ type PresetKey = keyof typeof PRESETS;
 // Demo access password
 const DEMO_PASSWORD = "Ashrith";
 
-export default function MassMutualSettings() {
+export default function CustomerSettings() {
   const [enabledFeatures, setEnabledFeatures] = useState<Record<string, boolean>>({});
   const [currentPreset, setCurrentPreset] = useState<PresetKey>("all");
   const [expandedParts, setExpandedParts] = useState<Record<string, boolean>>({});
@@ -161,8 +161,8 @@ export default function MassMutualSettings() {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("massmutual-features");
-    const savedPreset = localStorage.getItem("massmutual-preset");
+    const saved = localStorage.getItem("customer-features");
+    const savedPreset = localStorage.getItem("customer-preset");
 
     if (saved) {
       setEnabledFeatures(JSON.parse(saved));
@@ -175,7 +175,7 @@ export default function MassMutualSettings() {
     }
 
     // Expand first part by default
-    const firstPart = MASSMUTUAL_FEATURES.parts[0];
+    const firstPart = CUSTOMER_FEATURES.parts[0];
     if (firstPart) {
       setExpandedParts({ [firstPart.key]: true });
     }
@@ -184,8 +184,8 @@ export default function MassMutualSettings() {
   // Save to localStorage when features change
   useEffect(() => {
     if (Object.keys(enabledFeatures).length > 0) {
-      localStorage.setItem("massmutual-features", JSON.stringify(enabledFeatures));
-      localStorage.setItem("massmutual-preset", currentPreset);
+      localStorage.setItem("customer-features", JSON.stringify(enabledFeatures));
+      localStorage.setItem("customer-preset", currentPreset);
     }
   }, [enabledFeatures, currentPreset]);
 
@@ -195,7 +195,7 @@ export default function MassMutualSettings() {
 
     const newState: Record<string, boolean> = {};
 
-    MASSMUTUAL_FEATURES.parts.forEach((part) => {
+    CUSTOMER_FEATURES.parts.forEach((part) => {
       part.categories.forEach((category) => {
         category.features.forEach((feature) => {
           switch (preset) {
@@ -262,7 +262,7 @@ export default function MassMutualSettings() {
 
   const getTotalCount = () => {
     let count = 0;
-    MASSMUTUAL_FEATURES.parts.forEach((part) => {
+    CUSTOMER_FEATURES.parts.forEach((part) => {
       part.categories.forEach((cat) => {
         count += cat.features.length;
       });
@@ -348,7 +348,7 @@ export default function MassMutualSettings() {
           </div>
           <h1 className="text-3xl font-bold mb-2">Feature Configuration</h1>
           <p className="text-slate-400">
-            Select which features to show in the MassMutual demo
+            Select which features to show in the Customer demo
           </p>
         </div>
 
@@ -442,7 +442,7 @@ export default function MassMutualSettings() {
           <h2 className="text-lg font-bold mb-4">Feature Tree</h2>
 
           <div className="space-y-2">
-            {MASSMUTUAL_FEATURES.parts.map((part) => {
+            {CUSTOMER_FEATURES.parts.map((part) => {
               const partState = getPartState(part);
               const isExpanded = expandedParts[part.key];
 
@@ -608,7 +608,7 @@ export default function MassMutualSettings() {
         {/* Actions */}
         <div className="flex items-center justify-between">
           <Link
-            href="/massmutual"
+            href="/customer"
             className="text-slate-400 hover:text-white transition-colors"
           >
             ← Back to Overview
@@ -623,7 +623,7 @@ export default function MassMutualSettings() {
             </button>
             <button
               onClick={() => {
-                localStorage.setItem("massmutual-features", JSON.stringify(enabledFeatures));
+                localStorage.setItem("customer-features", JSON.stringify(enabledFeatures));
                 alert("Settings saved!");
               }}
               className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"

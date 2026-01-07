@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-export default function MassMutualLanding() {
+export default function CustomerLanding() {
   return (
     <div className="text-white">
       {/* Hero Section - Problem-Focused */}
@@ -23,13 +23,13 @@ export default function MassMutualLanding() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/massmutual/demo"
+              href="/customer/demo"
               className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
             >
               See the Solution
             </Link>
             <Link
-              href="/massmutual/pitch"
+              href="/customer/pitch"
               className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl border border-slate-700 transition-all text-lg"
             >
               View Full Pitch
@@ -290,6 +290,69 @@ export default function MassMutualLanding() {
         </div>
       </section>
 
+      {/* QUAD Platform: Enterprise Features */}
+      <section className="py-16 px-4 bg-slate-800/30">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-block px-4 py-2 bg-purple-500/20 text-purple-300 rounded-full text-sm mb-4">
+              Beyond the Methodology
+            </div>
+            <h2 className="text-3xl font-bold mb-4">QUAD Platform: Enterprise Features</h2>
+            <p className="text-slate-400 max-w-3xl mx-auto">
+              The QUAD Framework is a methodology anyone can adopt. The QUAD Platform is the software
+              that implements it — plus enterprise-grade features for visibility, governance, and team health.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: "📊",
+                title: "Project Health Dashboards",
+                desc: "Real-time visibility into project health, velocity trends, and delivery metrics across your entire organization.",
+              },
+              {
+                icon: "🏆",
+                title: "Appreciation & Recognition",
+                desc: "AI-suggested appreciation for team contributions. Celebrate wins, boost morale, reduce attrition.",
+              },
+              {
+                icon: "⚖️",
+                title: "Skewness Detection",
+                desc: "Identify workload imbalances before they cause burnout. Ensure fair distribution across team members.",
+              },
+              {
+                icon: "🔍",
+                title: "Bottleneck Identification",
+                desc: "Automatically detect where work gets stuck. Find process bottlenecks and resource constraints.",
+              },
+              {
+                icon: "📈",
+                title: "Resource Optimization",
+                desc: "AI-powered suggestions for team allocation. Right people on right projects at right time.",
+              },
+              {
+                icon: "🛡️",
+                title: "AI Governance & Compliance",
+                desc: "Track AI usage, enforce policies, audit outputs. Enterprise-grade controls for regulated industries.",
+              },
+            ].map((feature, i) => (
+              <div key={i} className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 hover:border-purple-500/30 transition-all">
+                <div className="text-3xl mb-3">{feature.icon}</div>
+                <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
+                <p className="text-slate-400 text-sm">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-slate-500 text-sm">
+              And more coming: Team development activities, cross-project analytics, compliance reporting...
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 px-4 bg-gradient-to-b from-transparent to-slate-800/30">
         <div className="max-w-4xl mx-auto text-center">
@@ -300,13 +363,13 @@ export default function MassMutualLanding() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/massmutual/contact"
+              href="/customer/contact"
               className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
             >
               Schedule a Demo
             </Link>
             <Link
-              href="/massmutual/pitch"
+              href="/customer/pitch"
               className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl border border-slate-700 transition-all text-lg"
             >
               View Full Pitch Deck
@@ -315,21 +378,21 @@ export default function MassMutualLanding() {
         </div>
       </section>
 
-      {/* CTA to Demo */}
+      {/* Next Step Navigation */}
       <section className="py-16 px-4 bg-slate-900">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
-            Ready to See It?
+            Step 1 of 5
           </div>
-          <h2 className="text-3xl font-bold mb-4">Experience QUAD Platform</h2>
+          <h2 className="text-3xl font-bold mb-4">Next: View the Full Pitch</h2>
           <p className="text-slate-400 max-w-2xl mx-auto mb-8">
-            Walk through the concept, then explore the platform as admin@massmutual.com
+            See the complete pitch deck with ROI calculations and customership proposal.
           </p>
           <Link
-            href="/massmutual/demo"
+            href="/customer/pitch"
             className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
           >
-            Start Guided Demo
+            View Pitch Deck
             <span>→</span>
           </Link>
         </div>

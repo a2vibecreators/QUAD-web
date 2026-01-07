@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 /**
- * MassMutual Demo Page
+ * Customer Demo Page
  *
  * Part 1: QUAD Concept (no password) - The problem and solution
  * Part 2: Interactive Demo (password) - Dashboard screens shown inline
@@ -47,7 +47,7 @@ const DEMO_SCREENS = [
   },
 ];
 
-export default function MassMutualDemo() {
+export default function CustomerDemo() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
@@ -258,8 +258,8 @@ export default function MassMutualDemo() {
               See QUAD In Action
             </h2>
             <p className="text-slate-400 max-w-2xl mx-auto">
-              We&apos;ve pre-configured a MassMutual organization. You&apos;ll log in as{" "}
-              <code className="bg-slate-700 px-2 py-1 rounded text-green-400">admin@massmutual.com</code>{" "}
+              We&apos;ve pre-configured a Customer organization. You&apos;ll log in as{" "}
+              <code className="bg-slate-700 px-2 py-1 rounded text-green-400">admin@customer.demo</code>{" "}
               and explore the platform.
             </p>
           </div>
@@ -270,11 +270,11 @@ export default function MassMutualDemo() {
             <div className="grid md:grid-cols-3 gap-4 text-sm">
               <div className="bg-slate-700/50 rounded-lg p-4">
                 <p className="text-slate-400">Organization</p>
-                <p className="text-white font-bold">MassMutual Financial</p>
+                <p className="text-white font-bold">Customer Organization</p>
               </div>
               <div className="bg-slate-700/50 rounded-lg p-4">
                 <p className="text-slate-400">Logged in as</p>
-                <p className="text-white font-bold">admin@massmutual.com</p>
+                <p className="text-white font-bold">admin@customer.demo</p>
               </div>
               <div className="bg-slate-700/50 rounded-lg p-4">
                 <p className="text-slate-400">Role</p>
@@ -332,7 +332,7 @@ export default function MassMutualDemo() {
                   <span className="text-2xl">{DEMO_SCREENS.find(s => s.id === activeScreen)?.icon}</span>
                   <div>
                     <h3 className="font-bold text-white">{DEMO_SCREENS.find(s => s.id === activeScreen)?.title}</h3>
-                    <p className="text-xs text-slate-400">admin@massmutual.com • Senior Director</p>
+                    <p className="text-xs text-slate-400">admin@customer.demo • Senior Director</p>
                   </div>
                 </div>
                 <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
@@ -358,7 +358,7 @@ export default function MassMutualDemo() {
         <div className="max-w-4xl mx-auto">
           <div className="grid md:grid-cols-2 gap-4">
             <Link
-              href="/massmutual/settings"
+              href="/customer/settings"
               className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 hover:border-purple-500/50 transition-all"
             >
               <div className="text-3xl mb-3">⚙️</div>
@@ -366,29 +366,33 @@ export default function MassMutualDemo() {
               <p className="text-sm text-slate-400">Configure which features to show</p>
             </Link>
             <Link
-              href="/massmutual/roi"
+              href="/customer/roi"
               className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 hover:border-green-500/50 transition-all"
             >
               <div className="text-3xl mb-3">💰</div>
               <h3 className="font-bold text-white mb-1">ROI Calculator</h3>
-              <p className="text-sm text-slate-400">Calculate savings for MassMutual</p>
+              <p className="text-sm text-slate-400">Calculate savings for your organization</p>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
+      {/* Next Step Navigation */}
       <section className="py-16 px-4 bg-gradient-to-b from-transparent to-slate-800/30">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready for a Personalized Walkthrough?</h2>
+          <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
+            Step 3 of 5
+          </div>
+          <h2 className="text-2xl font-bold mb-4">Next: Calculate Your ROI</h2>
           <p className="text-slate-400 mb-6">
-            We&apos;ll configure the demo with MassMutual&apos;s actual tech stack and workflows.
+            See how much your organization could save with QUAD Platform.
           </p>
           <Link
-            href="/massmutual/contact"
-            className="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
+            href="/customer/roi"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
           >
-            Schedule Personalized Demo
+            View ROI Calculator
+            <span>→</span>
           </Link>
         </div>
       </section>

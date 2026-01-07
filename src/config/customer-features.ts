@@ -1,5 +1,5 @@
 /**
- * MassMutual Feature Toggle Configuration
+ * Customer Feature Toggle Configuration
  *
  * Structure mirrors FEATURES.md pitch flow:
  * Part → Category → Feature
@@ -30,7 +30,7 @@ export interface FeatureConfig {
   parts: Part[];
 }
 
-export const MASSMUTUAL_FEATURES: FeatureConfig = {
+export const CUSTOMER_FEATURES: FeatureConfig = {
   parts: [
     {
       key: "pain",
@@ -128,7 +128,7 @@ export const MASSMUTUAL_FEATURES: FeatureConfig = {
             { key: "apiTableMapping", name: "API-to-Table Mapping", description: "Show which APIs hit which database tables", isDemo: true },
             { key: "sampleQueries", name: "Sample Query Generator", description: "Auto-generate SQL queries for test verification", isDemo: true },
             { key: "multiPathTests", name: "Multi-Path Test Flows", description: "Document 3 ways to login, all test paths", isDemo: true },
-            { key: "agentRulesContext", name: "Agent Rules Context", description: "Base agent rules that partners can extend", isDemo: false },
+            { key: "agentRulesContext", name: "Agent Rules Context", description: "Base agent rules that customers can extend", isDemo: false },
             { key: "customExtensions", name: "Custom Extension Points", description: "MM can add custom rules/docs on top of QUAD", isDemo: false },
             { key: "testCoverageViz", name: "Test Coverage Visualization", description: "Visual map of what's tested vs untested", isDemo: false },
             { key: "qaOnboarding", name: "QA Onboarding Accelerator", description: "New QA → productive in hours, not weeks", isDemo: true },
@@ -337,7 +337,7 @@ export const MASSMUTUAL_FEATURES: FeatureConfig = {
 // Helper to get all feature keys in a flat list
 export function getAllFeatureKeys(): string[] {
   const keys: string[] = [];
-  MASSMUTUAL_FEATURES.parts.forEach(part => {
+  CUSTOMER_FEATURES.parts.forEach(part => {
     part.categories.forEach(category => {
       category.features.forEach(feature => {
         keys.push(feature.key);
@@ -350,7 +350,7 @@ export function getAllFeatureKeys(): string[] {
 // Helper to get feature count
 export function getFeatureCount(): number {
   let count = 0;
-  MASSMUTUAL_FEATURES.parts.forEach(part => {
+  CUSTOMER_FEATURES.parts.forEach(part => {
     part.categories.forEach(category => {
       count += category.features.length;
     });

@@ -6,21 +6,21 @@ import { useEffect, useState } from "react";
 /**
  * Conditional Footer Component
  *
- * Hides the main QUAD footer when on MassMutual pages
- * since they have their own footer in the MassMutual layout.
+ * Hides the main QUAD footer when on Customer pages
+ * since they have their own footer in the Customer layout.
  */
 export default function ConditionalFooter() {
   const pathname = usePathname();
-  const [isMassMutualSubdomain, setIsMassMutualSubdomain] = useState(false);
+  const [isCustomerSubdomain, setIsCustomerSubdomain] = useState(false);
 
   useEffect(() => {
-    // Check if we're on a MassMutual subdomain
+    // Check if we're on a customer subdomain (customer.quadframe.work)
     const hostname = window.location.hostname;
-    setIsMassMutualSubdomain(hostname.startsWith("massmutual"));
+    setIsCustomerSubdomain(hostname.startsWith("customer"));
   }, []);
 
-  // Hide main footer on MassMutual pages OR MassMutual subdomain
-  if (pathname.startsWith("/massmutual") || isMassMutualSubdomain) {
+  // Hide main footer on Customer pages OR Customer subdomain
+  if (pathname.startsWith("/customer") || isCustomerSubdomain) {
     return null;
   }
 

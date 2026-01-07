@@ -51,25 +51,25 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
 
   // =====================================================
-  // MassMutual Subdomain Handling
-  // massmutual.quadframe.work → /massmutual/* routes (PROD)
-  // massmutual-dev.quadframe.work → /massmutual/* routes (DEV)
-  // massmutual-qa.quadframe.work → /massmutual/* routes (QA)
+  // Customer Subdomain Handling
+  // customer.quadframe.work → /customer/* routes (PROD)
+  // customer-dev.quadframe.work → /customer/* routes (DEV)
+  // customer-qa.quadframe.work → /customer/* routes (QA)
   // =====================================================
-  if (hostname.startsWith('massmutual.') || hostname.startsWith('massmutual-dev.') || hostname.startsWith('massmutual-qa.')) {
+  if (hostname.startsWith('customer.') || hostname.startsWith('customer-dev.') || hostname.startsWith('customer-qa.')) {
     // Skip static assets and API routes
     if (pathname.startsWith('/_next') || pathname.startsWith('/api') || SKIP_PATTERNS.some(p => p.test(pathname))) {
       return NextResponse.next();
     }
 
-    // Root path → MassMutual landing page
+    // Root path → Customer landing page
     if (pathname === '/') {
-      return NextResponse.rewrite(new URL('/massmutual', request.url));
+      return NextResponse.rewrite(new URL('/customer', request.url));
     }
 
-    // Other paths → prefix with /massmutual if not already
-    if (!pathname.startsWith('/massmutual')) {
-      return NextResponse.rewrite(new URL(`/massmutual${pathname}`, request.url));
+    // Other paths → prefix with /customer if not already
+    if (!pathname.startsWith('/customer')) {
+      return NextResponse.rewrite(new URL(`/customer${pathname}`, request.url));
     }
 
     return NextResponse.next();

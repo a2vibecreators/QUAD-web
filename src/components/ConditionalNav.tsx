@@ -10,21 +10,21 @@ import DomainSelector from "@/components/DomainSelector";
 /**
  * Conditional Navigation Component
  *
- * Hides the main QUAD navigation when on MassMutual pages
+ * Hides the main QUAD navigation when on Customer pages
  * to create a focused, isolated pitch experience.
  */
 export default function ConditionalNav() {
   const pathname = usePathname();
-  const [isMassMutualSubdomain, setIsMassMutualSubdomain] = useState(false);
+  const [isCustomerSubdomain, setIsCustomerSubdomain] = useState(false);
 
   useEffect(() => {
-    // Check if we're on a MassMutual subdomain
+    // Check if we're on a customer subdomain (customer.quadframe.work)
     const hostname = window.location.hostname;
-    setIsMassMutualSubdomain(hostname.startsWith("massmutual"));
+    setIsCustomerSubdomain(hostname.startsWith("customer"));
   }, []);
 
-  // Hide main nav on MassMutual pages OR MassMutual subdomain
-  if (pathname.startsWith("/massmutual") || isMassMutualSubdomain) {
+  // Hide main nav on Customer pages OR Customer subdomain
+  if (pathname.startsWith("/customer") || isCustomerSubdomain) {
     return null;
   }
 

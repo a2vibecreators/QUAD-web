@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-export default function MassMutualROI() {
+export default function CustomerROI() {
   const [developers, setDevelopers] = useState(200);
   const [avgSalary, setAvgSalary] = useState(150000);
   const [currentCycleWeeks, setCurrentCycleWeeks] = useState(6);
@@ -32,7 +32,7 @@ export default function MassMutualROI() {
             Calculate Your Savings
           </h1>
           <p className="text-slate-400">
-            See how much MassMutual could save with QUAD Platform
+            See how much your organization could save with QUAD Platform
           </p>
         </div>
 
@@ -175,17 +175,21 @@ export default function MassMutualROI() {
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="mt-12 text-center">
+        {/* Next Step Navigation */}
+        <div className="mt-12 pt-12 border-t border-slate-700 text-center">
+          <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
+            Step 4 of 5
+          </div>
           <h2 className="text-2xl font-bold mb-4">Ready to Save ${(netSavings / 1000000).toFixed(1)}M/year?</h2>
           <p className="text-slate-400 mb-6">
-            Let&apos;s discuss how QUAD can transform MassMutual&apos;s engineering.
+            Let&apos;s discuss how QUAD can transform your engineering workflow.
           </p>
           <Link
-            href="/massmutual/contact"
-            className="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
+            href="/customer/contact"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
           >
             Schedule a Call
+            <span>→</span>
           </Link>
         </div>
       </div>

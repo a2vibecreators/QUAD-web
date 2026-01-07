@@ -2,20 +2,20 @@
 
 import Link from "next/link";
 
-export default function MassMutualContact() {
+export default function CustomerContact() {
   return (
     <div className="text-white py-12 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm mb-4">
-            Get Started
+          <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
+            Step 5 of 5 - Final Step
           </div>
           <h1 className="text-4xl font-bold mb-4">
             Schedule a Demo
           </h1>
           <p className="text-slate-400">
-            Let&apos;s discuss how QUAD can transform MassMutual&apos;s engineering workflow
+            Let&apos;s discuss how QUAD can transform your engineering workflow
           </p>
         </div>
 
@@ -23,7 +23,7 @@ export default function MassMutualContact() {
         <div className="grid md:grid-cols-2 gap-6 mb-12">
           {/* Email */}
           <a
-            href="mailto:suman.addanki@gmail.com?subject=QUAD Platform Demo Request - MassMutual"
+            href="mailto:suman.addanki@gmail.com?subject=QUAD Platform Demo Request"
             className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700 hover:border-blue-500/50 transition-all group"
           >
             <div className="text-4xl mb-4">📧</div>
@@ -60,12 +60,7 @@ export default function MassMutualContact() {
             {[
               {
                 name: "Madhuri",
-                role: "CEO",
-                location: "USA",
-              },
-              {
-                name: "Suman",
-                role: "CTO",
+                role: "Founder & CEO",
                 location: "USA",
               },
               {
@@ -81,6 +76,11 @@ export default function MassMutualContact() {
               {
                 name: "Lokesh",
                 role: "VP Product",
+                location: "India",
+              },
+              {
+                name: "Supriya",
+                role: "Human Resources",
                 location: "India",
               },
             ].map((member, i) => (
@@ -111,7 +111,7 @@ export default function MassMutualContact() {
               {
                 step: "2",
                 title: "Tailored Demo (45 min)",
-                desc: "See QUAD configured for MassMutual's tech stack",
+                desc: "See QUAD configured for your tech stack",
               },
               {
                 step: "3",
@@ -140,7 +140,7 @@ export default function MassMutualContact() {
         {/* Back to Overview */}
         <div className="text-center">
           <Link
-            href="/massmutual"
+            href="/customer"
             className="text-slate-400 hover:text-white transition-colors"
           >
             ← Back to Overview

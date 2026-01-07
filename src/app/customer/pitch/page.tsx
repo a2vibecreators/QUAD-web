@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-export default function MassMutualPitch() {
+export default function CustomerPitch() {
   return (
     <div className="text-white py-12 px-4">
       <div className="max-w-5xl mx-auto">
@@ -12,7 +12,7 @@ export default function MassMutualPitch() {
             Pitch Deck
           </div>
           <h1 className="text-4xl font-bold mb-4">
-            QUAD Platform for MassMutual
+            QUAD Platform for Enterprise
           </h1>
           <p className="text-slate-400">
             45-minute presentation: 15 min slides + 20 min demo + 10 min Q&A
@@ -176,13 +176,13 @@ export default function MassMutualPitch() {
             </div>
           </section>
 
-          {/* Partnership Proposal */}
+          {/* Customership Proposal */}
           <section className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl p-8 border border-blue-500/20">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 font-bold">
                 5
               </div>
-              <h2 className="text-2xl font-bold">Partnership Proposal</h2>
+              <h2 className="text-2xl font-bold">Customership Proposal</h2>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="bg-slate-800/50 rounded-xl p-6">
@@ -207,7 +207,7 @@ export default function MassMutualPitch() {
                 <h3 className="font-bold text-purple-400 mb-3">Strategic</h3>
                 <ul className="space-y-2 text-sm text-slate-400">
                   <li>• Exclusive insurance rights</li>
-                  <li>• White-label for partners</li>
+                  <li>• White-label for customers</li>
                   <li>• Co-development roadmap</li>
                   <li>• Revenue share model</li>
                 </ul>
@@ -239,7 +239,7 @@ export default function MassMutualPitch() {
             </div>
             <div className="mt-8 text-center">
               <Link
-                href="/massmutual/contact"
+                href="/customer/contact"
                 className="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
               >
                 Start Pilot Program
@@ -256,6 +256,26 @@ export default function MassMutualPitch() {
           <button className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-700 transition-all">
             Download PDF (Coming Soon)
           </button>
+        </div>
+
+        {/* Next Step Navigation */}
+        <div className="mt-16 pt-12 border-t border-slate-700">
+          <div className="text-center">
+            <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
+              Step 2 of 5
+            </div>
+            <h2 className="text-2xl font-bold mb-4">Next: See the Live Demo</h2>
+            <p className="text-slate-400 max-w-2xl mx-auto mb-8">
+              Experience the QUAD Platform with pre-configured demo data.
+            </p>
+            <Link
+              href="/customer/demo"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
+            >
+              Try Live Demo
+              <span>→</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

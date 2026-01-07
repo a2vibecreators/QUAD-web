@@ -1,8 +1,8 @@
 /**
- * MassMutual Demo Data - Pre-populated for Pitch
+ * Customer Demo Data - Pre-populated for Pitch
  *
  * Structure:
- * - MassMutual (Parent Org)
+ * - Customer (Parent Org)
  *   ├── Digital Experience (Sub-Org) → Customer Portal (Project)
  *   └── Data Engineering (Sub-Org) → Claims Pipeline (Project)
  *
@@ -15,13 +15,13 @@
 
 export const DEMO_ORG = {
   id: "mm-root",
-  name: "MassMutual",
+  name: "Customer",
   code: "MM",
   type: "enterprise",
   industry: "Financial Services / Insurance",
   headquarters: "Springfield, MA",
   employeeCount: "10,000+",
-  logo: "/partners/massmutual-logo.svg",
+  logo: "/customers/massmutual-logo.svg",
   createdAt: "2026-01-07",
 };
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-export default function MassMutualAbout() {
+export default function CustomerAbout() {
   const team = [
     {
       name: "Madhuri",
@@ -33,6 +33,12 @@ export default function MassMutualAbout() {
       role: "Architecture",
       bio: "Solutions architect with expertise in cloud infrastructure and enterprise systems. Designing scalable architectures for QUAD deployments.",
       email: "pradeep@quadframe.work",
+    },
+    {
+      name: "Supriya",
+      role: "Human Resources",
+      bio: "HR specialist ensuring QUAD attracts and retains top talent. Building a culture of innovation and collaboration across global teams.",
+      email: "supriya@quadframe.work",
     },
   ];
 
@@ -250,13 +256,13 @@ export default function MassMutualAbout() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/massmutual/contact"
+              href="/customer/contact"
               className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
             >
               Schedule a Demo
             </Link>
             <Link
-              href="/massmutual/pitch"
+              href="/customer/pitch"
               className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl border border-slate-700 transition-all text-lg"
             >
               View Full Pitch
