@@ -1,17 +1,241 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 /**
- * Customer Demo Page
+ * Customer Demo Page - Interactive QUAD Platform Demo
  *
- * Part 1: QUAD Concept (no password) - The problem and solution
- * Part 2: Interactive Demo (password) - Dashboard screens shown inline
+ * Features:
+ * - Role-based views (Developer, QA, TL, Director, Sr Director)
+ * - Interactive ticket detail with GitHub-style diff
+ * - Dev ↔ AI conversation for code changes
+ * - Real-time notifications
+ * - Allocation mismatch warnings
+ * - Time saved indicators
  */
 
 // Demo password
 const DEMO_PASSWORD = "Ashrith";
+
+// Demo roles (left sidebar)
+const DEMO_ROLES = [
+  { id: "senior_director", icon: "👔", title: "Senior Director", desc: "Organization-wide view" },
+  { id: "director", icon: "📊", title: "Director", desc: "Department-level view" },
+  { id: "tech_lead", icon: "🎯", title: "Tech Lead", desc: "Project-level view" },
+  { id: "qa", icon: "🧪", title: "QA Engineer", desc: "Testing & quality view" },
+  { id: "developer", icon: "💻", title: "Developer", desc: "Individual work view" },
+  { id: "prod_support", icon: "🚨", title: "Production Support", desc: "Incident & monitoring view" },
+  { id: "infrastructure", icon: "🔧", title: "Infrastructure", desc: "DevOps & SRE view" },
+];
+
+// Demo tickets for developer view
+const DEMO_TICKETS = [
+  {
+    id: "QUAD-1234",
+    title: "Add price filter to products page",
+    priority: "high",
+    stage: "Automate",
+    assignee: "You",
+    timeSaved: "4 hours",
+    aiModel: "Claude Opus",
+  },
+  {
+    id: "QUAD-1235",
+    title: "Fix checkout validation bug",
+    priority: "critical",
+    stage: "Deliver",
+    assignee: "You",
+    timeSaved: "2 hours",
+    aiModel: "Claude Sonnet",
+  },
+  {
+    id: "QUAD-1236",
+    title: "Add user preferences API endpoint",
+    priority: "medium",
+    stage: "Question",
+    assignee: "You",
+    timeSaved: "—",
+    aiModel: "—",
+  },
+];
+
+// Demo notifications
+const DEMO_NOTIFICATIONS = [
+  {
+    id: 1,
+    type: "meeting_to_code",
+    icon: "📧",
+    title: "Email → Jira → Code: Price Filter",
+    subtitle: "BA email auto-created QUAD-1234, AI generated code",
+    time: "Just now",
+    isNew: true,
+  },
+  {
+    id: 2,
+    type: "leave",
+    icon: "🏥",
+    title: "Ravi took emergency leave",
+    subtitle: "Outlook Agent detected PTO request",
+    time: "2 min ago",
+    isNew: true,
+  },
+  {
+    id: 3,
+    type: "reassign",
+    icon: "🔄",
+    title: "QUAD-1237 reassigned to Peter",
+    subtitle: "TL approved automatic reassignment",
+    time: "5 min ago",
+    isNew: true,
+  },
+  {
+    id: 4,
+    type: "approval",
+    icon: "✅",
+    title: "TL approved PR #892",
+    subtitle: "Merged to main branch",
+    time: "12 min ago",
+    isNew: false,
+  },
+  {
+    id: 5,
+    type: "allocation",
+    icon: "⚠️",
+    title: "David Kim: 100% assigned, 70% allocated",
+    subtitle: "30% over-allocation detected",
+    time: "1 hour ago",
+    isNew: false,
+    severity: "yellow",
+  },
+  {
+    id: 6,
+    type: "allocation",
+    icon: "🔴",
+    title: "Sneha Reddy: 100% assigned, 50% allocated",
+    subtitle: "50% over-allocation - needs attention",
+    time: "2 hours ago",
+    isNew: false,
+    severity: "red",
+  },
+];
+
+// Meeting to Code flow data
+const MEETING_TO_CODE_FLOW = {
+  email: {
+    from: "sarah.johnson@company.com",
+    to: "quad-agents@company.com",
+    subject: "Add price filter to products page",
+    body: "Hi team, we need to add a price range filter to the products page. Users should be able to filter products by price: Under $25, $25-$50, $50-$100, Over $100. Please prioritize this for Sprint 12. Thanks, Sarah (Product Manager)",
+    time: "9:15 AM",
+  },
+  jiraTicket: {
+    id: "QUAD-1234",
+    title: "Add price filter to products page",
+    type: "Feature",
+    priority: "High",
+    assignee: "Priya Sharma",
+    sprint: "Sprint 12",
+    status: "In Progress",
+    story: "As a user, I want to filter products by price range so I can find products within my budget.",
+    acceptance: [
+      "Filter options: Under $25, $25-$50, $50-$100, Over $100",
+      "Multiple selections allowed",
+      "Results update without page reload",
+      "Filter persists across pagination",
+    ],
+  },
+  aiGenerated: {
+    files: ["src/components/filters/PriceFilter.tsx", "src/hooks/usePriceFilter.ts", "src/tests/PriceFilter.test.ts"],
+    linesAdded: 147,
+    linesRemoved: 3,
+    timeSaved: "4 hours",
+  },
+};
+
+// Team allocation data - 16 person team across 4 projects
+// Projects: Customer Portal (CP), Data Pipeline (DP), ML Models (ML), Mobile App (MA)
+const TEAM_ALLOCATION = [
+  // Leadership (shared across projects)
+  { name: "Sarah Mitchell", role: "VP Engineering", allocated: 100, assigned: 95, projects: ["CP", "DP", "ML", "MA"] },
+  { name: "Rajesh Patel", role: "Director - Digital", allocated: 100, assigned: 100, projects: ["CP", "MA"] },
+  { name: "Jennifer Adams", role: "Director - Data", allocated: 100, assigned: 90, projects: ["DP", "ML"] },
+  { name: "Ahmed Hassan", role: "Director - QA", allocated: 100, assigned: 85, projects: ["CP", "DP", "ML", "MA"] },
+
+  // Customer Portal Team (Web UI - Next.js)
+  { name: "Michael Torres", role: "Tech Lead (CP)", allocated: 100, assigned: 100, projects: ["CP"] },
+  { name: "Priya Sharma", role: "Senior Developer", allocated: 100, assigned: 100, projects: ["CP"] },
+  { name: "David Kim", role: "Full Stack Dev", allocated: 70, assigned: 100, projects: ["CP", "MA"], warning: "yellow" },
+
+  // Mobile App Team (iOS + Android)
+  { name: "Arun Krishnan", role: "Tech Lead (MA)", allocated: 100, assigned: 100, projects: ["MA"] },
+  { name: "Jessica Brown", role: "iOS Developer", allocated: 100, assigned: 95, projects: ["MA"] },
+  { name: "Farhan Ali", role: "Android Developer", allocated: 100, assigned: 90, projects: ["MA"] },
+
+  // Data Pipeline Team (ETL - Python/Airflow)
+  { name: "Robert Johnson", role: "Tech Lead (DP)", allocated: 100, assigned: 95, projects: ["DP"] },
+  { name: "Sneha Reddy", role: "Data Engineer", allocated: 50, assigned: 100, projects: ["DP", "ML"], warning: "red" },
+
+  // ML Models Team (Data Science - Python/TensorFlow)
+  { name: "Emily Watson", role: "Data Scientist", allocated: 100, assigned: 90, projects: ["ML"] },
+  { name: "Lisa Chen", role: "ML Engineer", allocated: 100, assigned: 85, projects: ["ML", "DP"] },
+
+  // Shared Resources
+  { name: "Chris Martinez", role: "DevOps Engineer", allocated: 100, assigned: 95, projects: ["CP", "DP", "ML", "MA"] },
+  { name: "Fatima Khan", role: "Security Engineer", allocated: 100, assigned: 90, projects: ["CP", "DP", "ML", "MA"] },
+];
+
+// Project data for demo - 4 diverse project types
+const DEMO_PROJECTS = [
+  {
+    id: "cp",
+    name: "Customer Portal",
+    type: "Web UI",
+    tech: "Next.js, TypeScript, Tailwind",
+    techLead: "Michael Torres",
+    pm: "Rajesh Patel (shared)",
+    health: 87,
+    sprint: "Sprint 12",
+    flows: 14,
+    team: ["Priya Sharma", "David Kim"],
+  },
+  {
+    id: "ma",
+    name: "Mobile App",
+    type: "iOS + Android",
+    tech: "Swift, Kotlin, React Native",
+    techLead: "Arun Krishnan",
+    pm: "Rajesh Patel (dedicated)",
+    health: 92,
+    sprint: "Sprint 8",
+    flows: 10,
+    team: ["Jessica Brown", "Farhan Ali", "David Kim"],
+  },
+  {
+    id: "dp",
+    name: "Data Pipeline",
+    type: "ETL",
+    tech: "Python, Airflow, Spark",
+    techLead: "Robert Johnson",
+    pm: "Jennifer Adams",
+    health: 85,
+    sprint: "Sprint 6",
+    flows: 8,
+    team: ["Sneha Reddy", "Lisa Chen"],
+  },
+  {
+    id: "ml",
+    name: "ML Models",
+    type: "Data Science",
+    tech: "Python, TensorFlow, SageMaker",
+    techLead: "Emily Watson",
+    pm: "Jennifer Adams",
+    health: 78,
+    sprint: "Sprint 4",
+    flows: 6,
+    team: ["Lisa Chen", "Sneha Reddy", "Ahmed Hassan"],
+  },
+];
 
 // Demo screen data
 const DEMO_SCREENS = [
@@ -49,19 +273,64 @@ const DEMO_SCREENS = [
 
 export default function CustomerDemo() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showOrgNameModal, setShowOrgNameModal] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
+  const [orgName, setOrgName] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [activeScreen, setActiveScreen] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState("senior_director"); // Default to Senior Director
+
+  // Interactive ticket detail states
+  const [selectedTicket, setSelectedTicket] = useState<typeof DEMO_TICKETS[0] | null>(null);
+  const [showTicketDetail, setShowTicketDetail] = useState(false);
+  const [ticketStage, setTicketStage] = useState<"analyzing" | "diff" | "conversation" | "approved">("analyzing");
+  const [aiConversation, setAiConversation] = useState<Array<{role: "ai" | "dev", message: string}>>([]);
+  const [devInput, setDevInput] = useState("");
+
+  // Notification panel
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState(DEMO_NOTIFICATIONS);
+  const newNotificationCount = notifications.filter(n => n.isNew).length;
+
+  // Meeting to Code modal
+  const [showMeetingToCode, setShowMeetingToCode] = useState(false);
+  const [meetingToCodeStage, setMeetingToCodeStage] = useState<"email" | "jira" | "code" | "complete">("email");
+
+  // Settings panel
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState({
+    aiCodeGeneration: true,
+    meetingIntelligence: true,
+    allocationAlerts: true,
+    autoReassignment: true,
+    priorityLearning: true,
+    costOptimization: true,
+    dataMasking: true,
+    trivialErrorDetection: true,
+  });
+
+  const toggleSetting = (key: keyof typeof settings) => {
+    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const handlePasswordSubmit = () => {
     if (password.toLowerCase() === DEMO_PASSWORD.toLowerCase()) {
-      setUnlocked(true);
+      // Password correct - now ask for org name
       setShowPasswordModal(false);
-      setActiveScreen("dashboard"); // Show first screen after unlock
+      setShowOrgNameModal(true);
     } else {
       setPasswordError(true);
     }
+  };
+
+  const handleOrgNameSubmit = () => {
+    // Use entered name or default
+    const finalOrgName = orgName.trim() || "Demo Organization";
+    setOrgName(finalOrgName);
+    setShowOrgNameModal(false);
+    setUnlocked(true);
+    setActiveScreen("dashboard");
   };
 
   const handleScreenClick = (screenId: string) => {
@@ -74,8 +343,626 @@ export default function CustomerDemo() {
     }
   };
 
+  // Handle ticket click - opens interactive detail view
+  const handleTicketClick = (ticket: typeof DEMO_TICKETS[0]) => {
+    if (!settings.aiCodeGeneration) {
+      // Show a message that AI is disabled
+      alert("AI Code Generation is disabled. Enable it in Settings to see the AI-assisted development flow.");
+      return;
+    }
+
+    setSelectedTicket(ticket);
+    setShowTicketDetail(true);
+    setTicketStage("analyzing");
+    setAiConversation([]);
+    setDevInput("");
+
+    // Simulate analyzing phase (2 seconds), then show diff
+    setTimeout(() => {
+      setTicketStage("diff");
+      // Add initial AI message
+      setAiConversation([
+        {
+          role: "ai",
+          message: `I've analyzed the codebase and prepared the implementation for "${ticket.title}". Here are the proposed changes. Please review and let me know if you'd like any modifications.`
+        }
+      ]);
+    }, 2000);
+  };
+
+  // Handle dev message in conversation
+  const handleDevMessage = () => {
+    if (!devInput.trim()) return;
+
+    // Add dev message
+    setAiConversation(prev => [...prev, { role: "dev", message: devInput }]);
+    const userMessage = devInput.toLowerCase();
+    setDevInput("");
+
+    // Simulate AI response based on dev input
+    setTimeout(() => {
+      let aiResponse = "";
+
+      if (userMessage.includes("reuse") || userMessage.includes("existing")) {
+        aiResponse = "Good catch! I found `src/utils/priceFormatter.ts` that already handles currency formatting. I'll refactor to use that instead. Updated diff below.";
+      } else if (userMessage.includes("class") || userMessage.includes("double check")) {
+        aiResponse = "You're right - I found `PriceRangeSelector` in `src/components/filters/`. I'll extend that instead of creating a new component. Let me update the implementation.";
+      } else if (userMessage.includes("test") || userMessage.includes("unit")) {
+        aiResponse = "I'll add comprehensive unit tests using Jest. Adding tests for edge cases: empty price range, negative values, and currency conversion.";
+      } else if (userMessage.includes("approve") || userMessage.includes("looks good") || userMessage.includes("lgtm")) {
+        aiResponse = "Great! I'll proceed with creating the PR. The changes will be submitted for TL review.";
+        setTimeout(() => setTicketStage("approved"), 1000);
+      } else {
+        aiResponse = "I understand. Let me adjust the implementation based on your feedback. I'll also run the existing test suite to ensure compatibility.";
+      }
+
+      setAiConversation(prev => [...prev, { role: "ai", message: aiResponse }]);
+    }, 1500);
+  };
+
+  // Mark notifications as read
+  const markNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
+  };
+
+  // Handle Meeting to Code demo
+  const handleMeetingToCodeClick = () => {
+    setShowNotifications(false);
+    setShowMeetingToCode(true);
+    setMeetingToCodeStage("email");
+  };
+
+  const advanceMeetingToCodeStage = () => {
+    if (meetingToCodeStage === "email") setMeetingToCodeStage("jira");
+    else if (meetingToCodeStage === "jira") setMeetingToCodeStage("code");
+    else if (meetingToCodeStage === "code") setMeetingToCodeStage("complete");
+    else setShowMeetingToCode(false);
+  };
+
   return (
     <div className="text-white">
+      {/* =====================================================
+          INTERACTIVE TICKET DETAIL MODAL
+          ===================================================== */}
+      {showTicketDetail && selectedTicket && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-slate-700">
+            {/* Modal Header */}
+            <div className="bg-slate-800 px-6 py-4 border-b border-slate-700 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-4">
+                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                  selectedTicket.priority === "critical" ? "bg-red-500/20 text-red-400" :
+                  selectedTicket.priority === "high" ? "bg-orange-500/20 text-orange-400" :
+                  "bg-blue-500/20 text-blue-400"
+                }`}>
+                  {selectedTicket.priority.toUpperCase()}
+                </span>
+                <div>
+                  <h3 className="font-bold text-white">{selectedTicket.id}: {selectedTicket.title}</h3>
+                  <p className="text-xs text-slate-400">
+                    Stage: {selectedTicket.stage} • AI: {selectedTicket.aiModel}
+                    {selectedTicket.timeSaved !== "—" && (
+                      <span className="text-green-400 ml-2">⏱️ {selectedTicket.timeSaved} saved</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTicketDetail(false)}
+                className="text-slate-400 hover:text-white p-2"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Analyzing Stage */}
+              {ticketStage === "analyzing" && (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-6" />
+                  <h3 className="text-xl font-bold text-white mb-2">Analyzing Codebase...</h3>
+                  <p className="text-slate-400 text-center max-w-md">
+                    QUAD AI is scanning your codebase, understanding patterns, and preparing optimal implementation.
+                  </p>
+                  <div className="mt-8 bg-slate-800/50 rounded-lg p-4 max-w-md">
+                    <p className="text-sm text-slate-300 italic">
+                      💡 <span className="text-blue-400">Pro tip:</span> This is a great time for a coffee break. Health is important!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Diff + Conversation Stage */}
+              {(ticketStage === "diff" || ticketStage === "conversation") && (
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Left: GitHub-style Diff */}
+                  <div className="bg-slate-800 rounded-xl overflow-hidden">
+                    <div className="bg-slate-700 px-4 py-2 flex items-center justify-between">
+                      <span className="text-sm font-mono text-slate-300">
+                        src/components/filters/PriceFilter.tsx
+                      </span>
+                      <span className="text-xs text-green-400">+47 -3</span>
+                    </div>
+                    <div className="p-4 font-mono text-sm overflow-x-auto">
+                      {/* Diff lines */}
+                      <div className="space-y-1">
+                        <div className="text-slate-500">@@ -12,6 +12,50 @@</div>
+                        <div className="text-slate-400"> import {"{ useState }"} from &apos;react&apos;;</div>
+                        <div className="text-slate-400"> import {"{ useProducts }"} from &apos;@/hooks&apos;;</div>
+                        <div className="text-slate-400"> </div>
+                        <div className="bg-green-500/10 text-green-400">+ interface PriceRange {"{"}</div>
+                        <div className="bg-green-500/10 text-green-400">+   min: number;</div>
+                        <div className="bg-green-500/10 text-green-400">+   max: number;</div>
+                        <div className="bg-green-500/10 text-green-400">+ {"}"}</div>
+                        <div className="bg-green-500/10 text-green-400">+ </div>
+                        <div className="bg-green-500/10 text-green-400">+ const PRICE_RANGES: PriceRange[] = [</div>
+                        <div className="bg-green-500/10 text-green-400">+   {"{ min: 0, max: 25 }"},</div>
+                        <div className="bg-green-500/10 text-green-400">+   {"{ min: 25, max: 50 }"},</div>
+                        <div className="bg-green-500/10 text-green-400">+   {"{ min: 50, max: 100 }"},</div>
+                        <div className="bg-green-500/10 text-green-400">+   {"{ min: 100, max: Infinity }"},</div>
+                        <div className="bg-green-500/10 text-green-400">+ ];</div>
+                        <div className="text-slate-400"> </div>
+                        <div className="bg-red-500/10 text-red-400">- export function ProductList() {"{"}</div>
+                        <div className="bg-green-500/10 text-green-400">+ export function ProductList({"{ onPriceFilter }"}: Props) {"{"}</div>
+                        <div className="bg-green-500/10 text-green-400">+   const [selectedRange, setSelectedRange] = useState&lt;PriceRange | null&gt;(null);</div>
+                        <div className="bg-green-500/10 text-green-400">+   </div>
+                        <div className="bg-green-500/10 text-green-400">+   const handleFilterChange = (range: PriceRange) =&gt; {"{"}</div>
+                        <div className="bg-green-500/10 text-green-400">+     setSelectedRange(range);</div>
+                        <div className="bg-green-500/10 text-green-400">+     onPriceFilter(range);</div>
+                        <div className="bg-green-500/10 text-green-400">+   {"}"};</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: AI Conversation */}
+                  <div className="bg-slate-800 rounded-xl overflow-hidden flex flex-col">
+                    <div className="bg-slate-700 px-4 py-2 flex items-center gap-2">
+                      <span className="text-lg">🤖</span>
+                      <span className="text-sm font-semibold text-slate-300">QUAD AI Assistant</span>
+                      <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded">
+                        {selectedTicket.aiModel}
+                      </span>
+                    </div>
+
+                    {/* Conversation */}
+                    <div className="flex-1 p-4 space-y-4 max-h-64 overflow-y-auto">
+                      {aiConversation.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.role === "dev" ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[85%] rounded-lg px-4 py-2 ${
+                            msg.role === "dev"
+                              ? "bg-blue-600 text-white"
+                              : "bg-slate-700 text-slate-200"
+                          }`}>
+                            <p className="text-sm">{msg.message}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Input */}
+                    <div className="p-4 border-t border-slate-700">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={devInput}
+                          onChange={(e) => setDevInput(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleDevMessage()}
+                          placeholder="Type feedback... (try: 'can you reuse existing class?')"
+                          className="flex-1 px-4 py-2 bg-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={handleDevMessage}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm"
+                        >
+                          Send
+                        </button>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => {
+                            setDevInput("Looks good, approve it!");
+                            setTimeout(handleDevMessage, 100);
+                          }}
+                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-xs"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          onClick={() => setDevInput("Can you reuse existing class? Double check the codebase.")}
+                          className="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all text-xs"
+                        >
+                          Request Changes
+                        </button>
+                        <button
+                          onClick={() => setDevInput("I'll code this myself with my preferred code assistant.")}
+                          className="px-3 py-1.5 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-all text-xs"
+                        >
+                          I&apos;ll Code It
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Approved Stage */}
+              {ticketStage === "approved" && (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                    <span className="text-4xl">✓</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-green-400 mb-2">Changes Approved!</h3>
+                  <p className="text-slate-400 text-center max-w-md mb-6">
+                    PR #{Math.floor(Math.random() * 900) + 100} created and submitted for TL review.
+                  </p>
+                  <div className="bg-slate-800 rounded-lg p-4 text-center">
+                    <p className="text-sm text-slate-400">Time saved on this task:</p>
+                    <p className="text-3xl font-bold text-green-400">{selectedTicket.timeSaved}</p>
+                  </div>
+                  <button
+                    onClick={() => setShowTicketDetail(false)}
+                    className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                  >
+                    Back to Dashboard
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          MEETING TO CODE MODAL
+          ===================================================== */}
+      {showMeetingToCode && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-slate-700">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-4">
+                <span className="text-2xl">📧</span>
+                <div>
+                  <h3 className="font-bold text-white text-lg">Meeting → Code Demo</h3>
+                  <p className="text-xs text-blue-100">
+                    See how an email becomes working code in hours
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowMeetingToCode(false)}
+                className="text-white/70 hover:text-white p-2"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="px-6 py-4 border-b border-slate-700 bg-slate-800/50">
+              <div className="flex items-center justify-between max-w-2xl mx-auto">
+                {[
+                  { id: "email", label: "Email Received", icon: "📧" },
+                  { id: "jira", label: "Jira Created", icon: "🎫" },
+                  { id: "code", label: "Code Generated", icon: "💻" },
+                  { id: "complete", label: "PR Ready", icon: "✅" },
+                ].map((step, i) => (
+                  <div key={step.id} className="flex items-center">
+                    <div className={`flex flex-col items-center ${
+                      meetingToCodeStage === step.id ? "opacity-100" :
+                      ["email", "jira", "code", "complete"].indexOf(meetingToCodeStage) > i ? "opacity-100" : "opacity-40"
+                    }`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                        meetingToCodeStage === step.id ? "bg-blue-600" :
+                        ["email", "jira", "code", "complete"].indexOf(meetingToCodeStage) > i ? "bg-green-600" : "bg-slate-700"
+                      }`}>
+                        {["email", "jira", "code", "complete"].indexOf(meetingToCodeStage) > i ? "✓" : step.icon}
+                      </div>
+                      <span className="text-xs text-slate-400 mt-1">{step.label}</span>
+                    </div>
+                    {i < 3 && (
+                      <div className={`w-16 h-0.5 mx-2 ${
+                        ["email", "jira", "code", "complete"].indexOf(meetingToCodeStage) > i ? "bg-green-600" : "bg-slate-700"
+                      }`} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Email Stage */}
+              {meetingToCodeStage === "email" && (
+                <div className="max-w-2xl mx-auto">
+                  <div className="bg-slate-800 rounded-xl overflow-hidden">
+                    <div className="bg-slate-700 px-4 py-3 flex items-center gap-3">
+                      <span className="text-xl">📧</span>
+                      <div className="flex-1">
+                        <p className="text-xs text-slate-400">From: {MEETING_TO_CODE_FLOW.email.from}</p>
+                        <p className="text-xs text-slate-400">To: {MEETING_TO_CODE_FLOW.email.to}</p>
+                      </div>
+                      <span className="text-xs text-slate-500">{MEETING_TO_CODE_FLOW.email.time}</span>
+                    </div>
+                    <div className="p-4">
+                      <p className="font-bold text-white mb-3">{MEETING_TO_CODE_FLOW.email.subject}</p>
+                      <p className="text-slate-300 text-sm leading-relaxed">{MEETING_TO_CODE_FLOW.email.body}</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 text-center">
+                    <p className="text-slate-400 text-sm mb-4">
+                      <span className="text-blue-400">QUAD Email Agent</span> detects the feature request and auto-creates a Jira ticket
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Jira Stage */}
+              {meetingToCodeStage === "jira" && (
+                <div className="max-w-2xl mx-auto">
+                  <div className="bg-slate-800 rounded-xl overflow-hidden">
+                    <div className="bg-blue-600/20 px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded text-xs font-bold">
+                          {MEETING_TO_CODE_FLOW.jiraTicket.priority}
+                        </span>
+                        <span className="text-white font-bold">{MEETING_TO_CODE_FLOW.jiraTicket.id}</span>
+                      </div>
+                      <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">
+                        {MEETING_TO_CODE_FLOW.jiraTicket.status}
+                      </span>
+                    </div>
+                    <div className="p-4">
+                      <h4 className="font-bold text-white text-lg mb-3">{MEETING_TO_CODE_FLOW.jiraTicket.title}</h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                        <div>
+                          <span className="text-slate-500">Type:</span>
+                          <span className="text-slate-300 ml-2">{MEETING_TO_CODE_FLOW.jiraTicket.type}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">Sprint:</span>
+                          <span className="text-slate-300 ml-2">{MEETING_TO_CODE_FLOW.jiraTicket.sprint}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">Assignee:</span>
+                          <span className="text-slate-300 ml-2">{MEETING_TO_CODE_FLOW.jiraTicket.assignee}</span>
+                        </div>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3 mb-3">
+                        <p className="text-xs text-slate-500 mb-1">User Story</p>
+                        <p className="text-slate-300 text-sm">{MEETING_TO_CODE_FLOW.jiraTicket.story}</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3">
+                        <p className="text-xs text-slate-500 mb-2">Acceptance Criteria</p>
+                        <ul className="space-y-1">
+                          {MEETING_TO_CODE_FLOW.jiraTicket.acceptance.map((ac, i) => (
+                            <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
+                              <span className="text-green-400">✓</span>
+                              {ac}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-6 text-center">
+                    <p className="text-slate-400 text-sm mb-4">
+                      <span className="text-purple-400">QUAD AI Agent</span> analyzes requirements and generates implementation
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Code Stage */}
+              {meetingToCodeStage === "code" && (
+                <div className="max-w-2xl mx-auto">
+                  <div className="bg-slate-800 rounded-xl overflow-hidden">
+                    <div className="bg-slate-700 px-4 py-3 flex items-center justify-between">
+                      <span className="text-sm font-mono text-slate-300">AI Generated Code</span>
+                      <span className="text-xs text-green-400">+{MEETING_TO_CODE_FLOW.aiGenerated.linesAdded} -{MEETING_TO_CODE_FLOW.aiGenerated.linesRemoved}</span>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-xs text-slate-500 mb-3">Files created/modified:</p>
+                      <div className="space-y-2">
+                        {MEETING_TO_CODE_FLOW.aiGenerated.files.map((file, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <span className="text-green-400">+</span>
+                            <span className="font-mono text-slate-300">{file}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 p-3 bg-slate-700/50 rounded-lg font-mono text-sm">
+                        <div className="text-slate-500">// PriceFilter.tsx (preview)</div>
+                        <div className="text-green-400">+ export function PriceFilter({"{ onFilter }"})</div>
+                        <div className="text-green-400">+   const [selected, setSelected] = useState([])</div>
+                        <div className="text-green-400">+   const ranges = [&quot;Under $25&quot;, &quot;$25-$50&quot;, ...]</div>
+                        <div className="text-slate-500">+   // ... 144 more lines</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-6 text-center">
+                    <p className="text-slate-400 text-sm mb-4">
+                      Developer reviews and approves the implementation
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Complete Stage */}
+              {meetingToCodeStage === "complete" && (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                    <span className="text-4xl">✓</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-green-400 mb-2">PR Ready for Review!</h3>
+                  <p className="text-slate-400 text-center max-w-md mb-6">
+                    From email to working code in less than 4 hours
+                  </p>
+                  <div className="grid grid-cols-3 gap-6 text-center mb-8">
+                    <div className="bg-slate-800 rounded-lg p-4">
+                      <p className="text-2xl font-bold text-blue-400">📧 → 🎫</p>
+                      <p className="text-xs text-slate-400 mt-1">Auto-created Jira</p>
+                    </div>
+                    <div className="bg-slate-800 rounded-lg p-4">
+                      <p className="text-2xl font-bold text-purple-400">+147 lines</p>
+                      <p className="text-xs text-slate-400 mt-1">AI-generated code</p>
+                    </div>
+                    <div className="bg-slate-800 rounded-lg p-4">
+                      <p className="text-2xl font-bold text-green-400">{MEETING_TO_CODE_FLOW.aiGenerated.timeSaved}</p>
+                      <p className="text-xs text-slate-400 mt-1">Time saved</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-slate-500 italic">
+                    &quot;AI suggests, human decides&quot; - Developer approved the implementation
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-700 bg-slate-800/50 flex justify-between items-center">
+              <button
+                onClick={() => setShowMeetingToCode(false)}
+                className="px-4 py-2 text-slate-400 hover:text-white transition-all"
+              >
+                Close
+              </button>
+              <button
+                onClick={advanceMeetingToCodeStage}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+              >
+                {meetingToCodeStage === "complete" ? "Done" : "Next Step"}
+                <span>→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          NOTIFICATION PANEL
+          ===================================================== */}
+      {showNotifications && (
+        <div className="fixed top-20 right-4 w-96 bg-slate-900 rounded-xl border border-slate-700 shadow-2xl z-50 overflow-hidden">
+          <div className="bg-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700">
+            <h3 className="font-bold text-white">Notifications</h3>
+            <button
+              onClick={() => { markNotificationsRead(); setShowNotifications(false); }}
+              className="text-slate-400 hover:text-white text-sm"
+            >
+              Mark all read
+            </button>
+          </div>
+          <div className="max-h-96 overflow-y-auto">
+            {notifications
+              .filter(notif => {
+                // Filter based on settings
+                if (notif.type === "meeting_to_code" && !settings.meetingIntelligence) return false;
+                if (notif.type === "allocation" && !settings.allocationAlerts) return false;
+                if (notif.type === "reassign" && !settings.autoReassignment) return false;
+                return true;
+              })
+              .map((notif) => (
+              <div
+                key={notif.id}
+                onClick={() => notif.type === "meeting_to_code" && settings.meetingIntelligence && handleMeetingToCodeClick()}
+                className={`px-4 py-3 border-b border-slate-700/50 hover:bg-slate-800/50 transition-all cursor-pointer ${
+                  notif.isNew ? "bg-blue-500/5" : ""
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">{notif.icon}</span>
+                  <div className="flex-1">
+                    <p className={`font-medium text-sm ${
+                      notif.severity === "red" ? "text-red-400" :
+                      notif.severity === "yellow" ? "text-yellow-400" :
+                      "text-white"
+                    }`}>
+                      {notif.title}
+                    </p>
+                    <p className="text-xs text-slate-400">{notif.subtitle}</p>
+                    <p className="text-xs text-slate-500 mt-1">{notif.time}</p>
+                  </div>
+                  {notif.isNew && (
+                    <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                  )}
+                </div>
+              </div>
+            ))}
+            {notifications.filter(n => {
+              if (n.type === "meeting_to_code" && !settings.meetingIntelligence) return false;
+              if (n.type === "allocation" && !settings.allocationAlerts) return false;
+              if (n.type === "reassign" && !settings.autoReassignment) return false;
+              return true;
+            }).length === 0 && (
+              <div className="px-4 py-8 text-center text-slate-500 text-sm">
+                <p>No notifications</p>
+                <p className="text-xs mt-1">Some notifications are hidden by Settings</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          SETTINGS PANEL
+          ===================================================== */}
+      {showSettings && (
+        <div className="fixed top-20 right-4 w-96 bg-slate-900 rounded-xl border border-slate-700 shadow-2xl z-50 overflow-hidden">
+          <div className="bg-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700">
+            <h3 className="font-bold text-white">Feature Settings</h3>
+            <button
+              onClick={() => setShowSettings(false)}
+              className="text-slate-400 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+            <p className="text-xs text-slate-500 mb-4">
+              Toggle features ON/OFF to see how the demo changes. This simulates the Settings page in QUAD Platform.
+            </p>
+            {[
+              { key: "aiCodeGeneration" as const, label: "AI Code Generation", desc: "Generate code from tickets" },
+              { key: "meetingIntelligence" as const, label: "Meeting Intelligence", desc: "Auto-MOM, action items" },
+              { key: "allocationAlerts" as const, label: "Allocation Alerts", desc: "Yellow/red warnings" },
+              { key: "autoReassignment" as const, label: "Auto-Reassignment", desc: "Reassign on PTO/leave" },
+              { key: "priorityLearning" as const, label: "Priority Learning", desc: "AI learns from PM" },
+              { key: "costOptimization" as const, label: "Cost Optimization", desc: "Infrastructure savings" },
+              { key: "dataMasking" as const, label: "Data Masking", desc: "Mask PII in dev" },
+              { key: "trivialErrorDetection" as const, label: "Trivial Error Detection", desc: "Auto-create BAU tickets" },
+            ].map((setting) => (
+              <div
+                key={setting.key}
+                className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg"
+              >
+                <div>
+                  <p className="font-medium text-sm text-white">{setting.label}</p>
+                  <p className="text-xs text-slate-500">{setting.desc}</p>
+                </div>
+                <button
+                  onClick={() => toggleSetting(setting.key)}
+                  className={`w-12 h-6 rounded-full transition-all relative ${
+                    settings[setting.key] ? "bg-green-500" : "bg-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${
+                      settings[setting.key] ? "left-7" : "left-1"
+                    }`}
+                  />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="p-4 border-t border-slate-700 bg-slate-800/50">
+            <p className="text-xs text-slate-400 text-center">
+              Features are configurable per organization in the actual platform
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
@@ -121,188 +1008,70 @@ export default function CustomerDemo() {
         </div>
       )}
 
+      {/* Organization Name Modal (after password) */}
+      {showOrgNameModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-slate-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-slate-700">
+            <h2 className="text-xl font-bold mb-4 text-center">🏢 Enter Organization Name</h2>
+            <p className="text-slate-400 text-sm text-center mb-2">
+              Enter your organization name for the demo
+            </p>
+            <p className="text-slate-500 text-xs text-center mb-6 italic">
+              This is for demo purposes only - no affiliation implied
+            </p>
+            <input
+              type="text"
+              value={orgName}
+              onChange={(e) => setOrgName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleOrgNameSubmit()}
+              placeholder="e.g., Acme Corporation"
+              className="w-full px-4 py-3 bg-slate-700 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none mb-4"
+              autoFocus
+            />
+            <button
+              onClick={handleOrgNameSubmit}
+              className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"
+            >
+              Start Demo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ========================================= */}
-      {/* PART 1: QUAD CONCEPT (No Password)       */}
+      {/* PLATFORM DEMO (Password Protected)       */}
       {/* ========================================= */}
 
       {/* Hero */}
       <section className="py-20 px-4 text-center">
         <div className="max-w-4xl mx-auto">
           <div className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm mb-6">
-            Part 1: Understanding QUAD
+            Platform Demo
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            First, Let&apos;s Understand{" "}
+            See QUAD{" "}
             <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              The Problem
+              In Action
             </span>
           </h1>
           <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-            Before we show you the platform, let&apos;s make sure we&apos;re solving the right problem.
+            Experience the QUAD Platform with your organization&apos;s name and pre-configured demo data.
           </p>
         </div>
       </section>
 
-      {/* The Problem */}
       <section className="py-12 px-4 bg-slate-800/30">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            <span className="text-red-400">The Problem:</span> Why 1 Paragraph Takes 6 Weeks
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            {[
-              {
-                icon: "📝",
-                title: "The Telephone Game",
-                problem: "Business → BA → PM → TL → Dev",
-                result: "30-40% rework because requirements get lost in translation",
-              },
-              {
-                icon: "📅",
-                title: "Ceremony Overload",
-                problem: "Sprint planning, standups, retros, refinement...",
-                result: "20% of time talking about work instead of doing it",
-              },
-              {
-                icon: "🤖",
-                title: "AI Without Strategy",
-                problem: "Everyone uses different AI tools with no governance",
-                result: "Can&apos;t measure ROI or ensure code quality",
-              },
-              {
-                icon: "😓",
-                title: "Developer Burnout",
-                problem: "Weekend deployments, crunch time, firefighting",
-                result: "Best engineers leave for better work-life balance",
-              },
-            ].map((item, i) => (
-              <div key={i} className="bg-red-500/5 rounded-xl p-6 border border-red-500/20">
-                <div className="text-3xl mb-3">{item.icon}</div>
-                <h3 className="text-lg font-bold text-red-400 mb-2">{item.title}</h3>
-                <p className="text-slate-400 text-sm mb-2">{item.problem}</p>
-                <p className="text-slate-300 text-sm font-medium">{item.result}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* The QUAD Solution */}
-      <section className="py-12 px-4">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            <span className="text-green-400">The Solution:</span> QUAD Methodology
-          </h2>
-
-          <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl p-8 border border-blue-500/20 mb-12">
-            <div className="grid md:grid-cols-4 gap-6 text-center">
-              {[
-                { letter: "Q", name: "Question", time: "10 min", desc: "BA describes need in plain English" },
-                { letter: "U", name: "Understand", time: "30 min", desc: "AI expands to detailed spec" },
-                { letter: "A", name: "Automate", time: "2-4 hrs", desc: "AI generates production code" },
-                { letter: "D", name: "Deliver", time: "1-2 hrs", desc: "Human validates and deploys" },
-              ].map((step, i) => (
-                <div key={i}>
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-2xl font-bold mb-3">
-                    {step.letter}
-                  </div>
-                  <h3 className="font-bold text-white">{step.name}</h3>
-                  <p className="text-green-400 text-sm font-bold">{step.time}</p>
-                  <p className="text-slate-400 text-xs mt-1">{step.desc}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-center mt-8 pt-6 border-t border-blue-500/20">
-              <p className="text-lg">
-                Total time: <span className="text-red-400 line-through">6-9 weeks</span> →{" "}
-                <span className="text-green-400 font-bold">3-7 hours</span>
+          {!unlocked && (
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">
+                Interactive Dashboard
+              </h2>
+              <p className="text-slate-400 max-w-2xl mx-auto">
+                Unlock to explore the QUAD Platform with your organization&apos;s name and pre-configured demo data covering UI, Backend, and B2B Webservice projects.
               </p>
             </div>
-          </div>
-
-          {/* Channelized AI Energy */}
-          <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-2xl p-8 border border-yellow-500/20">
-            <h3 className="text-xl font-bold text-center mb-4">Channelized AI Energy</h3>
-            <p className="text-center text-slate-400 mb-6">
-              Think of AI like <span className="text-yellow-400 font-bold">electricity</span> -
-              raw electricity is dangerous. Through proper wiring, it powers your home safely.
-            </p>
-            <p className="text-center text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
-              QUAD is the wiring.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Divider */}
-      <div className="py-8 px-4">
-        <div className="max-w-xl mx-auto text-center">
-          <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent mb-6"></div>
-          <p className="text-slate-500">Now that you understand the concept...</p>
-        </div>
-      </div>
-
-      {/* ========================================= */}
-      {/* PART 2: INTERACTIVE DEMO (Password)      */}
-      {/* ========================================= */}
-
-      <section className="py-12 px-4 bg-slate-800/30">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
-              Part 2: Interactive Demo
-            </div>
-            <h2 className="text-3xl font-bold mb-4">
-              See QUAD In Action
-            </h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
-              We&apos;ve pre-configured a Customer organization. You&apos;ll log in as{" "}
-              <code className="bg-slate-700 px-2 py-1 rounded text-green-400">admin@customer.demo</code>{" "}
-              and explore the platform.
-            </p>
-          </div>
-
-          {/* Demo Environment Info */}
-          <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 mb-8">
-            <h3 className="font-bold text-white mb-4">Demo Environment Setup</h3>
-            <div className="grid md:grid-cols-3 gap-4 text-sm">
-              <div className="bg-slate-700/50 rounded-lg p-4">
-                <p className="text-slate-400">Organization</p>
-                <p className="text-white font-bold">Customer Organization</p>
-              </div>
-              <div className="bg-slate-700/50 rounded-lg p-4">
-                <p className="text-slate-400">Logged in as</p>
-                <p className="text-white font-bold">admin@customer.demo</p>
-              </div>
-              <div className="bg-slate-700/50 rounded-lg p-4">
-                <p className="text-slate-400">Role</p>
-                <p className="text-white font-bold">Admin (Senior Director)</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Screen Navigation */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {DEMO_SCREENS.map((screen) => (
-              <button
-                key={screen.id}
-                onClick={() => handleScreenClick(screen.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                  activeScreen === screen.id
-                    ? "bg-blue-600 text-white"
-                    : unlocked
-                    ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                    : "bg-slate-800 text-slate-500"
-                }`}
-              >
-                <span>{screen.icon}</span>
-                <span>{screen.title}</span>
-                {!unlocked && <span>🔐</span>}
-              </button>
-            ))}
-          </div>
+          )}
 
           {/* Unlock Button (when locked) */}
           {!unlocked && (
@@ -323,30 +1092,131 @@ export default function CustomerDemo() {
             </div>
           )}
 
-          {/* Demo Screen Content (when unlocked) */}
-          {unlocked && activeScreen && (
-            <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
-              {/* Screen Header */}
-              <div className="bg-slate-800 px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{DEMO_SCREENS.find(s => s.id === activeScreen)?.icon}</span>
-                  <div>
-                    <h3 className="font-bold text-white">{DEMO_SCREENS.find(s => s.id === activeScreen)?.title}</h3>
-                    <p className="text-xs text-slate-400">admin@customer.demo • Senior Director</p>
+          {/* Demo Content (when unlocked) - 2 Column Layout */}
+          {unlocked && (
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* LEFT: Role Selector */}
+              <div className="lg:w-64 shrink-0">
+                {/* Notification & Settings */}
+                <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-4 mb-4 space-y-2">
+                  <button
+                    onClick={() => { setShowNotifications(!showNotifications); setShowSettings(false); }}
+                    className="w-full flex items-center justify-between px-3 py-2 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">🔔</span>
+                      <span className="font-medium text-sm text-white">Notifications</span>
+                    </div>
+                    {newNotificationCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                        {newNotificationCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => { setShowSettings(!showSettings); setShowNotifications(false); }}
+                    className="w-full flex items-center justify-between px-3 py-2 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">⚙️</span>
+                      <span className="font-medium text-sm text-white">Settings</span>
+                    </div>
+                    <span className="text-xs text-slate-500">Demo</span>
+                  </button>
+                </div>
+
+                <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-4">
+                  <h3 className="font-bold text-white mb-4 text-sm">View As Role</h3>
+                  <div className="space-y-2">
+                    {DEMO_ROLES.map((role) => (
+                      <button
+                        key={role.id}
+                        onClick={() => setSelectedRole(role.id)}
+                        className={`w-full text-left px-3 py-3 rounded-lg transition-all ${
+                          selectedRole === role.id
+                            ? "bg-blue-600 text-white"
+                            : "bg-slate-700/50 text-slate-300 hover:bg-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{role.icon}</span>
+                          <div>
+                            <p className="font-medium text-sm">{role.title}</p>
+                            <p className={`text-xs ${selectedRole === role.id ? "text-blue-200" : "text-slate-500"}`}>
+                              {role.desc}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
-                  Live Demo
+
+                {/* Organization Info */}
+                <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-4 mt-4">
+                  <h3 className="font-bold text-white mb-3 text-sm">Organization</h3>
+                  <p className="text-white font-bold">{orgName}</p>
+                  <p className="text-xs text-slate-500 mt-1">Founder Account</p>
                 </div>
               </div>
 
-              {/* Screen Content */}
-              <div className="p-6">
-                {activeScreen === "dashboard" && <DashboardScreen />}
-                {activeScreen === "domains" && <DomainsScreen />}
-                {activeScreen === "roles" && <RolesScreen />}
-                {activeScreen === "adoption" && <AdoptionScreen />}
-                {activeScreen === "reporting" && <ReportingScreen />}
+              {/* RIGHT: Dashboard Content */}
+              <div className="flex-1">
+                {/* Screen Navigation */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {DEMO_SCREENS.map((screen) => (
+                    <button
+                      key={screen.id}
+                      onClick={() => setActiveScreen(screen.id)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                        activeScreen === screen.id
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                      }`}
+                    >
+                      <span>{screen.icon}</span>
+                      <span>{screen.title}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Screen Content */}
+                {activeScreen && (
+                  <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
+                    {/* Screen Header */}
+                    <div className="bg-slate-800 px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{DEMO_SCREENS.find(s => s.id === activeScreen)?.icon}</span>
+                        <div>
+                          <h3 className="font-bold text-white">{DEMO_SCREENS.find(s => s.id === activeScreen)?.title}</h3>
+                          <p className="text-xs text-slate-400">
+                            {orgName} • {DEMO_ROLES.find(r => r.id === selectedRole)?.title}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
+                        Live Demo
+                      </div>
+                    </div>
+
+                    {/* Screen Content - Role-based views */}
+                    <div className="p-6">
+                      {activeScreen === "dashboard" && (
+                        <DashboardScreen
+                          role={selectedRole}
+                          orgName={orgName}
+                          onTicketClick={handleTicketClick}
+                          teamAllocation={TEAM_ALLOCATION}
+                          settings={settings}
+                        />
+                      )}
+                      {activeScreen === "domains" && <DomainsScreen role={selectedRole} orgName={orgName} />}
+                      {activeScreen === "roles" && <RolesScreen role={selectedRole} teamAllocation={TEAM_ALLOCATION} />}
+                      {activeScreen === "adoption" && <AdoptionScreen role={selectedRole} />}
+                      {activeScreen === "reporting" && <ReportingScreen role={selectedRole} />}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -381,9 +1251,9 @@ export default function CustomerDemo() {
       <section className="py-16 px-4 bg-gradient-to-b from-transparent to-slate-800/30">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
-            Step 3 of 5
+            Next Step
           </div>
-          <h2 className="text-2xl font-bold mb-4">Next: Calculate Your ROI</h2>
+          <h2 className="text-2xl font-bold mb-4">Calculate Your ROI</h2>
           <p className="text-slate-400 mb-6">
             See how much your organization could save with QUAD Platform.
           </p>
@@ -404,54 +1274,755 @@ export default function CustomerDemo() {
 // INLINE DEMO SCREEN COMPONENTS
 // =====================================================
 
-function DashboardScreen() {
+interface ScreenProps {
+  role: string;
+  orgName?: string;
+  onTicketClick?: (ticket: typeof DEMO_TICKETS[0]) => void;
+  teamAllocation?: typeof TEAM_ALLOCATION;
+  settings?: {
+    aiCodeGeneration: boolean;
+    meetingIntelligence: boolean;
+    allocationAlerts: boolean;
+    autoReassignment: boolean;
+    priorityLearning: boolean;
+    costOptimization: boolean;
+    dataMasking: boolean;
+    trivialErrorDetection: boolean;
+  };
+}
+
+function DashboardScreen({ role, orgName, onTicketClick, teamAllocation, settings }: ScreenProps) {
+  // Role-specific stats
+  const getStats = () => {
+    switch (role) {
+      case "senior_director":
+        return [
+          { label: "Active Projects", value: "3", change: "+1 this month", icon: "📁" },
+          { label: "Total Budget", value: "$2.4M", change: "On track", icon: "💰" },
+          { label: "Team Members", value: "45", change: "Across 3 domains", icon: "👥" },
+          { label: "Org Velocity", value: "87%", change: "+12% vs Q3", icon: "📈" },
+        ];
+      case "director":
+        return [
+          { label: "Department Projects", value: "2", change: "Customer Portal, API", icon: "📁" },
+          { label: "Team Size", value: "18", change: "6 devs, 4 QA", icon: "👥" },
+          { label: "Active Flows", value: "24", change: "8 in Automate", icon: "🔄" },
+          { label: "Dept Velocity", value: "92%", change: "+8% vs last cycle", icon: "📈" },
+        ];
+      case "tech_lead":
+        return [
+          { label: "My Project", value: "1", change: "Customer Portal", icon: "📁" },
+          { label: "Team Members", value: "6", change: "4 devs, 2 QA", icon: "👥" },
+          { label: "Open PRs", value: "8", change: "3 need review", icon: "🔀" },
+          { label: "Sprint Progress", value: "75%", change: "Day 8 of 10", icon: "⏱️" },
+        ];
+      case "qa":
+        return [
+          { label: "Test Queue", value: "12", change: "3 high priority", icon: "📋" },
+          { label: "Bugs Found", value: "5", change: "This sprint", icon: "🐛" },
+          { label: "Pass Rate", value: "94%", change: "+2% vs last sprint", icon: "✅" },
+          { label: "Coverage", value: "78%", change: "Target: 80%", icon: "📊" },
+        ];
+      case "developer":
+        return [
+          { label: "My Flows", value: "3", change: "1 in Automate", icon: "🔄" },
+          { label: "PRs Open", value: "2", change: "1 approved", icon: "🔀" },
+          { label: "Code Reviews", value: "3", change: "Pending", icon: "👁️" },
+          { label: "Time Saved", value: "6h", change: "This week with AI", icon: "⏱️" },
+        ];
+      case "prod_support":
+        return [
+          { label: "Open Incidents", value: "3", change: "1 P1, 2 P2", icon: "🚨" },
+          { label: "MTTR", value: "45m", change: "↓ 15% vs last week", icon: "⏱️" },
+          { label: "On-Call", value: "Active", change: "Until 6 PM EST", icon: "📞" },
+          { label: "SLA Compliance", value: "99.2%", change: "Target: 99%", icon: "📊" },
+        ];
+      case "infrastructure":
+        return [
+          { label: "Uptime", value: "99.97%", change: "Last 30 days", icon: "📡" },
+          { label: "Deployments", value: "12", change: "This week", icon: "🚀" },
+          { label: "Active Alerts", value: "2", change: "Non-critical", icon: "🔔" },
+          { label: "Cost Savings", value: "$12K", change: "This month", icon: "💰" },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  // Allocation warnings (for TL and above)
+  const getAllocationWarnings = () => {
+    if (!teamAllocation) return [];
+    return teamAllocation.filter(m => m.warning);
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Active Projects", value: "3", change: "+1 this month" },
-          { label: "Team Members", value: "12", change: "Across 2 domains" },
-          { label: "Active Flows", value: "24", change: "8 in Automate" },
-          { label: "Velocity", value: "87%", change: "+12% vs last cycle" },
-        ].map((stat, i) => (
+        {getStats().map((stat, i) => (
           <div key={i} className="bg-slate-700/50 rounded-xl p-4">
-            <p className="text-slate-400 text-xs">{stat.label}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">{stat.icon}</span>
+              <p className="text-slate-400 text-xs">{stat.label}</p>
+            </div>
             <p className="text-2xl font-bold text-white">{stat.value}</p>
             <p className="text-xs text-green-400">{stat.change}</p>
           </div>
         ))}
       </div>
 
-      {/* Projects List */}
-      <div>
-        <h4 className="text-sm font-semibold text-slate-400 mb-3">Active Projects</h4>
-        <div className="space-y-2">
-          {[
-            { name: "Customer Portal", health: 87, stage: "Sprint 12", flows: 12 },
-            { name: "Mobile App", health: 92, stage: "Sprint 8", flows: 8 },
-            { name: "API Gateway", health: 78, stage: "Sprint 5", flows: 4 },
-          ].map((project, i) => (
-            <div key={i} className="bg-slate-700/30 rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <p className="font-medium text-white">{project.name}</p>
-                <p className="text-xs text-slate-400">{project.stage} • {project.flows} active flows</p>
+      {/* Developer: Clickable Ticket List */}
+      {role === "developer" && (
+        <div>
+          <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+            <span>🎫</span> My Assigned Flows
+            <span className="text-xs text-blue-400">(Click to work on)</span>
+          </h4>
+          <div className="space-y-2">
+            {DEMO_TICKETS.map((ticket) => (
+              <button
+                key={ticket.id}
+                onClick={() => onTicketClick?.(ticket)}
+                className="w-full text-left bg-slate-700/30 rounded-lg p-4 hover:bg-slate-700/50 transition-all border border-transparent hover:border-blue-500/50"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                        ticket.priority === "critical" ? "bg-red-500/20 text-red-400" :
+                        ticket.priority === "high" ? "bg-orange-500/20 text-orange-400" :
+                        "bg-blue-500/20 text-blue-400"
+                      }`}>
+                        {ticket.priority.toUpperCase()}
+                      </span>
+                      <span className="text-xs text-slate-500">{ticket.id}</span>
+                    </div>
+                    <p className="font-medium text-white">{ticket.title}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Stage: <span className="text-purple-400">{ticket.stage}</span>
+                      {ticket.timeSaved !== "—" && (
+                        <span className="text-green-400 ml-2">• {ticket.timeSaved} saved</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl">→</span>
+                    <p className="text-xs text-slate-500">Start</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* QA: Test Coverage Donut + Test Queue */}
+      {role === "qa" && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Test Coverage Donut */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4">Test Coverage by Type</h4>
+            <div className="flex items-center justify-center gap-8">
+              <div className="relative w-32 h-32">
+                <svg className="w-32 h-32 transform -rotate-90">
+                  <circle cx="64" cy="64" r="56" stroke="#334155" strokeWidth="12" fill="none" />
+                  <circle cx="64" cy="64" r="56" stroke="#22c55e" strokeWidth="12" fill="none"
+                    strokeDasharray="352" strokeDashoffset="77" />
+                  <circle cx="64" cy="64" r="56" stroke="#3b82f6" strokeWidth="12" fill="none"
+                    strokeDasharray="352" strokeDashoffset="264" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-white">78%</span>
+                </div>
               </div>
-              <div className="text-right">
-                <p className={`text-lg font-bold ${project.health >= 85 ? 'text-green-400' : 'text-yellow-400'}`}>
-                  {project.health}%
-                </p>
-                <p className="text-xs text-slate-500">Health</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-green-500 rounded-full" />
+                  <span className="text-slate-400">Unit (45%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-blue-500 rounded-full" />
+                  <span className="text-slate-400">Integration (25%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-slate-600 rounded-full" />
+                  <span className="text-slate-400">E2E (8%)</span>
+                </div>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Bug Severity */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4">Open Bugs by Severity</h4>
+            <div className="space-y-3">
+              {[
+                { label: "Critical", count: 1, color: "bg-red-500", width: "20%" },
+                { label: "High", count: 3, color: "bg-orange-500", width: "60%" },
+                { label: "Medium", count: 2, color: "bg-yellow-500", width: "40%" },
+                { label: "Low", count: 5, color: "bg-blue-500", width: "100%" },
+              ].map((bug, i) => (
+                <div key={i}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-400">{bug.label}</span>
+                    <span className="text-white font-bold">{bug.count}</span>
+                  </div>
+                  <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
+                    <div className={`h-full ${bug.color} rounded-full`} style={{ width: bug.width }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Tech Lead: Team Velocity + Allocation Warnings */}
+      {role === "tech_lead" && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Sprint Burndown */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4">Sprint Burndown</h4>
+            <div className="h-40 flex items-end justify-between gap-1 px-2">
+              {[24, 22, 18, 15, 14, 12, 10, 8, 6, 3].map((val, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center">
+                  <div
+                    className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t"
+                    style={{ height: `${(val / 24) * 100}%` }}
+                  />
+                  <span className="text-xs text-slate-500 mt-1">D{i + 1}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 text-center text-xs text-slate-400">
+              <span className="text-green-400">On track</span> • 3 story points remaining
+            </div>
+          </div>
+
+          {/* Allocation Warnings */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
+              ⚠️ Allocation Alerts
+              {settings && !settings.allocationAlerts && (
+                <span className="text-xs bg-slate-600 text-slate-400 px-2 py-0.5 rounded">OFF</span>
+              )}
+            </h4>
+            {!settings || settings.allocationAlerts ? (
+              <div className="space-y-2">
+                {getAllocationWarnings().map((member, i) => (
+                  <div
+                    key={i}
+                    className={`p-3 rounded-lg border ${
+                      member.warning === "red"
+                        ? "bg-red-500/10 border-red-500/30"
+                        : "bg-yellow-500/10 border-yellow-500/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`font-medium text-sm ${member.warning === "red" ? "text-red-400" : "text-yellow-400"}`}>
+                          {member.name}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {member.assigned}% assigned / {member.allocated}% allocated
+                        </p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        member.warning === "red" ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400"
+                      }`}>
+                        +{member.assigned - member.allocated}% over
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {getAllocationWarnings().length === 0 && (
+                  <p className="text-slate-500 text-sm text-center py-4">No allocation issues</p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-slate-500 text-sm">
+                <p>Allocation alerts disabled</p>
+                <p className="text-xs mt-1">Enable in Settings to see warnings</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Director: Burndown + Resource Utilization Pie */}
+      {role === "director" && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Department Burndown */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4">Department Burndown</h4>
+            <div className="h-40 flex items-end justify-between gap-1 px-2">
+              {[100, 92, 85, 78, 70, 62].map((val, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center">
+                  <div
+                    className="w-full bg-gradient-to-t from-purple-600 to-purple-400 rounded-t"
+                    style={{ height: `${val}%` }}
+                  />
+                  <span className="text-xs text-slate-500 mt-1">W{i + 1}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 text-center text-xs text-slate-400">
+              <span className="text-green-400">38% complete</span> • On schedule
+            </div>
+          </div>
+
+          {/* Resource Utilization Pie */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4">Resource Utilization</h4>
+            <div className="flex items-center justify-center gap-8">
+              <div className="relative w-32 h-32">
+                <svg className="w-32 h-32 transform -rotate-90">
+                  <circle cx="64" cy="64" r="56" stroke="#334155" strokeWidth="12" fill="none" />
+                  <circle cx="64" cy="64" r="56" stroke="#22c55e" strokeWidth="12" fill="none"
+                    strokeDasharray="352" strokeDashoffset="52" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                  <span className="text-2xl font-bold text-white">85%</span>
+                  <span className="text-xs text-slate-400">utilized</span>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-green-500 rounded-full" />
+                  <span className="text-slate-400">Productive (85%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-yellow-500 rounded-full" />
+                  <span className="text-slate-400">Meetings (10%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-slate-600 rounded-full" />
+                  <span className="text-slate-400">Available (5%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Senior Director / Founder: Training vs Appreciation + Org Health */}
+      {role === "senior_director" && (
+        <>
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Training Investment */}
+            <div className="bg-slate-700/30 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-slate-400 mb-4">🎓 Training Investment</h4>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-blue-400">$45K</p>
+                <p className="text-xs text-slate-400 mt-1">This quarter</p>
+              </div>
+              <div className="mt-4 space-y-2">
+                {[
+                  { label: "AI/ML Skills", value: "$18K" },
+                  { label: "Leadership", value: "$12K" },
+                  { label: "Technical Certs", value: "$15K" },
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-slate-400">{item.label}</span>
+                    <span className="text-white">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Appreciation / Recognition */}
+            <div className="bg-slate-700/30 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-slate-400 mb-4">🏆 Recognition Program</h4>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-green-400">23</p>
+                <p className="text-xs text-slate-400 mt-1">Awards this month</p>
+              </div>
+              <div className="mt-4 space-y-2">
+                {[
+                  { label: "Spot Bonuses", value: "12" },
+                  { label: "Peer Recognition", value: "8" },
+                  { label: "Promotions", value: "3" },
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-slate-400">{item.label}</span>
+                    <span className="text-white">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Talent Retention */}
+            <div className="bg-slate-700/30 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-slate-400 mb-4">👥 Talent Retention</h4>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-purple-400">94%</p>
+                <p className="text-xs text-slate-400 mt-1">Retention rate (↑ 8%)</p>
+              </div>
+              <div className="mt-4 space-y-2">
+                {[
+                  { label: "Avg Tenure", value: "3.2 yrs" },
+                  { label: "eNPS Score", value: "+42" },
+                  { label: "Open Positions", value: "4" },
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-slate-400">{item.label}</span>
+                    <span className="text-white">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Risk & Compliance + Monitoring */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Risk & Compliance */}
+            <div className="bg-slate-700/30 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
+                🛡️ Risk & Compliance
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: "SOC 2", status: "Compliant", icon: "✅", color: "text-green-400" },
+                  { label: "HIPAA", status: "In Progress", icon: "🔄", color: "text-yellow-400" },
+                  { label: "GDPR", status: "Compliant", icon: "✅", color: "text-green-400" },
+                  { label: "Security Scan", status: "0 Critical", icon: "🔒", color: "text-green-400" },
+                ].map((item, i) => (
+                  <div key={i} className="bg-slate-700/50 rounded-lg p-3 text-center">
+                    <span className="text-2xl">{item.icon}</span>
+                    <p className="text-xs text-slate-400 mt-1">{item.label}</p>
+                    <p className={`text-xs font-bold ${item.color}`}>{item.status}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Infrastructure & App Monitoring */}
+            <div className="bg-slate-700/30 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
+                📡 System Monitoring
+              </h4>
+              <div className="space-y-3">
+                {/* Infrastructure */}
+                <div className="bg-slate-700/50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-slate-400">Infrastructure</span>
+                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">All Systems Go</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div>
+                      <p className="text-white font-bold">99.97%</p>
+                      <p className="text-slate-500">Uptime</p>
+                    </div>
+                    <div>
+                      <p className="text-white font-bold">45ms</p>
+                      <p className="text-slate-500">Latency</p>
+                    </div>
+                    <div>
+                      <p className="text-white font-bold">0</p>
+                      <p className="text-slate-500">Alerts</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Application */}
+                <div className="bg-slate-700/50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-slate-400">Application</span>
+                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">Healthy</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div>
+                      <p className="text-white font-bold">0.02%</p>
+                      <p className="text-slate-500">Error Rate</p>
+                    </div>
+                    <div>
+                      <p className="text-white font-bold">1.2s</p>
+                      <p className="text-slate-500">Avg Load</p>
+                    </div>
+                    <div>
+                      <p className="text-white font-bold">12K</p>
+                      <p className="text-slate-500">Requests/min</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Projects List (for Director and Tech Lead) */}
+      {(role === "director" || role === "tech_lead") && (
+        <div>
+          <h4 className="text-sm font-semibold text-slate-400 mb-3">Active Projects</h4>
+          <div className="space-y-2">
+            {(role === "tech_lead" ? [
+              { name: "Customer Portal", type: "Web UI", health: 87, stage: "Sprint 12", flows: 12 }
+            ] : [
+              { name: "Customer Portal", type: "Web UI", health: 87, stage: "Sprint 12", flows: 12 },
+              { name: "Claims API", type: "Backend", health: 92, stage: "Sprint 8", flows: 8 },
+            ]).map((project, i) => (
+              <div key={i} className="bg-slate-700/30 rounded-lg p-4 flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-white">{project.name}</p>
+                  <p className="text-xs text-slate-400">
+                    <span className="text-blue-400 mr-2">[{project.type}]</span>
+                    {project.stage} • {project.flows} active flows
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-lg font-bold ${project.health >= 85 ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {project.health}%
+                  </p>
+                  <p className="text-xs text-slate-500">Health</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Production Support: Incident Dashboard */}
+      {role === "prod_support" && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Active Incidents */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
+              🚨 Active Incidents
+            </h4>
+            <div className="space-y-2">
+              {[
+                { id: "INC-001", title: "Payment gateway timeout", priority: "P1", status: "In Progress", age: "45m" },
+                { id: "INC-002", title: "Slow API response (>3s)", priority: "P2", status: "Investigating", age: "2h" },
+                { id: "INC-003", title: "Email delivery delays", priority: "P2", status: "Monitoring", age: "4h" },
+              ].map((incident, i) => (
+                <div key={i} className={`p-3 rounded-lg border ${
+                  incident.priority === "P1" ? "bg-red-500/10 border-red-500/30" : "bg-yellow-500/10 border-yellow-500/30"
+                }`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs font-bold ${incident.priority === "P1" ? "text-red-400" : "text-yellow-400"}`}>
+                      {incident.priority}
+                    </span>
+                    <span className="text-xs text-slate-500">{incident.age}</span>
+                  </div>
+                  <p className="text-sm text-white font-medium">{incident.title}</p>
+                  <p className="text-xs text-slate-400">{incident.id} • {incident.status}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Service Health */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
+              📡 Service Health
+            </h4>
+            <div className="space-y-3">
+              {[
+                { name: "Customer Portal", status: "Operational", uptime: "99.99%", color: "green" },
+                { name: "Payment Gateway", status: "Degraded", uptime: "98.5%", color: "yellow" },
+                { name: "Claims API", status: "Operational", uptime: "99.97%", color: "green" },
+                { name: "Email Service", status: "Degraded", uptime: "97.2%", color: "yellow" },
+                { name: "Database Cluster", status: "Operational", uptime: "100%", color: "green" },
+              ].map((service, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${
+                      service.color === "green" ? "bg-green-500" : "bg-yellow-500"
+                    }`} />
+                    <span className="text-sm text-white">{service.name}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className={`text-xs ${
+                      service.color === "green" ? "text-green-400" : "text-yellow-400"
+                    }`}>
+                      {service.status}
+                    </span>
+                    <span className="text-xs text-slate-400">{service.uptime}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Incidents Timeline */}
+          <div className="md:col-span-2 bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4">📅 Incident Timeline (Last 7 Days)</h4>
+            <div className="flex items-end justify-between gap-1 h-24">
+              {[
+                { day: "Mon", p1: 0, p2: 1 },
+                { day: "Tue", p1: 1, p2: 2 },
+                { day: "Wed", p1: 0, p2: 0 },
+                { day: "Thu", p1: 0, p2: 1 },
+                { day: "Fri", p1: 1, p2: 1 },
+                { day: "Sat", p1: 0, p2: 0 },
+                { day: "Sun", p1: 0, p2: 1 },
+              ].map((day, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center">
+                  <div className="w-full flex flex-col gap-0.5">
+                    {day.p1 > 0 && <div className="w-full h-4 bg-red-500 rounded-t" />}
+                    {day.p2 > 0 && <div className="w-full h-3 bg-yellow-500 rounded-t" style={{ marginTop: day.p1 > 0 ? 0 : 'auto' }} />}
+                    {day.p1 === 0 && day.p2 === 0 && <div className="w-full h-1 bg-green-500 rounded" />}
+                  </div>
+                  <span className="text-xs text-slate-500 mt-2">{day.day}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center gap-6 mt-4 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-red-500 rounded" />
+                <span className="text-slate-400">P1 Incidents</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-yellow-500 rounded" />
+                <span className="text-slate-400">P2 Incidents</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-green-500 rounded" />
+                <span className="text-slate-400">Clear</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Infrastructure: DevOps Dashboard */}
+      {role === "infrastructure" && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* System Health */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
+              📡 Infrastructure Health
+            </h4>
+            <div className="space-y-3">
+              {[
+                { name: "Kubernetes Cluster", status: "Healthy", cpu: "42%", memory: "68%" },
+                { name: "PostgreSQL Primary", status: "Healthy", cpu: "35%", memory: "72%" },
+                { name: "Redis Cache", status: "Healthy", cpu: "15%", memory: "45%" },
+                { name: "CDN Edge Nodes", status: "Healthy", cpu: "—", memory: "—" },
+              ].map((infra, i) => (
+                <div key={i} className="bg-slate-700/50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span className="text-sm text-white font-medium">{infra.name}</span>
+                    </div>
+                    <span className="text-xs text-green-400">{infra.status}</span>
+                  </div>
+                  {infra.cpu !== "—" && (
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <span className="text-slate-500">CPU:</span>
+                        <span className="text-slate-300 ml-1">{infra.cpu}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Memory:</span>
+                        <span className="text-slate-300 ml-1">{infra.memory}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Deployments */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
+              🚀 Recent Deployments
+            </h4>
+            <div className="space-y-2">
+              {[
+                { service: "customer-portal", version: "v2.4.1", time: "2 hours ago", status: "success" },
+                { service: "claims-api", version: "v1.8.3", time: "5 hours ago", status: "success" },
+                { service: "payment-gateway", version: "v3.1.0", time: "1 day ago", status: "success" },
+                { service: "auth-service", version: "v1.2.1", time: "2 days ago", status: "rollback" },
+              ].map((deploy, i) => (
+                <div key={i} className="flex items-center justify-between p-2 bg-slate-700/50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-white font-medium">{deploy.service}</p>
+                    <p className="text-xs text-slate-400">{deploy.version} • {deploy.time}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    deploy.status === "success" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"
+                  }`}>
+                    {deploy.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CI/CD Pipeline */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
+              🔄 CI/CD Pipeline
+            </h4>
+            <div className="space-y-3">
+              {[
+                { stage: "Build", status: "passed", duration: "3m 42s" },
+                { stage: "Unit Tests", status: "passed", duration: "5m 18s" },
+                { stage: "Integration Tests", status: "passed", duration: "8m 55s" },
+                { stage: "Security Scan", status: "passed", duration: "4m 12s" },
+                { stage: "Deploy to Staging", status: "running", duration: "1m 30s" },
+                { stage: "Deploy to Prod", status: "pending", duration: "—" },
+              ].map((stage, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {stage.status === "passed" && <span className="text-green-400">✓</span>}
+                    {stage.status === "running" && <span className="text-blue-400 animate-pulse">●</span>}
+                    {stage.status === "pending" && <span className="text-slate-500">○</span>}
+                    <span className={`text-sm ${stage.status === "pending" ? "text-slate-500" : "text-white"}`}>
+                      {stage.stage}
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-400">{stage.duration}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cost Optimization */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
+              💰 Cloud Cost Optimization
+              {settings && !settings.costOptimization && (
+                <span className="text-xs bg-slate-600 text-slate-400 px-2 py-0.5 rounded">OFF</span>
+              )}
+            </h4>
+            {!settings || settings.costOptimization ? (
+              <>
+                <div className="text-center mb-4">
+                  <p className="text-3xl font-bold text-green-400">$12,450</p>
+                  <p className="text-xs text-slate-400">Saved this month</p>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { action: "Right-sized EC2 instances", savings: "$4,200" },
+                    { action: "Reserved instance coverage", savings: "$5,800" },
+                    { action: "Spot instances for batch", savings: "$1,650" },
+                    { action: "S3 lifecycle policies", savings: "$800" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex justify-between text-xs">
+                      <span className="text-slate-400">{item.action}</span>
+                      <span className="text-green-400">{item.savings}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-6 text-slate-500 text-sm">
+                <p>Cost optimization disabled</p>
+                <p className="text-xs mt-1">Enable in Settings to see savings</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function DomainsScreen() {
+function DomainsScreen({ role, orgName }: ScreenProps) {
   return (
     <div className="space-y-4">
       <div className="grid md:grid-cols-2 gap-4">
@@ -461,16 +2032,23 @@ function DomainsScreen() {
             projects: ["Customer Portal", "Mobile App"],
             members: 8,
             tech: "Next.js, Spring Boot, PostgreSQL",
+            health: 87,
           },
           {
             name: "Data Engineering",
             projects: ["Claims Pipeline", "API Gateway"],
             members: 4,
             tech: "Spring Batch, SageMaker, Redshift",
+            health: 92,
           },
         ].map((domain, i) => (
-          <div key={i} className="bg-slate-700/30 rounded-xl p-5">
-            <h4 className="font-bold text-white mb-2">{domain.name}</h4>
+          <div key={i} className="bg-slate-700/30 rounded-xl p-5 hover:bg-slate-700/50 transition-all cursor-pointer">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-bold text-white">{domain.name}</h4>
+              <span className={`text-sm font-bold ${domain.health >= 85 ? 'text-green-400' : 'text-yellow-400'}`}>
+                {domain.health}%
+              </span>
+            </div>
             <div className="space-y-2 text-sm">
               <p className="text-slate-400">
                 <span className="text-slate-500">Projects:</span> {domain.projects.join(", ")}
@@ -485,34 +2063,132 @@ function DomainsScreen() {
           </div>
         ))}
       </div>
+
+      {/* Sub-organizations (visible to Director and above) */}
+      {(role === "director" || role === "senior_director") && (
+        <div className="mt-6">
+          <h4 className="text-sm font-semibold text-slate-400 mb-3">Sub-Organizations</h4>
+          <div className="grid md:grid-cols-3 gap-3">
+            {[
+              { name: `${orgName} - US East`, teams: 3, members: 25 },
+              { name: `${orgName} - US West`, teams: 2, members: 15 },
+              { name: `${orgName} - India`, teams: 4, members: 35 },
+            ].map((subOrg, i) => (
+              <div key={i} className="bg-slate-700/30 rounded-lg p-4">
+                <p className="font-medium text-white text-sm">{subOrg.name}</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {subOrg.teams} teams • {subOrg.members} members
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function RolesScreen() {
+function RolesScreen({ role, teamAllocation }: ScreenProps) {
   return (
     <div className="space-y-4">
+      {/* Allocation Overview Pie (for TL and above) */}
+      {(role === "tech_lead" || role === "director" || role === "senior_director") && (
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* Team Allocation Pie */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4">Team Allocation Overview</h4>
+            <div className="flex items-center justify-center gap-8">
+              <div className="relative w-28 h-28">
+                <svg className="w-28 h-28 transform -rotate-90">
+                  <circle cx="56" cy="56" r="48" stroke="#334155" strokeWidth="10" fill="none" />
+                  <circle cx="56" cy="56" r="48" stroke="#22c55e" strokeWidth="10" fill="none"
+                    strokeDasharray="301" strokeDashoffset="45" />
+                  <circle cx="56" cy="56" r="48" stroke="#eab308" strokeWidth="10" fill="none"
+                    strokeDasharray="301" strokeDashoffset="270" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xl font-bold text-white">8</span>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-green-500 rounded-full" />
+                  <span className="text-slate-400">Optimal (6)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-yellow-500 rounded-full" />
+                  <span className="text-slate-400">Over-allocated (1)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 bg-red-500 rounded-full" />
+                  <span className="text-slate-400">Critical (1)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Allocation Warnings */}
+          <div className="bg-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-slate-400 mb-4">⚠️ Allocation Issues</h4>
+            <div className="space-y-2">
+              {teamAllocation?.filter(m => m.warning).map((member, i) => (
+                <div
+                  key={i}
+                  className={`p-3 rounded-lg border ${
+                    member.warning === "red"
+                      ? "bg-red-500/10 border-red-500/30"
+                      : "bg-yellow-500/10 border-yellow-500/30"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={`font-medium text-sm ${member.warning === "red" ? "text-red-400" : "text-yellow-400"}`}>
+                        {member.name}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {member.assigned}% assigned / {member.allocated}% allocated
+                      </p>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      member.warning === "red" ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400"
+                    }`}>
+                      +{member.assigned - member.allocated}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Team Members Table */}
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-slate-500 border-b border-slate-700">
             <th className="pb-2">Name</th>
             <th className="pb-2">Role</th>
-            <th className="pb-2">Allocation</th>
+            <th className="pb-2">Allocated</th>
+            <th className="pb-2">Assigned</th>
+            <th className="pb-2">Status</th>
           </tr>
         </thead>
         <tbody>
-          {[
-            { name: "Sarah Chen", role: "Senior Director", alloc: "40% CP + 40% CLM" },
-            { name: "Mike Rodriguez", role: "Team Lead", alloc: "80% CP + 20% CLM" },
-            { name: "Priya Sharma", role: "Principal Engineer", alloc: "70% CLM + 30% CP" },
-            { name: "James Wilson", role: "Senior Developer", alloc: "100% CP" },
-            { name: "Emma Thompson", role: "QA Lead", alloc: "60% CP + 40% CLM" },
-            { name: "David Kim", role: "Platform Engineer", alloc: "50% CP + 50% CLM" },
-          ].map((user, i) => (
+          {(teamAllocation || []).map((user, i) => (
             <tr key={i} className="border-b border-slate-700/50">
               <td className="py-3 text-white">{user.name}</td>
               <td className="py-3 text-slate-400">{user.role}</td>
-              <td className="py-3 text-slate-400">{user.alloc}</td>
+              <td className="py-3 text-slate-400">{user.allocated}%</td>
+              <td className="py-3 text-slate-400">{user.assigned}%</td>
+              <td className="py-3">
+                {user.warning === "red" ? (
+                  <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">Critical</span>
+                ) : user.warning === "yellow" ? (
+                  <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Over</span>
+                ) : (
+                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">OK</span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -521,7 +2197,7 @@ function RolesScreen() {
   );
 }
 
-function AdoptionScreen() {
+function AdoptionScreen({ role }: ScreenProps) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-400 mb-4">
@@ -564,7 +2240,7 @@ function AdoptionScreen() {
   );
 }
 
-function ReportingScreen() {
+function ReportingScreen({ role }: ScreenProps) {
   return (
     <div className="space-y-6">
       {/* Velocity Chart Placeholder */}

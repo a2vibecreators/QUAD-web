@@ -9,7 +9,7 @@ export default function CustomerContact() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
-            Step 5 of 5 - Final Step
+            Get Started
           </div>
           <h1 className="text-4xl font-bold mb-4">
             Schedule a Demo
@@ -23,7 +23,7 @@ export default function CustomerContact() {
         <div className="grid md:grid-cols-2 gap-6 mb-12">
           {/* Email */}
           <a
-            href="mailto:suman.addanki@gmail.com?subject=QUAD Platform Demo Request"
+            href="mailto:quad@quadframe.work?subject=QUAD Platform Demo Request"
             className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700 hover:border-blue-500/50 transition-all group"
           >
             <div className="text-4xl mb-4">📧</div>
@@ -34,7 +34,7 @@ export default function CustomerContact() {
               Send us an email and we&apos;ll respond within 24 hours
             </p>
             <span className="text-blue-400">
-              suman.addanki@gmail.com
+              quad@quadframe.work
             </span>
           </a>
 
@@ -76,6 +76,11 @@ export default function CustomerContact() {
               {
                 name: "Lokesh",
                 role: "VP Product",
+                location: "India",
+              },
+              {
+                name: "Pradeep",
+                role: "Architecture",
                 location: "India",
               },
               {

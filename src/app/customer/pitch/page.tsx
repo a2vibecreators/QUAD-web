@@ -262,17 +262,17 @@ export default function CustomerPitch() {
         <div className="mt-16 pt-12 border-t border-slate-700">
           <div className="text-center">
             <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
-              Step 2 of 5
+              Next Step
             </div>
-            <h2 className="text-2xl font-bold mb-4">Next: See the Live Demo</h2>
+            <h2 className="text-2xl font-bold mb-4">See the Platform Demo</h2>
             <p className="text-slate-400 max-w-2xl mx-auto mb-8">
-              Experience the QUAD Platform with pre-configured demo data.
+              Experience the QUAD Platform with your organization name and pre-configured demo data.
             </p>
             <Link
               href="/customer/demo"
               className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
             >
-              Try Live Demo
+              Try Platform Demo
               <span>→</span>
             </Link>
           </div>

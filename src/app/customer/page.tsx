@@ -127,9 +127,9 @@ export default function CustomerLanding() {
             see working code <strong className="text-white">the same day</strong>?
           </p>
 
-          {/* Timeline Comparison */}
-          <div className="grid md:grid-cols-2 gap-8 mb-12">
-            {/* Traditional */}
+          {/* Timeline Comparison - 3 Columns */}
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {/* Traditional Agile */}
             <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
               <h3 className="text-lg font-bold text-slate-400 mb-4">Traditional Agile</h3>
               <div className="space-y-3">
@@ -155,9 +155,37 @@ export default function CustomerLanding() {
               </div>
             </div>
 
-            {/* QUAD */}
+            {/* Agile with Vibe Coding */}
+            <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-xl p-6 border border-yellow-500/20">
+              <h3 className="text-lg font-bold text-yellow-400 mb-4">Agile + Vibe Coding</h3>
+              <p className="text-xs text-slate-500 mb-3">(Cursor, Devin, Copilot, etc.)</p>
+              <div className="space-y-3">
+                {[
+                  { phase: "Requirements", time: "1-2 weeks" },
+                  { phase: "Sprint Planning", time: "2-3 days" },
+                  { phase: "AI-Assisted Dev", time: "3-5 days" },
+                  { phase: "Code Review", time: "2-3 days" },
+                  { phase: "QA Testing", time: "1 week" },
+                  { phase: "Deployment", time: "2-3 days" },
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="text-slate-400">{item.phase}</span>
+                    <span className="text-yellow-400">{item.time}</span>
+                  </div>
+                ))}
+                <div className="border-t border-yellow-500/20 pt-3 mt-3">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-white">Total</span>
+                    <span className="text-yellow-400">4-6 weeks</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* QUAD Platform */}
             <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 border border-blue-500/20">
               <h3 className="text-lg font-bold text-blue-400 mb-4">QUAD Platform</h3>
+              <p className="text-xs text-slate-500 mb-3">(AI-first methodology)</p>
               <div className="space-y-3">
                 {[
                   { phase: "Q - Question", time: "10 min", desc: "BA describes need" },
@@ -382,11 +410,11 @@ export default function CustomerLanding() {
       <section className="py-16 px-4 bg-slate-900">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
-            Step 1 of 5
+            Next Step
           </div>
-          <h2 className="text-3xl font-bold mb-4">Next: View the Full Pitch</h2>
+          <h2 className="text-3xl font-bold mb-4">View the Full Pitch</h2>
           <p className="text-slate-400 max-w-2xl mx-auto mb-8">
-            See the complete pitch deck with ROI calculations and customership proposal.
+            See the complete pitch deck with ROI calculations and partnership proposal.
           </p>
           <Link
             href="/customer/pitch"
