@@ -11,6 +11,7 @@ const SLIDES = [
   { id: "meeting-to-code", label: "Meeting → Code" },
   { id: "ai-agents", label: "AI Agents" },
   { id: "dashboards", label: "Dashboards" },
+  { id: "proprietary", label: "Technology" },
   { id: "security", label: "Security" },
   { id: "roi", label: "ROI" },
   { id: "features", label: "Features" },
@@ -289,53 +290,65 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 4: Meeting to Code */}
+        {/* Slide 4: Meeting to Code - Horizontal Steps */}
         <section
           id="meeting-to-code"
           className={`min-h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-blue-950/20 transition-all duration-1000 ${
             isVisible["meeting-to-code"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
           }`}
         >
-          <div className="max-w-5xl w-full">
-            <div className="text-center mb-12">
+          <div className="max-w-6xl w-full">
+            <div className="text-center mb-10">
               <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
                 The Magic
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-2">
                 Meeting → Code
               </h2>
-              <p className="text-xl text-slate-400">
+              <p className="text-lg text-slate-400">
                 From email to working code in <span className="text-green-400 font-bold">hours</span>, not weeks
               </p>
             </div>
 
+            {/* Horizontal Timeline with Dots */}
             <div className="relative">
-              {/* Timeline */}
-              <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-purple-500 to-green-500 -translate-x-1/2 hidden md:block" />
+              {/* Timeline Line */}
+              <div className="hidden md:block absolute top-[60px] left-[10%] right-[10%] h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 rounded-full" />
 
-              <div className="space-y-8">
+              {/* Steps */}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-0 md:px-[5%]">
                 {[
-                  { time: "9:15 AM", icon: "📧", title: "Email Received", desc: "PM sends: 'Add price filter to products page'", color: "blue" },
-                  { time: "9:16 AM", icon: "🎫", title: "Ticket Created", desc: "QUAD auto-creates Jira with user story + acceptance criteria", color: "purple" },
-                  { time: "10:30 AM", icon: "💻", title: "Code Generated", desc: "3 files created: component, hook, tests (+147 lines)", color: "indigo" },
-                  { time: "1:15 PM", icon: "✅", title: "PR Ready", desc: "Developer reviews, approves → PR created", color: "green" },
+                  { time: "9:15 AM", icon: "📧", title: "Email", desc: "PM sends feature request", dotClass: "bg-blue-500 shadow-blue-500/50", badgeClass: "bg-blue-500/20 text-blue-300" },
+                  { time: "9:16 AM", icon: "🎫", title: "Jira Ticket", desc: "Auto-created with user story", dotClass: "bg-purple-500 shadow-purple-500/50", badgeClass: "bg-purple-500/20 text-purple-300" },
+                  { time: "10:30 AM", icon: "💻", title: "Code Generated", desc: "3 files, +147 lines", dotClass: "bg-indigo-500 shadow-indigo-500/50", badgeClass: "bg-indigo-500/20 text-indigo-300" },
+                  { time: "1:15 PM", icon: "✅", title: "PR Ready", desc: "Developer approves", dotClass: "bg-green-500 shadow-green-500/50", badgeClass: "bg-green-500/20 text-green-300" },
                 ].map((step, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-6 ${i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"}`}
-                  >
-                    <div className={`flex-1 ${i % 2 === 0 ? "md:text-right" : "md:text-left"}`}>
-                      <div className={`bg-slate-800/50 rounded-xl p-6 border border-${step.color}-500/30 inline-block`}>
-                        <div className="text-sm text-slate-500 mb-1">{step.time}</div>
-                        <div className="text-2xl mb-2">{step.icon}</div>
-                        <h3 className="font-bold text-white mb-1">{step.title}</h3>
-                        <p className="text-slate-400 text-sm">{step.desc}</p>
-                      </div>
+                  <div key={i} className="flex flex-col items-center text-center relative z-10">
+                    {/* Dot on timeline */}
+                    <div className={`w-5 h-5 rounded-full border-4 border-slate-900 mb-4 shadow-lg ${step.dotClass}`} />
+
+                    {/* Icon */}
+                    <div className="text-4xl mb-2">{step.icon}</div>
+
+                    {/* Content */}
+                    <h3 className="font-bold text-white text-sm mb-1">{step.title}</h3>
+                    <p className="text-slate-400 text-xs mb-2 max-w-[120px]">{step.desc}</p>
+
+                    {/* Time Badge */}
+                    <div className={`text-xs font-mono px-2 py-1 rounded ${step.badgeClass}`}>
+                      {step.time}
                     </div>
-                    <div className="hidden md:flex w-4 h-4 bg-white rounded-full z-10 flex-shrink-0" />
-                    <div className="flex-1 hidden md:block" />
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Total time highlight */}
+            <div className="mt-10 text-center">
+              <div className="inline-block bg-gradient-to-r from-blue-500/10 to-green-500/10 rounded-xl px-8 py-4 border border-green-500/20">
+                <span className="text-slate-400">Total: </span>
+                <span className="text-4xl font-bold text-green-400">~4 hours</span>
+                <span className="text-slate-500 ml-3 text-sm">vs 6-9 weeks traditional</span>
               </div>
             </div>
           </div>
@@ -430,7 +443,128 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 7: Security & BYOK */}
+        {/* Slide 7: Proprietary Technology */}
+        <section
+          id="proprietary"
+          className={`min-h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-purple-950/20 transition-all duration-1000 ${
+            isVisible["proprietary"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
+        >
+          <div className="max-w-5xl w-full">
+            <div className="text-center mb-12">
+              <div className="inline-block px-4 py-2 bg-purple-500/20 text-purple-300 rounded-full text-sm mb-4">
+                Proprietary Technology
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                The QUAD Advantage
+              </h2>
+              <p className="text-xl text-slate-400">
+                Ten proprietary systems that power your development
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {[
+                {
+                  name: "QUAD FLOW™",
+                  icon: "🔄",
+                  tagline: "Core Workflow",
+                  desc: "Q → U → A → D methodology",
+                  cardClass: "from-blue-500/10 to-blue-600/5 border-blue-500/20 hover:border-blue-500/40",
+                  tagClass: "text-blue-400",
+                },
+                {
+                  name: "QUAD FLUX™",
+                  icon: "⚡",
+                  tagline: "AI Routing",
+                  desc: "Multi-provider smart routing",
+                  cardClass: "from-yellow-500/10 to-yellow-600/5 border-yellow-500/20 hover:border-yellow-500/40",
+                  tagClass: "text-yellow-400",
+                },
+                {
+                  name: "QUAD ORBIT™",
+                  icon: "🌐",
+                  tagline: "Cloud Deploy",
+                  desc: "Multi-cloud, zero lock-in",
+                  cardClass: "from-cyan-500/10 to-cyan-600/5 border-cyan-500/20 hover:border-cyan-500/40",
+                  tagClass: "text-cyan-400",
+                },
+                {
+                  name: "QUAD GATE™",
+                  icon: "🚦",
+                  tagline: "Human Gates",
+                  desc: "AI suggests, humans decide",
+                  cardClass: "from-green-500/10 to-green-600/5 border-green-500/20 hover:border-green-500/40",
+                  tagClass: "text-green-400",
+                },
+                {
+                  name: "QUAD SYNC™",
+                  icon: "🔗",
+                  tagline: "Integrations",
+                  desc: "Jira, GitHub, Slack sync",
+                  cardClass: "from-orange-500/10 to-orange-600/5 border-orange-500/20 hover:border-orange-500/40",
+                  tagClass: "text-orange-400",
+                },
+                {
+                  name: "QUAD PULSE™",
+                  icon: "📡",
+                  tagline: "Monitoring",
+                  desc: "Real-time health & metrics",
+                  cardClass: "from-pink-500/10 to-pink-600/5 border-pink-500/20 hover:border-pink-500/40",
+                  tagClass: "text-pink-400",
+                },
+                {
+                  name: "QUAD FORGE™",
+                  icon: "🔥",
+                  tagline: "Data Generation",
+                  desc: "Test data on the fly",
+                  cardClass: "from-red-500/10 to-red-600/5 border-red-500/20 hover:border-red-500/40",
+                  tagClass: "text-red-400",
+                },
+                {
+                  name: "QUAD SPARK™",
+                  icon: "✨",
+                  tagline: "Code Generation",
+                  desc: "AI-powered code from specs",
+                  cardClass: "from-violet-500/10 to-violet-600/5 border-violet-500/20 hover:border-violet-500/40",
+                  tagClass: "text-violet-400",
+                },
+                {
+                  name: "QUAD MIRROR™",
+                  icon: "🪞",
+                  tagline: "Environment Clone",
+                  desc: "Prod to dev with masked PII",
+                  cardClass: "from-teal-500/10 to-teal-600/5 border-teal-500/20 hover:border-teal-500/40",
+                  tagClass: "text-teal-400",
+                },
+                {
+                  name: "QUAD LENS™",
+                  icon: "🔍",
+                  tagline: "Right-Sized Solutions",
+                  desc: "Simplest effective architecture",
+                  cardClass: "from-amber-500/10 to-amber-600/5 border-amber-500/20 hover:border-amber-500/40",
+                  tagClass: "text-amber-400",
+                },
+              ].map((tech, i) => (
+                <div
+                  key={i}
+                  className={`bg-gradient-to-br ${tech.cardClass} rounded-xl p-4 border transition-all`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">{tech.icon}</span>
+                    <div>
+                      <h3 className="font-bold text-white text-sm">{tech.name}</h3>
+                      <p className={`text-xs ${tech.tagClass}`}>{tech.tagline}</p>
+                    </div>
+                  </div>
+                  <p className="text-slate-400 text-xs">{tech.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Slide 8: Security & BYOK */}
         <section
           id="security"
           className={`min-h-screen snap-start flex items-center justify-center px-6 transition-all duration-1000 ${

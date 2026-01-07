@@ -10,11 +10,11 @@ export default function CustomerHeader() {
 
   const navLinks = [
     { href: "/customer", label: "Overview" },
-    { href: "/customer/pitch", label: "Pitch Deck" },
-    { href: "/customer/demo", label: "Live Demo" },
-    { href: "/customer/roi", label: "ROI Calculator" },
+    { href: "/customer/pitch", label: "Pitch" },
+    { href: "/customer/demo", label: "Demo" },
+    { href: "/customer/roi", label: "ROI" },
+    { href: "/customer/features", label: "Features" },
     { href: "/customer/about", label: "About Us" },
-    { href: "/customer/settings", label: "⚙️ Settings" },
   ];
 
   const isActive = (href: string) => {
@@ -59,7 +59,7 @@ export default function CustomerHeader() {
               href="/customer/contact"
               className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-medium rounded-lg transition-all"
             >
-              Schedule Demo
+              Contact
             </Link>
           </nav>
 
@@ -105,7 +105,7 @@ export default function CustomerHeader() {
               onClick={() => setMobileMenuOpen(false)}
               className="mt-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-medium rounded-lg text-center transition-all"
             >
-              Schedule Demo
+              Contact
             </Link>
           </nav>
         </div>
