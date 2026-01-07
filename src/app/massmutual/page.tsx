@@ -314,6 +314,26 @@ export default function MassMutualLanding() {
           </div>
         </div>
       </section>
+
+      {/* CTA to Demo */}
+      <section className="py-16 px-4 bg-slate-900">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
+            Ready to See It?
+          </div>
+          <h2 className="text-3xl font-bold mb-4">Experience QUAD Platform</h2>
+          <p className="text-slate-400 max-w-2xl mx-auto mb-8">
+            Walk through the concept, then explore the platform as admin@massmutual.com
+          </p>
+          <Link
+            href="/massmutual/demo"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
+          >
+            Start Guided Demo
+            <span>→</span>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

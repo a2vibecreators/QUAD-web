@@ -52,9 +52,11 @@ export async function middleware(request: NextRequest) {
 
   // =====================================================
   // MassMutual Subdomain Handling
-  // massmutual.quadframe.work → /massmutual/* routes
+  // massmutual.quadframe.work → /massmutual/* routes (PROD)
+  // massmutual-dev.quadframe.work → /massmutual/* routes (DEV)
+  // massmutual-qa.quadframe.work → /massmutual/* routes (QA)
   // =====================================================
-  if (hostname.startsWith('massmutual.')) {
+  if (hostname.startsWith('massmutual.') || hostname.startsWith('massmutual-dev.') || hostname.startsWith('massmutual-qa.')) {
     // Skip static assets and API routes
     if (pathname.startsWith('/_next') || pathname.startsWith('/api') || SKIP_PATTERNS.some(p => p.test(pathname))) {
       return NextResponse.next();

@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 /**
  * Conditional Footer Component
@@ -10,9 +11,16 @@ import { usePathname } from "next/navigation";
  */
 export default function ConditionalFooter() {
   const pathname = usePathname();
+  const [isMassMutualSubdomain, setIsMassMutualSubdomain] = useState(false);
 
-  // Hide main footer on MassMutual pages - they have their own footer
-  if (pathname.startsWith("/massmutual")) {
+  useEffect(() => {
+    // Check if we're on a MassMutual subdomain
+    const hostname = window.location.hostname;
+    setIsMassMutualSubdomain(hostname.startsWith("massmutual"));
+  }, []);
+
+  // Hide main footer on MassMutual pages OR MassMutual subdomain
+  if (pathname.startsWith("/massmutual") || isMassMutualSubdomain) {
     return null;
   }
 

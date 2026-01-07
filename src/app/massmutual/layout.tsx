@@ -63,6 +63,18 @@ export default function MassMutualLayout({
                 ROI Calculator
               </Link>
               <Link
+                href="/massmutual/about"
+                className="text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                About Us
+              </Link>
+              <Link
+                href="/massmutual/settings"
+                className="text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                ⚙️ Settings
+              </Link>
+              <Link
                 href="/massmutual/contact"
                 className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-medium rounded-lg transition-all"
               >

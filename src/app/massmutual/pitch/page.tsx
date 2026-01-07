@@ -51,11 +51,50 @@ export default function MassMutualPitch() {
             </div>
           </section>
 
+          {/* Channelized AI Energy */}
+          <section className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-2xl p-8 border border-yellow-500/20">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center text-yellow-400 font-bold">
+                2
+              </div>
+              <h2 className="text-2xl font-bold">Channelized AI Energy</h2>
+            </div>
+            <div className="mb-6">
+              <p className="text-slate-300 mb-4">
+                Today&apos;s AI coding assistants have incredible power - <span className="text-yellow-400 font-mono">Agent Rules</span>, <span className="text-yellow-400 font-mono">Commands</span>, <span className="text-yellow-400 font-mono">Skills</span>, <span className="text-yellow-400 font-mono">RAG</span>, <span className="text-yellow-400 font-mono">AST</span>, <span className="text-yellow-400 font-mono">ADK</span> - but it&apos;s scattered.
+              </p>
+              <p className="text-slate-400 text-sm italic">
+                Developers send raw HTTP requests to AI, hoping for the best. Result? Hallucinations. Wrong syntax. Made-up file paths.
+              </p>
+            </div>
+            <div className="bg-slate-800/50 rounded-xl p-6 mb-6">
+              <p className="text-center text-lg">
+                Think of AI like <span className="text-yellow-400 font-bold">electricity</span> - raw electricity is dangerous. Through proper wiring, it powers your home safely.
+              </p>
+              <p className="text-center text-2xl font-bold mt-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
+                QUAD is the wiring.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { before: "Random AI responses", after: "Predictable output" },
+                { before: "Hallucinated paths", after: "Real codebase refs" },
+                { before: "Syntax errors", after: "AST-verified code" },
+                { before: "Context confusion", after: "Smart memory" },
+              ].map((item, i) => (
+                <div key={i} className="text-center">
+                  <div className="text-red-400 text-xs line-through mb-1">{item.before}</div>
+                  <div className="text-green-400 text-sm font-bold">{item.after}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* The QUAD Model */}
           <section className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 font-bold">
-                2
+                3
               </div>
               <h2 className="text-2xl font-bold">The QUAD Model</h2>
             </div>
@@ -81,7 +120,7 @@ export default function MassMutualPitch() {
           <section className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 font-bold">
-                3
+                4
               </div>
               <h2 className="text-2xl font-bold">Why QUAD vs Competitors</h2>
             </div>
@@ -141,7 +180,7 @@ export default function MassMutualPitch() {
           <section className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl p-8 border border-blue-500/20">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 font-bold">
-                4
+                5
               </div>
               <h2 className="text-2xl font-bold">Partnership Proposal</h2>
             </div>
@@ -180,7 +219,7 @@ export default function MassMutualPitch() {
           <section className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center text-green-400 font-bold">
-                5
+                6
               </div>
               <h2 className="text-2xl font-bold">The Ask</h2>
             </div>

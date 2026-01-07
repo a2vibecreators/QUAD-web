@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import MethodologySelector from "@/components/MethodologySelector";
 import { SearchButton } from "@/components/SearchProvider";
@@ -14,9 +15,16 @@ import DomainSelector from "@/components/DomainSelector";
  */
 export default function ConditionalNav() {
   const pathname = usePathname();
+  const [isMassMutualSubdomain, setIsMassMutualSubdomain] = useState(false);
 
-  // Hide main nav on MassMutual pages - they have their own layout
-  if (pathname.startsWith("/massmutual")) {
+  useEffect(() => {
+    // Check if we're on a MassMutual subdomain
+    const hostname = window.location.hostname;
+    setIsMassMutualSubdomain(hostname.startsWith("massmutual"));
+  }, []);
+
+  // Hide main nav on MassMutual pages OR MassMutual subdomain
+  if (pathname.startsWith("/massmutual") || isMassMutualSubdomain) {
     return null;
   }
 
