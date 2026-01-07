@@ -54,8 +54,30 @@ case "$ENV" in
         ;;
     prod)
         print_status "PROD uses GCP Cloud Run"
-        # TODO: Add GCP deployment
-        exit 0
+
+        # Check prerequisites
+        if [ -z "$BW_SESSION" ]; then
+            print_error "BW_SESSION not set. Run: export BW_SESSION=\$(bw unlock --raw)"
+            exit 1
+        fi
+
+        # GCP Configuration
+        GCP_PROJECT="nutrinine-prod"
+        GCP_REGION="us-east1"
+        GCP_SERVICE="quad-web-prod"
+        GCP_IMAGE="gcr.io/${GCP_PROJECT}/quad-web:latest"
+        CLOUD_SQL_INSTANCE="${GCP_PROJECT}:${GCP_REGION}:nutrinine-db"
+
+        # Fetch secrets from Vaultwarden
+        print_status "Fetching secrets from Vaultwarden (PROD collection)..."
+        source "$SCRIPT_DIR/fetch-secrets.sh" prod
+
+        # Build DATABASE_URL for Cloud SQL
+        DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@/${DB_NAME}?host=/cloudsql/${CLOUD_SQL_INSTANCE}"
+
+        DOMAIN="quadframe.work"
+        NETWORK=""  # Cloud Run doesn't use Docker networks
+        CONTAINER=""  # Cloud Run service name
         ;;
     *)
         echo "Usage: $0 {dev|qa|prod} [db|web]"
@@ -74,7 +96,7 @@ deploy_db() {
     print_status "Database schema deployed"
 }
 
-# Deploy web application
+# Deploy web application (DEV/QA - Docker on Mac Studio)
 deploy_web() {
     print_status "Building Docker image..."
     cd "$WEB_DIR"
@@ -114,15 +136,86 @@ deploy_web() {
     print_status "URL: https://${DOMAIN}"
 }
 
+# Deploy web application (PROD - GCP Cloud Run)
+deploy_web_prod() {
+    print_status "Deploying to GCP Cloud Run..."
+    cd "$WEB_DIR"
+
+    # Ensure gcloud is authenticated
+    print_status "Checking GCP authentication..."
+    gcloud config set project $GCP_PROJECT
+
+    # Build Docker image for amd64 (Cloud Run requires linux/amd64)
+    print_status "Building Docker image for Cloud Run (amd64)..."
+    docker build --platform linux/amd64 -t $GCP_IMAGE .
+
+    # Configure Docker to use gcloud as credential helper
+    print_status "Configuring Docker for GCR..."
+    gcloud auth configure-docker --quiet
+
+    # Push to Google Container Registry
+    print_status "Pushing image to GCR..."
+    docker push $GCP_IMAGE
+
+    # Deploy to Cloud Run
+    print_status "Deploying to Cloud Run..."
+
+    # Get backend URL (use actual Cloud Run URL, not custom domain yet)
+    BACKEND_URL="https://quad-services-prod-605414080358.us-east1.run.app/v1"
+
+    gcloud run deploy $GCP_SERVICE \
+        --image=$GCP_IMAGE \
+        --region=$GCP_REGION \
+        --platform=managed \
+        --allow-unauthenticated \
+        --memory=512Mi \
+        --cpu=1 \
+        --max-instances=10 \
+        --min-instances=0 \
+        --timeout=300 \
+        --add-cloudsql-instances=$CLOUD_SQL_INSTANCE \
+        --set-env-vars="DATABASE_URL=${DATABASE_URL},NEXTAUTH_URL=https://${DOMAIN},NEXTAUTH_SECRET=${NEXTAUTH_SECRET},QUAD_API_URL=${BACKEND_URL},GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID},GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET},GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-},GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-},ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-},GEMINI_API_KEY=${GEMINI_API_KEY:-AIzaSyBA27fTF2AyRISvz0LAJTX9mCL8B2PJxBY},SPRING_PROFILES_ACTIVE=prod"
+
+    # Get the service URL
+    SERVICE_URL=$(gcloud run services describe $GCP_SERVICE --region=$GCP_REGION --format='value(status.url)')
+
+    print_success "╔════════════════════════════════════════════════╗"
+    print_success "║  PROD Deployment Complete! ✓                  ║"
+    print_success "╚════════════════════════════════════════════════╝"
+    echo ""
+    print_status "Service URL: $SERVICE_URL"
+    print_status "Custom Domain: https://${DOMAIN}"
+    echo ""
+    print_status "Next Steps:"
+    echo "  1. Map custom domain: gcloud beta run domain-mappings create --service=$GCP_SERVICE --domain=$DOMAIN --region=$GCP_REGION"
+    echo "  2. Update Cloudflare DNS to point to ghs.googlehosted.com"
+    echo "  3. Wait for SSL certificate provisioning (15-30 minutes)"
+    echo ""
+}
+
 # Main
 case "$COMPONENT" in
     db|database)
+        if [ "$ENV" = "prod" ]; then
+            print_error "Database deployment for PROD not supported (use Cloud SQL directly)"
+            print_status "Use: gcloud sql databases create quad_prod_db --instance=nutrinine-db"
+            exit 1
+        fi
         deploy_db
         ;;
     web|"")
-        deploy_web
+        if [ "$ENV" = "prod" ]; then
+            deploy_web_prod
+        else
+            deploy_web
+        fi
         ;;
     all)
+        if [ "$ENV" = "prod" ]; then
+            print_error "Database deployment for PROD not supported"
+            print_status "Deploy web only: $0 prod web"
+            exit 1
+        fi
         deploy_db
         deploy_web
         ;;

@@ -263,7 +263,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'action_items array required' }, { status: 400 });
     }
 
-    const results = [];
+    const results: Array<{ item_id: any; action: string }> = [];
     for (const item of action_items) {
       const { item_id, confirm, reject, edited_text } = item;
 
@@ -342,7 +342,14 @@ export async function POST(
       }, { status: 400 });
     }
 
-    const proposedFollowups = [];
+    const proposedFollowups: Array<{
+      id: string;
+      title: string;
+      type: string;
+      suggested_assignee: string;
+      assignment_reason: string;
+      alternatives: string[];
+    }> = [];
 
     for (const actionItem of confirmedPendingItems) {
       // Determine ticket type from item type

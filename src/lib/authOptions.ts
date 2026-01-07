@@ -148,10 +148,10 @@ export const authOptions: NextAuthOptions = {
             token.fullName = dbUser.fullName;
 
             // TODO: Fetch domain membership from Java backend when endpoint exists
-            // For now, domain info will be null for new users
-            token.domainId = null;
-            token.domainRole = null;
-            token.allocationPercentage = null;
+            // For now, domain info will be undefined for new users
+            token.domainId = undefined;
+            token.domainRole = undefined;
+            token.allocationPercentage = undefined;
 
             // Generate access token for API calls
             token.accessToken = jwt.sign(

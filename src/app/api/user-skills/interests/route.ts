@@ -127,7 +127,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'interests array is required' }, { status: 400 });
     }
 
-    const results = [];
+    const results: Array<{ action: string; skill: any; interest_level: string | null }> = [];
 
     for (const item of interests) {
       const { skill_name, interest_level, wants_to_learn } = item;

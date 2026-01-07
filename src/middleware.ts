@@ -48,6 +48,30 @@ const SKIP_PATTERNS = [
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get('host') || '';
+
+  // =====================================================
+  // MassMutual Subdomain Handling
+  // massmutual.quadframe.work → /massmutual/* routes
+  // =====================================================
+  if (hostname.startsWith('massmutual.')) {
+    // Skip static assets and API routes
+    if (pathname.startsWith('/_next') || pathname.startsWith('/api') || SKIP_PATTERNS.some(p => p.test(pathname))) {
+      return NextResponse.next();
+    }
+
+    // Root path → MassMutual landing page
+    if (pathname === '/') {
+      return NextResponse.rewrite(new URL('/massmutual', request.url));
+    }
+
+    // Other paths → prefix with /massmutual if not already
+    if (!pathname.startsWith('/massmutual')) {
+      return NextResponse.rewrite(new URL(`/massmutual${pathname}`, request.url));
+    }
+
+    return NextResponse.next();
+  }
 
   // Skip static assets
   if (SKIP_PATTERNS.some(pattern => pattern.test(pathname))) {

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 // NOTE: Prisma removed - using stubs until Java backend ready
 import { verifyToken } from '@/lib/auth';
-import { assignTicket, recordAssignment } from '@/lib/services/assignment-service';
+import { assignTicket, recordAssignment, type AssignmentResult } from '@/lib/services/assignment-service';
 
 // TODO: All database operations in this file need to be implemented via Java backend
 
@@ -303,29 +303,32 @@ export async function POST(request: NextRequest) {
     });
 
     // Intelligent assignment if not manually assigned
-    let assignmentResult = null;
+    let assignmentResult: AssignmentResult | null = null;
     if (!assigned_to) {
       try {
         assignmentResult = await assignTicket(ticket.id, domain_id, payload.companyId);
 
-        // Update ticket with assigned user
-        await stubUpdateTicket(ticket.id, { assigned_to: assignmentResult.assigned_to });
+        // Type guard: Only proceed if assignmentResult is not null
+        if (assignmentResult) {
+          // Update ticket with assigned user
+          await stubUpdateTicket(ticket.id, { assigned_to: assignmentResult.assigned_to });
 
-        // Record assignment for audit and learning
-        await recordAssignment(ticket.id, assignmentResult);
+          // Record assignment for audit and learning
+          await recordAssignment(ticket.id, assignmentResult);
 
-        // Merge assignment info into response
-        (ticket as Record<string, unknown>).assigned_to = assignmentResult.assigned_to;
-        (ticket as Record<string, unknown>).assignment_info = {
-          type: assignmentResult.assignment_type,
-          score: assignmentResult.score,
-          reason: assignmentResult.reason,
-          assigned_name: assignmentResult.assigned_name
-        };
+          // Merge assignment info into response
+          (ticket as unknown as Record<string, unknown>).assigned_to = assignmentResult.assigned_to;
+          (ticket as unknown as Record<string, unknown>).assignment_info = {
+            type: assignmentResult.assignment_type,
+            score: assignmentResult.score,
+            reason: assignmentResult.reason,
+            assigned_name: assignmentResult.assigned_name
+          };
+        }
       } catch (assignError) {
         // Assignment failed (e.g., no developers) - ticket still created unassigned
         console.warn('Auto-assignment failed:', assignError);
-        (ticket as Record<string, unknown>).assignment_info = {
+        (ticket as unknown as Record<string, unknown>).assignment_info = {
           type: 'unassigned',
           reason: 'No developers available for auto-assignment'
         };

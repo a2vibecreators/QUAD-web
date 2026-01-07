@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'skills array is required' }, { status: 400 });
     }
 
-    const results = [];
+    const results: Array<{ action: string; skill: UserSkill }> = [];
 
     for (const skillData of skills) {
       const { skill_name, skill_id, proficiency_level, skill_category } = skillData;

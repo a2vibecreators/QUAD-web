@@ -9,13 +9,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '2mb',
     },
   },
-  // TODO: Re-enable type checking after full Prisma migration is complete
-  // Temporarily disabled during Java backend migration
+  // TypeScript and ESLint checking re-enabled (Jan 5, 2026)
+  // All type errors fixed - ready for production builds
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 };
 

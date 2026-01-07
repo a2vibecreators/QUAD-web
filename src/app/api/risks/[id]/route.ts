@@ -117,7 +117,7 @@ export async function GET(
     }
 
     // Get owner name if assigned
-    let owner = null;
+    let owner: any = null;
     if (risk.owner_user_id) {
       owner = await findUserById(risk.owner_user_id);
     }

@@ -165,7 +165,12 @@ async function analyzeRequirementWithAI(
   // In production, this would call Claude/GPT API
   // For now, return a simulated response based on title keywords
 
-  const milestones = [];
+  const milestones: Array<{
+    title: string;
+    description: string;
+    sequence_order: number;
+    ai_confidence: number;
+  }> = [];
   const baseConfidence = 0.85;
 
   // Simulate milestone extraction

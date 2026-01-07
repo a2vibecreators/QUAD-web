@@ -51,14 +51,14 @@ export async function POST(request: NextRequest) {
         sub: user.id,
         email: user.email,
         name: user.fullName,
-        picture: null,
+        picture: undefined,
         userId: user.id,
         companyId: user.companyId,
         role: user.role,
         fullName: user.fullName,
-        domainId: null,
-        domainRole: null,
-        allocationPercentage: null,
+        domainId: undefined,
+        domainRole: undefined,
+        allocationPercentage: undefined,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
       },
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Set session cookie
-    cookies().set({
+    (await cookies()).set({
       name: COOKIE_NAME,
       value: token,
       httpOnly: true,

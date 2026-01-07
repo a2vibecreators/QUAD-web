@@ -153,7 +153,7 @@ async function handleCalComWebhook(
         ),
         externalProvider: 'cal_com',
         externalId: processed.uid,
-        meetingUrl: processed.meetingUrl,
+        meetingUrl: processed.meetingUrl || null,
         status: 'scheduled',
         organizerId: orgAdmin.id,
       });

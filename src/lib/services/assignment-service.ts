@@ -33,7 +33,7 @@ interface AssignmentCandidate {
   skill_matches: { skill: string; user_level: number; required_level: number; interest: string; wants_to_learn: boolean }[];
 }
 
-interface AssignmentResult {
+export interface AssignmentResult {
   assigned_to: string;
   assigned_name: string;
   assignment_type: 'skill_match' | 'interest_match' | 'learning_opportunity' | 'workload_balance' | 'experience_based' | 'single_developer';
@@ -164,7 +164,7 @@ export async function assignTicket(
   // 3. Get required skills and ticket priority for weighted scoring
   const requiredSkills = await analyzeTicketSkills(ticketId, orgId);
   // TODO: Get ticket priority from Java backend
-  const priority = 'medium'; // Default priority until backend ready
+  const priority = ('medium' as 'critical' | 'high' | 'medium' | 'low'); // Default priority until backend ready
 
   // 4. Score each candidate
   const candidates: AssignmentCandidate[] = [];

@@ -185,6 +185,7 @@ function SignupContent() {
         }
       } else {
         // Startup/Business: Instant signup
+        let data: any; // Declare at higher scope for lines 249-259
 
         // OAuth users: Use complete-oauth-signup endpoint
         if (verifiedUser.isOAuth) {
@@ -199,7 +200,7 @@ function SignupContent() {
             }),
           });
 
-          const data = await response.json();
+          data = await response.json();
           if (!response.ok) {
             throw new Error(data.error || 'OAuth signup failed');
           }
@@ -239,7 +240,7 @@ function SignupContent() {
             }),
           });
 
-          const data = await response.json();
+          data = await response.json();
           if (!response.ok) {
             throw new Error(data.error || 'Signup failed');
           }

@@ -228,7 +228,7 @@ async function analyzeTicketWithAI(
   }
 
   // Generate acceptance criteria if missing
-  let generatedAC = null;
+  let generatedAC: string | null = null;
   if (!acceptanceCriteria) {
     generatedAC = `## Acceptance Criteria (AI-Generated - Please Review)
 

@@ -336,22 +336,9 @@ export default function PageNavigation({ sections }: PageNavigationProps) {
                   )}
                 </div>
               ) : (
-                /* Sign In + Sign Up Buttons */
-                <div className="flex items-center gap-2">
-                  <Link
-                    href="/auth/login"
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 text-white font-medium"
-                  >
-                    <span className="text-sm">Sign In</span>
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg transition-all bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium"
-                  >
-                    <span className="text-sm">Sign Up</span>
-                    <span>→</span>
-                  </Link>
-                </div>
+                /* Sign In + Sign Up Buttons - HIDDEN for static website */
+                /* Authentication features are not yet complete - hiding to avoid incomplete experience */
+                null
               )}
 
               <button

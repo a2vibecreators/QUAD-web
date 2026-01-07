@@ -509,7 +509,7 @@ export async function POST(
       }
 
       // Create tickets with intelligent assignment
-      const createdTickets = [];
+      const createdTickets: Ticket[] = [];
       const assignmentResults: Array<{ ticketId: string; assignedTo: string | null; assignedName: string; reason: string }> = [];
 
       for (const t of analysis.tickets) {
@@ -549,7 +549,7 @@ export async function POST(
           const assignment = await assignTicket(ticket.id, requirement.domain_id, payload.companyId);
           await stubUpdateTicketAssignment(ticket.id, assignment.assigned_to);
           await recordAssignment(ticket.id, assignment);
-          (ticket as Record<string, unknown>).assigned_to = assignment.assigned_to;
+          (ticket as unknown as Record<string, unknown>).assigned_to = assignment.assigned_to;
           assignmentResults.push({
             ticketId: ticket.id,
             assignedTo: assignment.assigned_to,

@@ -328,7 +328,7 @@ Output as JIRA-compatible markdown.`}
 
         {/* Footer */}
         <div className="text-center text-slate-500 text-sm">
-          <p>Created by Suman Addanki | suman.addanki@gmail.com</p>
+          <p>© 2025-2026 QUADFRAMEWORK LLC | contact@quadframe.work</p>
           <p className="mt-1">QUAD Framework - Quick Unified Agentic Development</p>
         </div>
       </div>
