@@ -1044,16 +1044,6 @@ export default function CustomerPitch() {
                 </div>
               </div>
             </div>
-
-            <div className="mt-8 text-center">
-              <Link
-                href="/customer/demo"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
-              >
-                See QUAD in Action
-                <span>→</span>
-              </Link>
-            </div>
           </div>
         </section>
 
