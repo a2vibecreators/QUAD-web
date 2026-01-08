@@ -108,7 +108,7 @@ export default function CustomerPitch() {
         <section id="title" className="h-screen snap-start flex items-center justify-center px-6">
           <div className="text-center max-w-4xl">
             <div className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm mb-6">
-              Founding Partner Program
+              Founding Customer Program
             </div>
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
               QUAD Platform
@@ -565,7 +565,7 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 11: Founding Partner Program */}
+        {/* Slide 11: Founding Customer Program */}
         <section id="founding-partner" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-purple-950/30">
           <div className="max-w-4xl w-full">
             <div className="text-center mb-12">
@@ -573,7 +573,7 @@ export default function CustomerPitch() {
                 ⭐ Exclusive Offer
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                Founding Partner Program
+                Founding Customer Program
               </h2>
               <p className="text-xl text-slate-400">
                 Limited to <span className="text-amber-400 font-bold">3 enterprise partners</span> in 2026
@@ -581,13 +581,13 @@ export default function CustomerPitch() {
             </div>
 
             <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-8 border border-amber-500/30 mb-8">
-              <h3 className="text-2xl font-bold text-white mb-6 text-center">What Founding Partners Get</h3>
+              <h3 className="text-2xl font-bold text-white mb-6 text-center">What Founding Customers Get</h3>
               <div className="grid md:grid-cols-2 gap-6">
                 {[
                   { icon: "🎯", title: "Dedicated Success Team", desc: "Personal onboarding and ongoing support" },
                   { icon: "🧠", title: "Custom AI Training", desc: "QUAD trained on YOUR codebase patterns" },
                   { icon: "⚡", title: "Priority Features", desc: "Your requests go to the front of the queue" },
-                  { icon: "💎", title: "Founding Partner Pricing", desc: "Lock in pre-launch rates forever" },
+                  { icon: "💎", title: "Founding Customer Pricing", desc: "Lock in pre-launch rates forever" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-4">
                     <div className="text-3xl">{item.icon}</div>
@@ -630,7 +630,7 @@ export default function CustomerPitch() {
               Get Started
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Become a Founding Partner
+              Become a Founding Customer
             </h2>
             <p className="text-xl text-slate-400 mb-8">
               Only 3 spots available. Let&apos;s discuss if QUAD is right for your team.
