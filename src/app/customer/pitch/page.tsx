@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 
-// Slide data
 const SLIDES = [
   { id: "title", label: "Welcome" },
   { id: "problem", label: "The Problem" },
@@ -21,17 +20,15 @@ const SLIDES = [
 
 export default function CustomerPitch() {
   const [activeSlide, setActiveSlide] = useState(0);
-  const [isVisible, setIsVisible] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Handle scroll to update active slide
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleScroll = () => {
       const scrollPosition = container.scrollTop;
-      const windowHeight = window.innerHeight;
+      const windowHeight = container.clientHeight;
       const newActiveSlide = Math.round(scrollPosition / windowHeight);
       setActiveSlide(newActiveSlide);
     };
@@ -40,20 +37,19 @@ export default function CustomerPitch() {
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const container = containerRef.current;
       if (!container) return;
 
-      if (e.key === "ArrowDown" || e.key === "PageDown") {
+      if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === " ") {
         e.preventDefault();
         const nextSlide = Math.min(activeSlide + 1, SLIDES.length - 1);
-        container.scrollTo({ top: nextSlide * window.innerHeight, behavior: "smooth" });
+        container.scrollTo({ top: nextSlide * container.clientHeight, behavior: "smooth" });
       } else if (e.key === "ArrowUp" || e.key === "PageUp") {
         e.preventDefault();
         const prevSlide = Math.max(activeSlide - 1, 0);
-        container.scrollTo({ top: prevSlide * window.innerHeight, behavior: "smooth" });
+        container.scrollTo({ top: prevSlide * container.clientHeight, behavior: "smooth" });
       }
     };
 
@@ -61,42 +57,21 @@ export default function CustomerPitch() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeSlide]);
 
-  // Intersection observer for animations
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible((prev) => ({ ...prev, [entry.target.id]: true }));
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    SLIDES.forEach((slide) => {
-      const element = document.getElementById(slide.id);
-      if (element) observer.observe(element);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
   const scrollToSlide = (index: number) => {
     const container = containerRef.current;
     if (!container) return;
-    container.scrollTo({ top: index * window.innerHeight, behavior: "smooth" });
+    container.scrollTo({ top: index * container.clientHeight, behavior: "smooth" });
   };
 
   return (
     <div className="relative">
       {/* Navigation Dots */}
-      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-3">
+      <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2">
         {SLIDES.map((slide, index) => (
           <button
             key={slide.id}
             onClick={() => scrollToSlide(index)}
-            className={`group flex items-center gap-3 transition-all ${
+            className={`group flex items-center justify-end gap-3 transition-all ${
               activeSlide === index ? "scale-110" : ""
             }`}
           >
@@ -126,16 +101,11 @@ export default function CustomerPitch() {
       {/* Slides Container */}
       <div
         ref={containerRef}
-        className="h-screen overflow-y-auto snap-y snap-mandatory"
-        style={{ scrollBehavior: "smooth" }}
+        className="h-screen overflow-y-scroll snap-y snap-mandatory"
+        style={{ scrollSnapType: "y mandatory" }}
       >
         {/* Slide 1: Title */}
-        <section
-          id="title"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 transition-opacity duration-1000 ${
-            isVisible["title"] ? "opacity-100" : "opacity-0"
-          }`}
-        >
+        <section id="title" className="h-screen snap-start flex items-center justify-center px-6">
           <div className="text-center max-w-4xl">
             <div className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm mb-6">
               Founding Partner Program
@@ -158,12 +128,7 @@ export default function CustomerPitch() {
         </section>
 
         {/* Slide 2: The Problem */}
-        <section
-          id="problem"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-red-950/20 transition-all duration-1000 ${
-            isVisible["problem"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        <section id="problem" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-red-950/20">
           <div className="text-center max-w-4xl">
             <div className="inline-block px-4 py-2 bg-red-500/20 text-red-300 rounded-full text-sm mb-6">
               The Problem
@@ -178,11 +143,7 @@ export default function CustomerPitch() {
                 { num: "3-4", label: "Weeks in planning", icon: "📅" },
                 { num: "30-40%", label: "Rework rate", icon: "🔄" },
               ].map((stat, i) => (
-                <div
-                  key={i}
-                  className={`bg-slate-800/50 rounded-xl p-6 border border-slate-700 transition-all duration-500 delay-${i * 200}`}
-                  style={{ transitionDelay: `${i * 200}ms` }}
-                >
+                <div key={i} className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
                   <div className="text-4xl mb-2">{stat.icon}</div>
                   <div className="text-3xl font-bold text-red-400">{stat.num}</div>
                   <div className="text-slate-400">{stat.label}</div>
@@ -193,12 +154,7 @@ export default function CustomerPitch() {
         </section>
 
         {/* Slide 3: Comparison */}
-        <section
-          id="comparison"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 transition-all duration-1000 ${
-            isVisible["comparison"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        <section id="comparison" className="h-screen snap-start flex items-center justify-center px-6">
           <div className="max-w-6xl w-full">
             <div className="text-center mb-12">
               <div className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm mb-4">
@@ -290,13 +246,8 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 4: Meeting to Code - Horizontal Steps */}
-        <section
-          id="meeting-to-code"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-blue-950/20 transition-all duration-1000 ${
-            isVisible["meeting-to-code"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        {/* Slide 4: Meeting to Code */}
+        <section id="meeting-to-code" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-blue-950/20">
           <div className="max-w-6xl w-full">
             <div className="text-center mb-10">
               <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
@@ -310,12 +261,8 @@ export default function CustomerPitch() {
               </p>
             </div>
 
-            {/* Horizontal Timeline with Dots */}
             <div className="relative">
-              {/* Timeline Line */}
               <div className="hidden md:block absolute top-[60px] left-[10%] right-[10%] h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 rounded-full" />
-
-              {/* Steps */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-0 md:px-[5%]">
                 {[
                   { time: "9:15 AM", icon: "📧", title: "Email", desc: "PM sends feature request", dotClass: "bg-blue-500 shadow-blue-500/50", badgeClass: "bg-blue-500/20 text-blue-300" },
@@ -324,17 +271,10 @@ export default function CustomerPitch() {
                   { time: "1:15 PM", icon: "✅", title: "PR Ready", desc: "Developer approves", dotClass: "bg-green-500 shadow-green-500/50", badgeClass: "bg-green-500/20 text-green-300" },
                 ].map((step, i) => (
                   <div key={i} className="flex flex-col items-center text-center relative z-10">
-                    {/* Dot on timeline */}
                     <div className={`w-5 h-5 rounded-full border-4 border-slate-900 mb-4 shadow-lg ${step.dotClass}`} />
-
-                    {/* Icon */}
                     <div className="text-4xl mb-2">{step.icon}</div>
-
-                    {/* Content */}
                     <h3 className="font-bold text-white text-sm mb-1">{step.title}</h3>
                     <p className="text-slate-400 text-xs mb-2 max-w-[120px]">{step.desc}</p>
-
-                    {/* Time Badge */}
                     <div className={`text-xs font-mono px-2 py-1 rounded ${step.badgeClass}`}>
                       {step.time}
                     </div>
@@ -343,7 +283,6 @@ export default function CustomerPitch() {
               </div>
             </div>
 
-            {/* Total time highlight */}
             <div className="mt-10 text-center">
               <div className="inline-block bg-gradient-to-r from-blue-500/10 to-green-500/10 rounded-xl px-8 py-4 border border-green-500/20">
                 <span className="text-slate-400">Total: </span>
@@ -355,12 +294,7 @@ export default function CustomerPitch() {
         </section>
 
         {/* Slide 5: AI Agents */}
-        <section
-          id="ai-agents"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 transition-all duration-1000 ${
-            isVisible["ai-agents"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        <section id="ai-agents" className="h-screen snap-start flex items-center justify-center px-6">
           <div className="max-w-5xl w-full">
             <div className="text-center mb-12">
               <div className="inline-block px-4 py-2 bg-purple-500/20 text-purple-300 rounded-full text-sm mb-4">
@@ -401,12 +335,7 @@ export default function CustomerPitch() {
         </section>
 
         {/* Slide 6: Role Dashboards */}
-        <section
-          id="dashboards"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-indigo-950/20 transition-all duration-1000 ${
-            isVisible["dashboards"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        <section id="dashboards" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-indigo-950/20">
           <div className="max-w-5xl w-full">
             <div className="text-center mb-12">
               <div className="inline-block px-4 py-2 bg-indigo-500/20 text-indigo-300 rounded-full text-sm mb-4">
@@ -420,20 +349,28 @@ export default function CustomerPitch() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               {[
                 { icon: "👔", role: "Executive", metrics: "All projects, ROI, Talent" },
                 { icon: "📊", role: "Director", metrics: "Departments, Resources" },
                 { icon: "🎯", role: "Tech Lead", metrics: "Sprint, Allocation, PRs" },
                 { icon: "💻", role: "Developer", metrics: "Tasks, AI savings, Code" },
+              ].map((item, i) => (
+                <div key={i} className="bg-slate-800/50 rounded-xl p-5 border border-slate-700 text-center">
+                  <div className="text-3xl mb-2">{item.icon}</div>
+                  <h3 className="font-bold text-white mb-1">{item.role}</h3>
+                  <p className="text-slate-500 text-sm">{item.metrics}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-4">
+              {[
                 { icon: "🧪", role: "QA", metrics: "Test queue, Coverage" },
                 { icon: "🚨", role: "Prod Support", metrics: "Incidents, MTTR, SLA" },
                 { icon: "🔧", role: "Infrastructure", metrics: "Uptime, Deployments, Cost" },
               ].map((item, i) => (
-                <div
-                  key={i}
-                  className={`bg-slate-800/50 rounded-xl p-5 border border-slate-700 ${i === 6 ? "md:col-span-4 md:max-w-xs md:mx-auto" : ""}`}
-                >
+                <div key={i} className="bg-slate-800/50 rounded-xl p-5 border border-slate-700 text-center w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)]">
                   <div className="text-3xl mb-2">{item.icon}</div>
                   <h3 className="font-bold text-white mb-1">{item.role}</h3>
                   <p className="text-slate-500 text-sm">{item.metrics}</p>
@@ -444,12 +381,7 @@ export default function CustomerPitch() {
         </section>
 
         {/* Slide 7: Proprietary Technology */}
-        <section
-          id="proprietary"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-purple-950/20 transition-all duration-1000 ${
-            isVisible["proprietary"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        <section id="proprietary" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-purple-950/20">
           <div className="max-w-5xl w-full">
             <div className="text-center mb-12">
               <div className="inline-block px-4 py-2 bg-purple-500/20 text-purple-300 rounded-full text-sm mb-4">
@@ -465,91 +397,18 @@ export default function CustomerPitch() {
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {[
-                {
-                  name: "QUAD FLOW™",
-                  icon: "🔄",
-                  tagline: "Core Workflow",
-                  desc: "Q → U → A → D methodology",
-                  cardClass: "from-blue-500/10 to-blue-600/5 border-blue-500/20 hover:border-blue-500/40",
-                  tagClass: "text-blue-400",
-                },
-                {
-                  name: "QUAD FLUX™",
-                  icon: "⚡",
-                  tagline: "AI Routing",
-                  desc: "Multi-provider smart routing",
-                  cardClass: "from-yellow-500/10 to-yellow-600/5 border-yellow-500/20 hover:border-yellow-500/40",
-                  tagClass: "text-yellow-400",
-                },
-                {
-                  name: "QUAD ORBIT™",
-                  icon: "🌐",
-                  tagline: "Cloud Deploy",
-                  desc: "Multi-cloud, zero lock-in",
-                  cardClass: "from-cyan-500/10 to-cyan-600/5 border-cyan-500/20 hover:border-cyan-500/40",
-                  tagClass: "text-cyan-400",
-                },
-                {
-                  name: "QUAD GATE™",
-                  icon: "🚦",
-                  tagline: "Human Gates",
-                  desc: "AI suggests, humans decide",
-                  cardClass: "from-green-500/10 to-green-600/5 border-green-500/20 hover:border-green-500/40",
-                  tagClass: "text-green-400",
-                },
-                {
-                  name: "QUAD SYNC™",
-                  icon: "🔗",
-                  tagline: "Integrations",
-                  desc: "Jira, GitHub, Slack sync",
-                  cardClass: "from-orange-500/10 to-orange-600/5 border-orange-500/20 hover:border-orange-500/40",
-                  tagClass: "text-orange-400",
-                },
-                {
-                  name: "QUAD PULSE™",
-                  icon: "📡",
-                  tagline: "Monitoring",
-                  desc: "Real-time health & metrics",
-                  cardClass: "from-pink-500/10 to-pink-600/5 border-pink-500/20 hover:border-pink-500/40",
-                  tagClass: "text-pink-400",
-                },
-                {
-                  name: "QUAD FORGE™",
-                  icon: "🔥",
-                  tagline: "Data Generation",
-                  desc: "Test data on the fly",
-                  cardClass: "from-red-500/10 to-red-600/5 border-red-500/20 hover:border-red-500/40",
-                  tagClass: "text-red-400",
-                },
-                {
-                  name: "QUAD SPARK™",
-                  icon: "✨",
-                  tagline: "Code Generation",
-                  desc: "AI-powered code from specs",
-                  cardClass: "from-violet-500/10 to-violet-600/5 border-violet-500/20 hover:border-violet-500/40",
-                  tagClass: "text-violet-400",
-                },
-                {
-                  name: "QUAD MIRROR™",
-                  icon: "🪞",
-                  tagline: "Environment Clone",
-                  desc: "Prod to dev with masked PII",
-                  cardClass: "from-teal-500/10 to-teal-600/5 border-teal-500/20 hover:border-teal-500/40",
-                  tagClass: "text-teal-400",
-                },
-                {
-                  name: "QUAD LENS™",
-                  icon: "🔍",
-                  tagline: "Right-Sized Solutions",
-                  desc: "Simplest effective architecture",
-                  cardClass: "from-amber-500/10 to-amber-600/5 border-amber-500/20 hover:border-amber-500/40",
-                  tagClass: "text-amber-400",
-                },
+                { name: "QUAD FLOW™", icon: "🔄", tagline: "Core Workflow", desc: "Q → U → A → D methodology", cardClass: "from-blue-500/10 to-blue-600/5 border-blue-500/20", tagClass: "text-blue-400" },
+                { name: "QUAD FLUX™", icon: "⚡", tagline: "AI Routing", desc: "Multi-provider smart routing", cardClass: "from-yellow-500/10 to-yellow-600/5 border-yellow-500/20", tagClass: "text-yellow-400" },
+                { name: "QUAD ORBIT™", icon: "🌐", tagline: "Cloud Deploy", desc: "Multi-cloud, zero lock-in", cardClass: "from-cyan-500/10 to-cyan-600/5 border-cyan-500/20", tagClass: "text-cyan-400" },
+                { name: "QUAD GATE™", icon: "🚦", tagline: "Human Gates", desc: "AI suggests, humans decide", cardClass: "from-green-500/10 to-green-600/5 border-green-500/20", tagClass: "text-green-400" },
+                { name: "QUAD SYNC™", icon: "🔗", tagline: "Integrations", desc: "Jira, GitHub, Slack sync", cardClass: "from-orange-500/10 to-orange-600/5 border-orange-500/20", tagClass: "text-orange-400" },
+                { name: "QUAD PULSE™", icon: "📡", tagline: "Monitoring", desc: "Real-time health & metrics", cardClass: "from-pink-500/10 to-pink-600/5 border-pink-500/20", tagClass: "text-pink-400" },
+                { name: "QUAD FORGE™", icon: "🔥", tagline: "Data Generation", desc: "Test data on the fly", cardClass: "from-red-500/10 to-red-600/5 border-red-500/20", tagClass: "text-red-400" },
+                { name: "QUAD SPARK™", icon: "✨", tagline: "Code Generation", desc: "AI-powered code from specs", cardClass: "from-violet-500/10 to-violet-600/5 border-violet-500/20", tagClass: "text-violet-400" },
+                { name: "QUAD MIRROR™", icon: "🪞", tagline: "Environment Clone", desc: "Prod to dev with masked PII", cardClass: "from-teal-500/10 to-teal-600/5 border-teal-500/20", tagClass: "text-teal-400" },
+                { name: "QUAD LENS™", icon: "🔍", tagline: "Right-Sized Solutions", desc: "Simplest effective architecture", cardClass: "from-amber-500/10 to-amber-600/5 border-amber-500/20", tagClass: "text-amber-400" },
               ].map((tech, i) => (
-                <div
-                  key={i}
-                  className={`bg-gradient-to-br ${tech.cardClass} rounded-xl p-4 border transition-all`}
-                >
+                <div key={i} className={`bg-gradient-to-br ${tech.cardClass} rounded-xl p-4 border transition-all`}>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-2xl">{tech.icon}</span>
                     <div>
@@ -565,12 +424,7 @@ export default function CustomerPitch() {
         </section>
 
         {/* Slide 8: Security & BYOK */}
-        <section
-          id="security"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 transition-all duration-1000 ${
-            isVisible["security"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        <section id="security" className="h-screen snap-start flex items-center justify-center px-6">
           <div className="max-w-4xl w-full">
             <div className="text-center mb-12">
               <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
@@ -591,10 +445,7 @@ export default function CustomerPitch() {
                 { icon: "📋", title: "Audit Trail", desc: "Every AI action logged and auditable" },
                 { icon: "🛡️", title: "SOC 2 Ready", desc: "Enterprise compliance support" },
               ].map((item, i) => (
-                <div
-                  key={i}
-                  className="bg-slate-800/50 rounded-xl p-6 border border-slate-700"
-                >
+                <div key={i} className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
                   <div className="text-4xl mb-3">{item.icon}</div>
                   <h3 className="font-bold text-white text-xl mb-2">{item.title}</h3>
                   <p className="text-slate-400">{item.desc}</p>
@@ -604,13 +455,8 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 8: ROI */}
-        <section
-          id="roi"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-green-950/20 transition-all duration-1000 ${
-            isVisible["roi"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        {/* Slide 9: ROI */}
+        <section id="roi" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-green-950/20">
           <div className="max-w-4xl w-full">
             <div className="text-center mb-12">
               <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-4">
@@ -628,10 +474,7 @@ export default function CustomerPitch() {
                 { metric: "94%", label: "Talent retention", sub: "AI handles routine work" },
                 { metric: "8hrs", label: "Saved per dev/week", sub: "Focus on creative work" },
               ].map((item, i) => (
-                <div
-                  key={i}
-                  className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 text-center"
-                >
+                <div key={i} className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 text-center">
                   <div className="text-5xl font-bold text-green-400 mb-2">{item.metric}</div>
                   <div className="text-white font-semibold mb-1">{item.label}</div>
                   <div className="text-slate-500 text-sm">{item.sub}</div>
@@ -651,13 +494,8 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 9: Features Roadmap */}
-        <section
-          id="features"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 transition-all duration-1000 ${
-            isVisible["features"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        {/* Slide 10: Features Roadmap */}
+        <section id="features" className="h-screen snap-start flex items-center justify-center px-6">
           <div className="max-w-5xl w-full">
             <div className="text-center mb-10">
               <div className="inline-block px-4 py-2 bg-cyan-500/20 text-cyan-300 rounded-full text-sm mb-4">
@@ -672,24 +510,13 @@ export default function CustomerPitch() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-8">
-              {/* Phase 1 - Current */}
               <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl p-6 border border-green-500/30">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded font-bold">LIVE</span>
                   <h3 className="text-lg font-bold text-white">Phase 1</h3>
                 </div>
                 <ul className="space-y-2 text-sm">
-                  {[
-                    "Meeting → Code flow",
-                    "7 Role-based dashboards",
-                    "Email & Slack agents",
-                    "Code generation",
-                    "PR review agent",
-                    "Allocation tracking",
-                    "Jira integration",
-                    "GitHub integration",
-                    "BYOK support",
-                  ].map((f, i) => (
+                  {["Meeting → Code flow", "7 Role-based dashboards", "Email & Slack agents", "Code generation", "PR review agent", "Allocation tracking", "Jira integration", "GitHub integration", "BYOK support"].map((f, i) => (
                     <li key={i} className="flex items-center gap-2 text-slate-300">
                       <span className="text-green-400">✓</span> {f}
                     </li>
@@ -697,24 +524,13 @@ export default function CustomerPitch() {
                 </ul>
               </div>
 
-              {/* Phase 2 - Next */}
               <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-xl p-6 border border-blue-500/30">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded font-bold">Q2 2026</span>
                   <h3 className="text-lg font-bold text-white">Phase 2</h3>
                 </div>
                 <ul className="space-y-2 text-sm">
-                  {[
-                    "Zoom meeting MOM",
-                    "AI Priority Learning",
-                    "Test generation agent",
-                    "Deploy agent",
-                    "Settings toggles",
-                    "Performance tracking",
-                    "Training recommendations",
-                    "Cost optimization",
-                    "Multi-language MOM",
-                  ].map((f, i) => (
+                  {["Zoom meeting MOM", "AI Priority Learning", "Test generation agent", "Deploy agent", "Settings toggles", "Performance tracking", "Training recommendations", "Cost optimization", "Multi-language MOM"].map((f, i) => (
                     <li key={i} className="flex items-center gap-2 text-slate-400">
                       <span className="text-blue-400">○</span> {f}
                     </li>
@@ -722,24 +538,13 @@ export default function CustomerPitch() {
                 </ul>
               </div>
 
-              {/* Phase 3 - Future */}
               <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl p-6 border border-purple-500/30">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded font-bold">Q4 2026</span>
                   <h3 className="text-lg font-bold text-white">Phase 3</h3>
                 </div>
                 <ul className="space-y-2 text-sm">
-                  {[
-                    "Data masking (PII)",
-                    "Prod-like data setup",
-                    "Use case data gen",
-                    "VS Code extension",
-                    "Azure DevOps",
-                    "SOC 2 compliance",
-                    "Mobile apps",
-                    "Custom agents",
-                    "Enterprise analytics",
-                  ].map((f, i) => (
+                  {["Data masking (PII)", "Prod-like data setup", "Use case data gen", "VS Code extension", "Azure DevOps", "SOC 2 compliance", "Mobile apps", "Custom agents", "Enterprise analytics"].map((f, i) => (
                     <li key={i} className="flex items-center gap-2 text-slate-500">
                       <span className="text-purple-400">◇</span> {f}
                     </li>
@@ -760,13 +565,8 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 10: Founding Partner Program */}
-        <section
-          id="founding-partner"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-purple-950/30 transition-all duration-1000 ${
-            isVisible["founding-partner"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        {/* Slide 11: Founding Partner Program */}
+        <section id="founding-partner" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-purple-950/30">
           <div className="max-w-4xl w-full">
             <div className="text-center mb-12">
               <div className="inline-block px-4 py-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-300 rounded-full text-sm mb-4">
@@ -823,13 +623,8 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 10: Contact */}
-        <section
-          id="contact"
-          className={`min-h-screen snap-start flex items-center justify-center px-6 transition-all duration-1000 ${
-            isVisible["contact"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
+        {/* Slide 12: Contact */}
+        <section id="contact" className="h-screen snap-start flex items-center justify-center px-6">
           <div className="max-w-3xl w-full text-center">
             <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-6">
               Get Started
