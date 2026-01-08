@@ -361,100 +361,64 @@ export default function CustomerPitch() {
 
         {/* Slide 4.5: Real-time vs Batch Processing */}
         <section id="processing-modes" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-orange-950/20">
-          <div className="max-w-6xl w-full">
-            <div className="text-center mb-12">
-              <div className="inline-block px-4 py-2 bg-orange-500/20 text-orange-300 rounded-full text-sm mb-4">
+          <div className="max-w-5xl w-full">
+            <div className="text-center mb-8">
+              <div className="inline-block px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-xs mb-3">
                 Processing Modes
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
                 Real-time vs Batch
               </h2>
-              <p className="text-xl text-slate-400">
+              <p className="text-sm text-slate-400">
                 Choose the right processing mode for every task
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto mb-6">
               {/* Real-time Processing */}
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-950/40 rounded-2xl p-8 border border-blue-500/30">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="text-4xl">⚡</div>
-                  <h3 className="text-2xl font-bold text-blue-300">Real-time</h3>
-                </div>
-                <p className="text-slate-300 mb-6">Immediate response for interactive tasks</p>
-
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <p className="text-sm text-slate-400 mb-2">⏱️ Response Time</p>
-                    <p className="text-lg font-bold text-blue-300">&lt;5 seconds</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400 mb-2">💼 Use Cases</p>
-                    <ul className="text-sm space-y-1">
-                      <li className="text-slate-300">✅ Code review feedback</li>
-                      <li className="text-slate-300">✅ Quick API docs lookup</li>
-                      <li className="text-slate-300">✅ Test suggestions</li>
-                      <li className="text-slate-300">✅ Cost analysis</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400 mb-2">🎯 Best For</p>
-                    <p className="text-sm text-slate-300">Interactive user experience, quick answers</p>
-                  </div>
+              <div className="bg-gradient-to-br from-blue-900/40 to-blue-950/40 rounded-xl p-5 border border-blue-500/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="text-3xl">⚡</div>
+                  <h3 className="text-xl font-bold text-blue-300">Real-time</h3>
                 </div>
 
-                <div className="bg-blue-950/50 rounded-lg p-4 border border-blue-500/20">
-                  <p className="text-xs text-slate-400">Example</p>
-                  <p className="text-sm text-blue-300 font-mono mt-2">@quad review my PR → ✅ Done in 30s</p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1">⏱️ &lt;5 seconds</p>
+                    <p className="text-sm text-blue-300">Code reviews, API docs, tests, cost analysis</p>
+                  </div>
+                  <div className="bg-blue-950/50 rounded-lg p-3 border border-blue-500/20">
+                    <p className="text-xs text-blue-300 font-mono">@quad review PR → Done in 30s</p>
+                  </div>
                 </div>
               </div>
 
               {/* Batch Processing */}
-              <div className="bg-gradient-to-br from-orange-900/40 to-orange-950/40 rounded-2xl p-8 border border-orange-500/30">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="text-4xl">📦</div>
-                  <h3 className="text-2xl font-bold text-orange-300">Batch</h3>
-                </div>
-                <p className="text-slate-300 mb-6">Queued processing for heavy computational tasks</p>
-
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <p className="text-sm text-slate-400 mb-2">⏱️ Response Time</p>
-                    <p className="text-lg font-bold text-orange-300">5 min - hours</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400 mb-2">💼 Use Cases</p>
-                    <ul className="text-sm space-y-1">
-                      <li className="text-slate-300">✅ Full test suites</li>
-                      <li className="text-slate-300">✅ Code generation</li>
-                      <li className="text-slate-300">✅ Deployments</li>
-                      <li className="text-slate-300">✅ Data migrations</li>
-                      <li className="text-slate-300">✅ Meeting transcripts (10 min)</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400 mb-2">🎯 Best For</p>
-                    <p className="text-sm text-slate-300">Resource optimization, complex operations</p>
-                  </div>
+              <div className="bg-gradient-to-br from-orange-900/40 to-orange-950/40 rounded-xl p-5 border border-orange-500/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="text-3xl">📦</div>
+                  <h3 className="text-xl font-bold text-orange-300">Batch</h3>
                 </div>
 
-                <div className="bg-orange-950/50 rounded-lg p-4 border border-orange-500/20">
-                  <div className="mb-3">
-                    <p className="text-xs text-slate-400">Example</p>
-                    <p className="text-sm text-orange-300 font-mono mt-2">Process meeting → 📧 Notes in 10 min</p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1">⏱️ 5 min - hours</p>
+                    <p className="text-sm text-orange-300">Tests, deployments, migrations, meeting transcripts</p>
                   </div>
-                  <div className="pt-3 border-t border-orange-500/20">
-                    <p className="text-xs text-orange-300 font-bold">💰 50% Cost Savings</p>
-                    <p className="text-xs text-slate-400 mt-1">Uses off-peak resources</p>
+                  <div className="bg-orange-950/50 rounded-lg p-3 border border-orange-500/20">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-orange-300 font-mono">Meeting → Notes in 10 min</p>
+                      <span className="text-xs font-bold text-orange-400">50% savings</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-12 bg-slate-800/50 rounded-xl p-6 border border-slate-700 max-w-3xl mx-auto">
-              <p className="text-center text-slate-300 mb-3">💡 Smart Queue System</p>
-              <p className="text-center text-sm text-slate-400">
-                QUAD automatically queues heavy tasks (migrations, large deployments) to prevent system overload, while keeping interactive tasks instant. Receive email or Slack notification when batch jobs complete.
+            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 max-w-3xl mx-auto text-center">
+              <p className="text-xs text-slate-300 mb-1">💡 Smart Queue System</p>
+              <p className="text-xs text-slate-400">
+                Heavy tasks queued automatically to prevent overload. Instant notifications when complete.
               </p>
             </div>
           </div>
@@ -468,14 +432,14 @@ export default function CustomerPitch() {
                 AI-Powered
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                12 Specialized AI Agents
+                14 Specialized AI Agents
               </h2>
               <p className="text-xl text-slate-400">
                 Each agent masters one job. Together, they transform your SDLC.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
               {[
                 { icon: "📧", name: "Email", desc: "Creates tickets from emails", type: "Server" },
                 { icon: "💬", name: "Messenger", desc: "Responds to @quad mentions", type: "Server" },
@@ -489,6 +453,8 @@ export default function CustomerPitch() {
                 { icon: "📊", name: "Analytics", desc: "Tracks performance", type: "Server" },
                 { icon: "📄", name: "Document", desc: "Generates & updates docs", type: "Server" },
                 { icon: "📅", name: "Meeting", desc: "Schedules & takes notes", type: "Server" },
+                { icon: "🔧", name: "Infrastructure", desc: "Monitors performance & health", type: "Server" },
+                { icon: "🌍", name: "Production", desc: "Manages releases & rollouts", type: "Server" },
               ].map((agent, i) => (
                 <div
                   key={i}
