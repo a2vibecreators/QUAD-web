@@ -379,7 +379,119 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 4.5: Real-time vs Batch Processing */}
+        {/* Slide 4.5: The 4 Circles */}
+        <section id="circles" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-teal-950/20">
+          <div className="max-w-5xl w-full">
+            <div className="text-center mb-12">
+              <div className="inline-block px-3 py-1 bg-teal-500/20 text-teal-300 rounded-full text-xs mb-3">
+                Team Structure
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                The 4 Circles
+              </h2>
+              <p className="text-xl text-slate-400">
+                Dedicated teams working together in harmony
+              </p>
+            </div>
+
+            {/* Dedicated → Shared Spectrum */}
+            <div className="flex items-center justify-between mb-6 px-4">
+              <div className="text-sm">
+                <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full">Dedicated</span>
+              </div>
+              <div className="flex-1 mx-4 h-px bg-gradient-to-r from-blue-500/50 via-green-500/50 via-purple-500/50 to-orange-500/50"></div>
+              <div className="text-sm">
+                <span className="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full">Shared</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Circle 1: Management */}
+              <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-2xl p-4 border border-blue-500/20">
+                <div className="text-center mb-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-2xl mx-auto mb-2">
+                    👔
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Circle 1</h3>
+                  <p className="text-sm text-blue-400 mb-1">Management</p>
+                  <p className="text-xs text-slate-400">80% Business · 20% Tech</p>
+                </div>
+                <div className="space-y-1 text-xs text-slate-300">
+                  <p>• BA, PM, Tech Lead</p>
+                  <p>• Requirements & roadmap</p>
+                  <p className="text-blue-400">• Story Agent</p>
+                </div>
+              </div>
+
+              {/* Circle 2: Development */}
+              <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 rounded-2xl p-4 border border-green-500/20">
+                <div className="text-center mb-3">
+                  <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-2xl mx-auto mb-2">
+                    💻
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Circle 2</h3>
+                  <p className="text-sm text-green-400 mb-1">Development</p>
+                  <p className="text-xs text-slate-400">30% Business · 70% Tech</p>
+                </div>
+                <div className="space-y-1 text-xs text-slate-300">
+                  <p>• Full Stack, Backend, UI</p>
+                  <p>• Code & features</p>
+                  <p className="text-green-400">• Dev Agents</p>
+                </div>
+              </div>
+
+              {/* Circle 3: QA */}
+              <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 rounded-2xl p-4 border border-purple-500/20">
+                <div className="text-center mb-3">
+                  <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-2xl mx-auto mb-2">
+                    🧪
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Circle 3</h3>
+                  <p className="text-sm text-purple-400 mb-1">QA</p>
+                  <p className="text-xs text-slate-400">30% Business · 70% Tech</p>
+                </div>
+                <div className="space-y-1 text-xs text-slate-300">
+                  <p>• QA, Automation, Security</p>
+                  <p>• Testing & quality</p>
+                  <p className="text-purple-400">• Test Agents</p>
+                </div>
+              </div>
+
+              {/* Circle 4: Infrastructure */}
+              <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 rounded-2xl p-4 border border-orange-500/20">
+                <div className="text-center mb-3">
+                  <div className="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center text-2xl mx-auto mb-2">
+                    🔧
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Circle 4</h3>
+                  <p className="text-sm text-orange-400 mb-1">Infrastructure</p>
+                  <p className="text-xs text-slate-400">20% Business · 80% Tech</p>
+                </div>
+                <div className="space-y-1 text-xs text-slate-300">
+                  <p>• DevOps, SRE, Cloud, DBA</p>
+                  <p>• Infrastructure & deploy</p>
+                  <p className="text-orange-400">• Deploy & Monitor</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Flow Diagram */}
+            <div className="mt-8 text-center">
+              <p className="text-sm text-slate-400 mb-2">Work Flow</p>
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-300">
+                <span className="px-3 py-1 bg-blue-500/20 rounded-full">Circle 1 → Requirements</span>
+                <span>→</span>
+                <span className="px-3 py-1 bg-green-500/20 rounded-full">Circle 2 → Code</span>
+                <span>→</span>
+                <span className="px-3 py-1 bg-purple-500/20 rounded-full">Circle 3 → Test</span>
+                <span>→</span>
+                <span className="px-3 py-1 bg-orange-500/20 rounded-full">Circle 4 → Deploy</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Slide 5: Real-time vs Batch Processing */}
         <section id="processing-modes" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-orange-950/20">
           <div className="max-w-5xl w-full">
             <div className="text-center mb-8">
@@ -394,52 +506,113 @@ export default function CustomerPitch() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {/* Real-time Processing */}
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-950/40 rounded-xl p-5 border border-blue-500/30">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="text-3xl">⚡</div>
-                  <h3 className="text-xl font-bold text-blue-300">Real-time</h3>
+              <div className="bg-gradient-to-br from-blue-900/40 to-blue-950/40 rounded-xl p-6 border border-blue-500/30">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="text-4xl">⚡</div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-blue-300">Real-time</h3>
+                    <p className="text-xs text-slate-400">Instant feedback &lt; 5 seconds</p>
+                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">⏱️ &lt;5 seconds</p>
-                    <p className="text-sm text-blue-300">Code reviews, API docs, tests, cost analysis</p>
+                <div className="space-y-3 mb-4">
+                  <div className="bg-blue-950/50 rounded-lg p-3 border border-blue-500/20">
+                    <p className="text-xs text-blue-400 font-semibold mb-1">💬 Messenger Agent</p>
+                    <p className="text-xs text-slate-300">@quad review PR #1234 → 30-second code review with suggestions</p>
                   </div>
                   <div className="bg-blue-950/50 rounded-lg p-3 border border-blue-500/20">
-                    <p className="text-xs text-blue-300 font-mono">@quad review PR → Done in 30s</p>
+                    <p className="text-xs text-blue-400 font-semibold mb-1">💻 Code Agent</p>
+                    <p className="text-xs text-slate-300">Generate API endpoint → Scaffold code in 15 seconds</p>
                   </div>
+                  <div className="bg-blue-950/50 rounded-lg p-3 border border-blue-500/20">
+                    <p className="text-xs text-blue-400 font-semibold mb-1">📄 Document Agent</p>
+                    <p className="text-xs text-slate-300">Update docs after PR merge → Generated in 20 seconds</p>
+                  </div>
+                  <div className="bg-blue-950/50 rounded-lg p-3 border border-blue-500/20">
+                    <p className="text-xs text-blue-400 font-semibold mb-1">🔧 Infrastructure Agent</p>
+                    <p className="text-xs text-slate-300">Check system health → Metrics in 10 seconds</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-blue-500/20 pt-3">
+                  <p className="text-xs text-slate-400 mb-2">When to use:</p>
+                  <ul className="text-xs text-slate-300 space-y-1">
+                    <li>• Developer waiting for response</li>
+                    <li>• Blocking next action</li>
+                    <li>• Small context (1 file, 1 PR)</li>
+                    <li>• Interactive chat commands</li>
+                  </ul>
                 </div>
               </div>
 
               {/* Batch Processing */}
-              <div className="bg-gradient-to-br from-orange-900/40 to-orange-950/40 rounded-xl p-5 border border-orange-500/30">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="text-3xl">📦</div>
-                  <h3 className="text-xl font-bold text-orange-300">Batch</h3>
+              <div className="bg-gradient-to-br from-orange-900/40 to-orange-950/40 rounded-xl p-6 border border-orange-500/30">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="text-4xl">📦</div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-orange-300">Batch</h3>
+                    <p className="text-xs text-slate-400">Queue & notify · 5 min - hours</p>
+                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">⏱️ 5 min - hours</p>
-                    <p className="text-sm text-orange-300">Tests, deployments, migrations, meeting transcripts</p>
+                <div className="space-y-3 mb-4">
+                  <div className="bg-orange-950/50 rounded-lg p-3 border border-orange-500/20">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs text-orange-400 font-semibold">📧 Email Agent</p>
+                      <span className="text-xs font-bold text-orange-300">50% savings</span>
+                    </div>
+                    <p className="text-xs text-slate-300">Email → Jira tickets → 5 minutes · Anthropic Batch API</p>
                   </div>
                   <div className="bg-orange-950/50 rounded-lg p-3 border border-orange-500/20">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs text-orange-300 font-mono">Meeting → Notes in 10 min</p>
-                      <span className="text-xs font-bold text-orange-400">50% savings</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs text-orange-400 font-semibold">🧪 Test Agent</p>
+                      <span className="text-xs font-bold text-orange-300">50% savings</span>
                     </div>
+                    <p className="text-xs text-slate-300">Generate 200 unit tests → 15 minutes · Run overnight</p>
                   </div>
+                  <div className="bg-orange-950/50 rounded-lg p-3 border border-orange-500/20">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs text-orange-400 font-semibold">📅 Meeting Agent</p>
+                      <span className="text-xs font-bold text-orange-300">50% savings</span>
+                    </div>
+                    <p className="text-xs text-slate-300">1-hour meeting → Notes + action items in 10 minutes</p>
+                  </div>
+                  <div className="bg-orange-950/50 rounded-lg p-3 border border-orange-500/20">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs text-orange-400 font-semibold">📊 Analytics Agent</p>
+                      <span className="text-xs font-bold text-orange-300">50% savings</span>
+                    </div>
+                    <p className="text-xs text-slate-300">Weekly performance report → 1 hour · Schedule Friday 5pm</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-orange-500/20 pt-3">
+                  <p className="text-xs text-slate-400 mb-2">When to use:</p>
+                  <ul className="text-xs text-slate-300 space-y-1">
+                    <li>• Non-blocking background tasks</li>
+                    <li>• Large context (100s of files)</li>
+                    <li>• Cost-sensitive operations</li>
+                    <li>• Scheduled/automated jobs</li>
+                  </ul>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 max-w-3xl mx-auto text-center">
-              <p className="text-xs text-slate-300 mb-1">💡 Smart Queue System</p>
-              <p className="text-xs text-slate-400">
-                Heavy tasks queued automatically to prevent overload. Instant notifications when complete.
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                <p className="text-xs text-slate-300 font-semibold mb-2">💡 Smart Queue System</p>
+                <p className="text-xs text-slate-400">
+                  QUAD automatically routes tasks to real-time or batch based on context size, urgency, and cost. Heavy tasks queued with instant Slack/email notifications.
+                </p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                <p className="text-xs text-slate-300 font-semibold mb-2">💰 Cost Optimization</p>
+                <p className="text-xs text-slate-400">
+                  Batch API uses Anthropic's 50% discount. Large reports (1M tokens) cost $5 instead of $10. Scheduled jobs run off-peak for max savings.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -461,20 +634,20 @@ export default function CustomerPitch() {
 
             <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
               {[
-                { icon: "📧", name: "Email", desc: "Creates tickets from emails", types: ["Server"] },
-                { icon: "💬", name: "Messenger", desc: "Responds to @quad mentions", types: ["Server"] },
-                { icon: "💻", name: "Code", desc: "Generates production code", types: ["Server", "Local"] },
-                { icon: "🔍", name: "Review", desc: "Reviews PRs for issues", types: ["Server", "Local"] },
-                { icon: "🧪", name: "Test", desc: "Writes unit & E2E tests", types: ["Server", "Local"] },
-                { icon: "🚀", name: "Deploy", desc: "Handles CI/CD pipelines", types: ["Server", "Local"] },
-                { icon: "💰", name: "Cost", desc: "Optimizes cloud spend", types: ["Server"] },
-                { icon: "📚", name: "Training", desc: "Matches skills to courses", types: ["Server"] },
-                { icon: "🎯", name: "Priority", desc: "Learns PM patterns", types: ["Server"] },
-                { icon: "📊", name: "Analytics", desc: "Tracks performance", types: ["Server"] },
-                { icon: "📄", name: "Document", desc: "Generates & updates docs", types: ["Server"] },
-                { icon: "📅", name: "Meeting", desc: "Schedules & takes notes", types: ["Server"] },
-                { icon: "🔧", name: "Infrastructure", desc: "Monitors performance & health", types: ["Server"] },
-                { icon: "🌍", name: "Production", desc: "Manages releases & rollouts", types: ["Server"] },
+                { icon: "📧", name: "Email", desc: "Creates tickets from emails", types: ["Server"], mode: "Batch" },
+                { icon: "💬", name: "Messenger", desc: "Responds to @quad mentions", types: ["Server"], mode: "Realtime" },
+                { icon: "💻", name: "Code", desc: "Generates production code", types: ["Server", "Local"], mode: "Realtime" },
+                { icon: "🔍", name: "Review", desc: "Reviews PRs for issues", types: ["Server", "Local"], mode: "Realtime" },
+                { icon: "🧪", name: "Test", desc: "Writes unit & E2E tests", types: ["Server", "Local"], mode: "Batch" },
+                { icon: "🚀", name: "Deploy", desc: "Handles CI/CD pipelines", types: ["Server", "Local"], mode: "Realtime" },
+                { icon: "💰", name: "Cost", desc: "Optimizes cloud spend", types: ["Server"], mode: "Batch" },
+                { icon: "📚", name: "Training", desc: "Matches skills to courses", types: ["Server"], mode: "Batch" },
+                { icon: "🎯", name: "Priority", desc: "Learns PM patterns", types: ["Server"], mode: "Batch" },
+                { icon: "📊", name: "Analytics", desc: "Tracks performance", types: ["Server"], mode: "Batch" },
+                { icon: "📄", name: "Document", desc: "Generates & updates docs", types: ["Server"], mode: "Realtime" },
+                { icon: "📅", name: "Meeting", desc: "Schedules & takes notes", types: ["Server"], mode: "Realtime" },
+                { icon: "🔧", name: "Infrastructure", desc: "Monitors performance & health", types: ["Server"], mode: "Realtime" },
+                { icon: "🌍", name: "Production", desc: "Manages releases & rollouts", types: ["Server"], mode: "Realtime" },
               ].map((agent, i) => (
                 <div
                   key={i}
@@ -496,6 +669,15 @@ export default function CustomerPitch() {
                         {t}
                       </div>
                     ))}
+                    <div
+                      className={`text-xs px-2 py-1 rounded-full inline-block ${
+                        agent.mode === "Realtime"
+                          ? "bg-blue-500/30 text-blue-300"
+                          : "bg-orange-500/30 text-orange-300"
+                      }`}
+                    >
+                      {agent.mode}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -567,17 +749,17 @@ export default function CustomerPitch() {
             <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               {[
                 { name: "QUAD FLOW™", icon: "🔄", tagline: "Core Workflow", desc: "Q → U → A → D methodology", cardClass: "from-blue-500/10 to-blue-600/5 border-blue-500/20", tagClass: "text-blue-400" },
-                { name: "QUAD FLUX™", icon: "⚡", tagline: "AI Routing", desc: "Multi-provider routing + batch/realtime", cardClass: "from-yellow-500/10 to-yellow-600/5 border-yellow-500/20", tagClass: "text-yellow-400" },
+                { name: "QUAD FLUX™", icon: "⚡", tagline: "AI Routing Engine", desc: "Routes to best AI provider, batch/realtime optimization", cardClass: "from-yellow-500/10 to-yellow-600/5 border-yellow-500/20", tagClass: "text-yellow-400" },
                 { name: "QUAD ORBIT™", icon: "🌐", tagline: "Cloud Deploy", desc: "Multi-cloud, zero lock-in", cardClass: "from-cyan-500/10 to-cyan-600/5 border-cyan-500/20", tagClass: "text-cyan-400" },
                 { name: "QUAD GATE™", icon: "🚦", tagline: "Human Gates", desc: "AI suggests, humans decide", cardClass: "from-green-500/10 to-green-600/5 border-green-500/20", tagClass: "text-green-400" },
                 { name: "QUAD SYNC™", icon: "🔗", tagline: "Integrations", desc: "Jira, GitHub, Messenger sync", cardClass: "from-orange-500/10 to-orange-600/5 border-orange-500/20", tagClass: "text-orange-400" },
                 { name: "QUAD MONITOR™", icon: "📡", tagline: "Real-time Monitoring", desc: "System health & performance tracking", cardClass: "from-pink-500/10 to-pink-600/5 border-pink-500/20", tagClass: "text-pink-400" },
                 { name: "QUAD FORGE™", icon: "🔥", tagline: "Data Generation", desc: "Test data on the fly", cardClass: "from-red-500/10 to-red-600/5 border-red-500/20", tagClass: "text-red-400" },
-                { name: "QUAD SPARK™", icon: "✨", tagline: "Code Generation", desc: "AI-powered code from specs", cardClass: "from-violet-500/10 to-violet-600/5 border-violet-500/20", tagClass: "text-violet-400" },
+                { name: "QUAD SPARK™", icon: "✨", tagline: "Smart Code Gen", desc: "Generates code via AI, templates, or patterns", cardClass: "from-violet-500/10 to-violet-600/5 border-violet-500/20", tagClass: "text-violet-400" },
                 { name: "QUAD MIRROR™", icon: "🪞", tagline: "Environment Clone", desc: "Prod to dev with masked PII", cardClass: "from-teal-500/10 to-teal-600/5 border-teal-500/20", tagClass: "text-teal-400" },
                 { name: "QUAD LENS™", icon: "🔍", tagline: "Right-Sized Solutions", desc: "Simplest effective architecture", cardClass: "from-amber-500/10 to-amber-600/5 border-amber-500/20", tagClass: "text-amber-400" },
                 { name: "QUAD ATLAS™", icon: "🗺️", tagline: "Knowledge Platform", desc: "Docs, code search, chatbot, context", cardClass: "from-indigo-500/10 to-indigo-600/5 border-indigo-500/20", tagClass: "text-indigo-400" },
-                { name: "QUAD BEACON™", icon: "🔔", tagline: "Alert Broadcasting", desc: "Calls, SMS, notifications", cardClass: "from-rose-500/10 to-rose-600/5 border-rose-500/20", tagClass: "text-rose-400" },
+                { name: "QUAD BEACON™", icon: "🔔", tagline: "Intelligent Alerts", desc: "Calls/SMS/Email with solutions, timelines, mitigation steps", cardClass: "from-rose-500/10 to-rose-600/5 border-rose-500/20", tagClass: "text-rose-400" },
               ].map((tech, i) => (
                 <div key={i} className={`bg-gradient-to-br ${tech.cardClass} rounded-xl p-4 border transition-all`}>
                   <div className="flex items-center gap-2 mb-2">
@@ -678,7 +860,7 @@ export default function CustomerPitch() {
                   <h3 className="text-lg font-bold text-white">Phase 1</h3>
                 </div>
                 <ul className="space-y-2 text-sm">
-                  {["Trigger → Code flow", "7 Role-based dashboards", "Email & Messenger agents", "Code generation", "PR review agent", "Allocation tracking", "Jira integration", "GitHub integration", "BYOK support"].map((f, i) => (
+                  {["Trigger → Code flow", "Role-based dashboards", "Email & Messenger agents", "Code generation", "PR review agent", "Allocation tracking", "Jira integration", "GitHub integration", "BYOK support"].map((f, i) => (
                     <li key={i} className="flex items-center gap-2 text-slate-300">
                       <span className="text-green-400">✓</span> {f}
                     </li>
