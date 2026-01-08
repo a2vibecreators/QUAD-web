@@ -15,6 +15,360 @@ import Link from "next/link";
  * - Time saved indicators
  */
 
+// ============================================================================
+// REUSABLE CHART COMPONENTS (from /demo/page.tsx)
+// ============================================================================
+
+// Pie chart component (simple CSS-based)
+function PieChart({ data, colors }: { data: { label: string; value: number }[]; colors: string[] }) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  let cumulativePercent = 0;
+
+  const gradientParts = data.map((item, i) => {
+    const percent = (item.value / total) * 100;
+    const start = cumulativePercent;
+    cumulativePercent += percent;
+    return `${colors[i]} ${start}% ${cumulativePercent}%`;
+  }).join(", ");
+
+  return (
+    <div className="flex items-center gap-6">
+      <div
+        className="w-32 h-32 rounded-full"
+        style={{
+          background: `conic-gradient(${gradientParts})`,
+        }}
+      />
+      <div className="space-y-2">
+        {data.map((item, i) => (
+          <div key={item.label} className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[i] }} />
+            <span className="text-sm text-slate-300">{item.label}: {item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Health Gauge component (CSS-based semi-circle gauge)
+function HealthGauge({ score, label }: { score: number; label: string }) {
+  // Score 0-100 maps to 0-180 degrees
+  const rotation = (score / 100) * 180;
+  const color = score >= 80 ? "#22c55e" : score >= 60 ? "#eab308" : "#ef4444";
+  const colorClass = score >= 80 ? "text-green-400" : score >= 60 ? "text-yellow-400" : "text-red-400";
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-32 h-16 overflow-hidden">
+        {/* Background arc */}
+        <div className="absolute w-32 h-32 rounded-full border-8 border-slate-700"
+             style={{ clipPath: "polygon(0 0, 100% 0, 100% 50%, 0 50%)" }} />
+        {/* Colored arc */}
+        <div
+          className="absolute w-32 h-32 rounded-full border-8 origin-center transition-transform duration-1000"
+          style={{
+            borderColor: color,
+            clipPath: "polygon(0 0, 100% 0, 100% 50%, 0 50%)",
+            transform: `rotate(${rotation - 180}deg)`,
+            transformOrigin: "center center"
+          }}
+        />
+        {/* Center text */}
+        <div className="absolute inset-0 flex items-end justify-center pb-1">
+          <span className={`text-2xl font-bold ${colorClass}`}>{score}</span>
+        </div>
+      </div>
+      <span className="text-xs text-slate-400 mt-1">{label}</span>
+    </div>
+  );
+}
+
+// Velocity Distribution Histogram
+function VelocityHistogram({
+  data,
+  mean,
+  stdDev
+}: {
+  data: { range: string; count: number }[];
+  mean: number;
+  stdDev: number;
+}) {
+  const maxCount = Math.max(...data.map(d => d.count));
+
+  return (
+    <div className="space-y-3">
+      {/* Histogram bars */}
+      <div className="flex items-end gap-1 h-24">
+        {data.map((item, i) => {
+          const height = (item.count / maxCount) * 100;
+          const isMeanRange = item.range.includes("41"); // Highlight range containing mean
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center">
+              <div
+                className={`w-full rounded-t transition-all ${
+                  isMeanRange ? "bg-blue-500" : "bg-slate-600"
+                }`}
+                style={{ height: `${height}%` }}
+                title={`${item.count} teams`}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* X-axis labels */}
+      <div className="flex gap-1 text-xs text-slate-500">
+        {data.map((item, i) => (
+          <div key={i} className="flex-1 text-center truncate">
+            {item.range}
+          </div>
+        ))}
+      </div>
+
+      {/* Statistics summary */}
+      <div className="flex justify-center gap-6 pt-2 border-t border-slate-700">
+        <div className="text-center">
+          <span className="text-blue-400 font-mono font-bold">{mean.toFixed(1)}</span>
+          <span className="text-xs text-slate-500 ml-1">pts/sprint</span>
+          <div className="text-xs text-slate-600">Mean (μ)</div>
+        </div>
+        <div className="text-center">
+          <span className={`font-mono font-bold ${stdDev > 10 ? "text-red-400" : stdDev > 7 ? "text-yellow-400" : "text-green-400"}`}>
+            {stdDev.toFixed(2)}
+          </span>
+          <div className="text-xs text-slate-600">Std Dev (σ)</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Stat Card with trend indicator
+function StatCard({
+  value,
+  label,
+  subLabel,
+  color = "blue",
+  showSigma = false,
+  sigmaStatus = "good"
+}: {
+  value: string | number;
+  label: string;
+  subLabel?: string;
+  color?: "blue" | "purple" | "green" | "orange" | "red" | "yellow";
+  showSigma?: boolean;
+  sigmaStatus?: "good" | "warning" | "danger";
+}) {
+  const colorClasses = {
+    blue: "text-blue-400",
+    purple: "text-purple-400",
+    green: "text-green-400",
+    orange: "text-orange-400",
+    red: "text-red-400",
+    yellow: "text-yellow-400",
+  };
+
+  const sigmaColors = {
+    good: "bg-green-500/20 text-green-300",
+    warning: "bg-yellow-500/20 text-yellow-300",
+    danger: "bg-red-500/20 text-red-300",
+  };
+
+  return (
+    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700 text-center">
+      <div className={`text-3xl font-bold ${colorClasses[color]}`}>{value}</div>
+      <div className="text-sm text-slate-400">{label}</div>
+      {subLabel && <div className="text-xs text-slate-500 mt-1">{subLabel}</div>}
+      {showSigma && (
+        <div className={`mt-2 px-2 py-0.5 rounded-full text-xs inline-block ${sigmaColors[sigmaStatus]}`}>
+          {sigmaStatus === "good" ? "σ < 7 (Consistent)" : sigmaStatus === "warning" ? "7 < σ < 10" : "σ > 10 (High Variance)"}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Simulated Chat Window Component
+function SimulatedChatWindow({ role }: { role: string }) {
+  const [messages, setMessages] = useState<Array<{role: "user" | "ai", message: string}>>([
+    { role: "ai", message: "Hello! I'm your QUAD AI assistant. Ask me anything about your organization, projects, or team metrics." }
+  ]);
+  const [input, setInput] = useState("");
+
+  const simulateResponse = (userMessage: string) => {
+    const lowerMessage = userMessage.toLowerCase();
+
+    // Role-specific responses
+    if (role === "senior_director") {
+      if (lowerMessage.includes("budget")) {
+        return "Total budget is $2.4M across 3 active projects: Customer Portal ($1.2M), Mobile App ($800K), and Data Pipeline ($400K). We're on track with 87% utilization.";
+      }
+      if (lowerMessage.includes("velocity")) {
+        return "Average portfolio velocity is 42 pts/sprint with σ=6.29. Team Zeta leads at 48 pts/sprint, followed by Team Alpha at 41 pts/sprint.";
+      }
+      if (lowerMessage.includes("allocation")) {
+        return "2 team members have allocation warnings: David Kim (130% allocated - 30% over) and Sneha Reddy (150% allocated - 50% over). Would you like me to suggest reassignments?";
+      }
+      if (lowerMessage.includes("retention")) {
+        return "Our retention rate is 94%, up 8% from last quarter. Average tenure is 3.2 years with an eNPS score of +42. We have 4 open positions.";
+      }
+      return "I can help with budget, velocity, team allocation, retention, or project-level questions. What would you like to know?";
+    }
+
+    if (role === "director") {
+      if (lowerMessage.includes("project")) {
+        return "You're managing 2 projects: Customer Portal (12 team members, 92% velocity) and API Gateway (6 members, 88% velocity). Both are on track.";
+      }
+      if (lowerMessage.includes("team")) {
+        return "Your department has 18 team members: 6 developers, 4 QA engineers, 3 tech leads, 2 product managers, and 3 DevOps engineers.";
+      }
+      if (lowerMessage.includes("flow") || lowerMessage.includes("ticket")) {
+        return "You have 24 active flows: 8 in Automate stage, 7 in Question, 6 in Deliver, and 3 in Understand. 5 flows need your approval.";
+      }
+      return "I can help with projects, team members, flows, or department metrics. What do you need?";
+    }
+
+    if (role === "developer") {
+      if (lowerMessage.includes("ticket") || lowerMessage.includes("flow")) {
+        return "You have 3 assigned flows: QUAD-1234 (high priority, in Automate), QUAD-1235 (critical, in Deliver), and QUAD-1236 (medium, in Question). Click any ticket above to work on it.";
+      }
+      if (lowerMessage.includes("code")) {
+        return "QUAD-1234 generated 147 lines of code using Claude Opus. AI saved you approximately 4 hours of development time. Review the diff above.";
+      }
+      if (lowerMessage.includes("review")) {
+        return "You have 3 code reviews pending: PR #892 (approved by TL), PR #893 (awaiting your review), and PR #894 (in progress).";
+      }
+      return "I can help with your tickets, code reviews, or development questions. What do you need?";
+    }
+
+    if (role === "qa") {
+      if (lowerMessage.includes("test") || lowerMessage.includes("coverage")) {
+        return "Current test coverage is 78%: Unit tests (45%), Integration tests (25%), E2E tests (8%). Target is 80% - we need 2% more coverage.";
+      }
+      if (lowerMessage.includes("bug")) {
+        return "Open bugs by severity: 1 Critical, 3 High, 2 Medium, 5 Low. Critical bug is QUAD-1240 (checkout validation failure).";
+      }
+      if (lowerMessage.includes("queue")) {
+        return "You have 12 items in your test queue. 3 are high priority: QUAD-1234 (price filter), QUAD-1235 (checkout fix), and QUAD-1237 (API endpoint).";
+      }
+      return "I can help with test coverage, bugs, test queue, or quality metrics. What would you like to know?";
+    }
+
+    if (role === "tech_lead") {
+      if (lowerMessage.includes("sprint")) {
+        return "Sprint 4 progress: 75% complete (Day 8 of 10). 3 story points remaining. Burndown is on track. No blockers reported.";
+      }
+      if (lowerMessage.includes("allocation")) {
+        return "2 allocation warnings: David Kim (30% over-allocated) and Sneha Reddy (50% over-allocated). I recommend moving QUAD-1238 and QUAD-1239 to next sprint.";
+      }
+      if (lowerMessage.includes("pr") || lowerMessage.includes("review")) {
+        return "8 open PRs: 3 need your review, 2 are approved and ready to merge, 3 are in progress. Oldest PR waiting for review is #889 (3 days old).";
+      }
+      if (lowerMessage.includes("blocker")) {
+        return "No active blockers reported. Last blocker was resolved 2 days ago (API dependency issue on QUAD-1235).";
+      }
+      return "I can help with sprint progress, team allocation, PRs, or blockers. What do you need?";
+    }
+
+    if (role === "prod_support") {
+      if (lowerMessage.includes("incident")) {
+        return "3 open incidents: INC-001 (P1, API latency spike - investigating), INC-002 (P2, checkout slow - monitoring), INC-003 (P2, email delay - assigned to Lisa).";
+      }
+      if (lowerMessage.includes("mttr")) {
+        return "Mean Time To Resolution is 45 minutes, down 15% from last week. P1 MTTR: 25 mins, P2 MTTR: 60 mins. Great improvement!";
+      }
+      if (lowerMessage.includes("sla")) {
+        return "SLA compliance is 99.2%, exceeding our 99% target. 2 SLA breaches this month, both due to external API outages.";
+      }
+      if (lowerMessage.includes("alert")) {
+        return "2 active alerts: CPU spike on web-server-03 (non-critical, monitoring) and disk usage at 75% on db-primary (action needed soon).";
+      }
+      return "I can help with incidents, MTTR, SLA compliance, or system alerts. What's your question?";
+    }
+
+    if (role === "infrastructure") {
+      if (lowerMessage.includes("uptime")) {
+        return "System uptime is 99.97% over the last 30 days. Only 13 minutes of downtime (scheduled maintenance on Dec 15th).";
+      }
+      if (lowerMessage.includes("deployment") || lowerMessage.includes("deploy")) {
+        return "12 deployments this week: 8 to production, 4 to staging. Success rate: 100%. Average deployment time: 8 minutes.";
+      }
+      if (lowerMessage.includes("cost") || lowerMessage.includes("savings")) {
+        return "Cost savings this month: $12K from spot instance optimization ($8K) and storage cleanup ($4K). YTD savings: $142K.";
+      }
+      if (lowerMessage.includes("resource")) {
+        return "Resource utilization: CPU avg 45%, Memory avg 62%, Disk avg 53%. All within optimal range. No scaling needed.";
+      }
+      return "I can help with uptime, deployments, cost optimization, or resource utilization. What do you need?";
+    }
+
+    // Default response
+    return "I'm here to help! Try asking about budget, velocity, projects, tickets, or team metrics specific to your role.";
+  };
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+
+    const userMessage = input.trim();
+    const aiResponse = simulateResponse(userMessage);
+
+    setMessages(prev => [
+      ...prev,
+      { role: "user", message: userMessage },
+      { role: "ai", message: aiResponse }
+    ]);
+    setInput("");
+  };
+
+  return (
+    <div className="bg-slate-700/30 rounded-xl border border-slate-700 overflow-hidden">
+      <div className="bg-slate-800 px-4 py-3 border-b border-slate-700 flex items-center gap-2">
+        <span className="text-lg">💬</span>
+        <h4 className="text-sm font-semibold text-white">AI Assistant</h4>
+        <span className="ml-auto text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">Simulated</span>
+      </div>
+
+      <div className="h-64 overflow-y-auto p-4 space-y-3">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`max-w-[80%] rounded-lg px-3 py-2 ${
+              msg.role === "user"
+                ? "bg-blue-600 text-white"
+                : "bg-slate-700 text-slate-200"
+            }`}>
+              <p className="text-sm">{msg.message}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="p-3 border-t border-slate-700 bg-slate-800/50">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Ask about your metrics, projects, team..."
+            className="flex-1 px-3 py-2 bg-slate-700 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-400"
+          />
+          <button
+            onClick={handleSend}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-medium"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// DEMO DATA
+// ============================================================================
+
 // Demo password
 const DEMO_PASSWORD = "Ashrith";
 
@@ -27,6 +381,7 @@ const DEMO_ROLES = [
   { id: "developer", icon: "💻", title: "Developer", desc: "Individual work view" },
   { id: "prod_support", icon: "🚨", title: "Production Support", desc: "Incident & monitoring view" },
   { id: "infrastructure", icon: "🔧", title: "Infrastructure", desc: "DevOps & SRE view" },
+  { id: "documentation", icon: "📚", title: "Documentation", desc: "Architecture, APIs, test flows" },
 ];
 
 // Demo tickets for developer view
@@ -237,46 +592,80 @@ const DEMO_PROJECTS = [
   },
 ];
 
-// Demo screen data
-const DEMO_SCREENS = [
+// Demo project configuration (for project config modal)
+const DEMO_DIRECTORS = [
   {
-    id: "dashboard",
-    icon: "🏠",
-    title: "Executive Dashboard",
-    desc: "High-level view of all projects, velocity metrics, and team performance",
+    id: "dir1",
+    name: "Director 1",
+    expanded: false,
+    projects: [
+      {
+        id: "ui",
+        name: "Project UI",
+        frontend: ["Next.js"],
+        backend: ["Spring Boot"],
+        database: ["PostgreSQL"],
+        frontendOptions: ["Next.js", "React.js", "Vue.js"],
+        backendOptions: ["Spring Boot", "Python", "Node.js"],
+        databaseOptions: ["PostgreSQL", "MySQL", "MongoDB"],
+      },
+      {
+        id: "mobile",
+        name: "Project Mobile",
+        frontend: ["React Native"],
+        backend: ["Spring Boot"],
+        database: ["PostgreSQL"],
+        frontendOptions: ["React Native", "Flutter", "Swift"],
+        backendOptions: ["Spring Boot", "Python", "Node.js"],
+        databaseOptions: ["PostgreSQL", "MySQL", "MongoDB"],
+      },
+    ],
   },
   {
-    id: "domains",
-    icon: "📁",
-    title: "Domains & Projects",
-    desc: "Mobile App, API Gateway, Customer Portal - all configured",
+    id: "dir2",
+    name: "Director 2",
+    expanded: false,
+    projects: [
+      {
+        id: "data-pipeline",
+        name: "Project Data Pipeline",
+        frontend: ["N/A"],
+        backend: ["Python"],
+        database: ["PostgreSQL"],
+        frontendOptions: ["N/A"],
+        backendOptions: ["Python", "Spark", "Airflow"],
+        databaseOptions: ["PostgreSQL", "Snowflake", "BigQuery"],
+      },
+    ],
   },
   {
-    id: "roles",
-    icon: "👥",
-    title: "Teams & Roles",
-    desc: "See how developers are allocated across multiple projects with percentages",
-  },
-  {
-    id: "adoption",
-    icon: "🎯",
-    title: "Adoption Matrix",
-    desc: "Track skill and trust levels for each team member",
-  },
-  {
-    id: "reporting",
-    icon: "📊",
-    title: "Reporting",
-    desc: "Velocity, burndown, and productivity metrics",
+    id: "dir3",
+    name: "Director 3",
+    expanded: false,
+    projects: [
+      {
+        id: "ml-models",
+        name: "Project ML Models",
+        frontend: ["N/A"],
+        backend: ["Python"],
+        database: ["PostgreSQL"],
+        frontendOptions: ["N/A"],
+        backendOptions: ["Python", "TensorFlow", "PyTorch"],
+        databaseOptions: ["PostgreSQL", "MongoDB", "Redis"],
+      },
+    ],
   },
 ];
 
 export default function CustomerDemo() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showOrgNameModal, setShowOrgNameModal] = useState(false);
+  const [showProjectConfigModal, setShowProjectConfigModal] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
   const [orgName, setOrgName] = useState("");
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [expandedDirectors, setExpandedDirectors] = useState<string[]>([]);
   const [unlocked, setUnlocked] = useState(false);
   const [activeScreen, setActiveScreen] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState("senior_director"); // Default to Senior Director
@@ -329,18 +718,25 @@ export default function CustomerDemo() {
     const finalOrgName = orgName.trim() || "Demo Organization";
     setOrgName(finalOrgName);
     setShowOrgNameModal(false);
+    // Show project config modal instead of going directly to dashboard
+    setShowProjectConfigModal(true);
+    // Pre-select first project and expand first director
+    setSelectedProject("ui");
+    setExpandedDirectors(["dir1"]);
+  };
+
+  const handleProjectConfigSubmit = () => {
+    setShowProjectConfigModal(false);
     setUnlocked(true);
     setActiveScreen("dashboard");
   };
 
-  const handleScreenClick = (screenId: string) => {
-    if (unlocked) {
-      setActiveScreen(screenId);
-    } else {
-      setShowPasswordModal(true);
-      setPassword("");
-      setPasswordError(false);
-    }
+  const toggleDirector = (dirId: string) => {
+    setExpandedDirectors(prev =>
+      prev.includes(dirId)
+        ? prev.filter(id => id !== dirId)
+        : [...prev, dirId]
+    );
   };
 
   // Handle ticket click - opens interactive detail view
@@ -1038,6 +1434,172 @@ export default function CustomerDemo() {
         </div>
       )}
 
+      {/* Project Configuration Modal (after org name) */}
+      {showProjectConfigModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-2xl p-8 max-w-5xl w-full mx-4 border border-slate-700 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-4 text-center">📂 Project Configuration</h2>
+            <p className="text-slate-400 text-sm text-center mb-8">
+              Select a project to view its technology stack configuration
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Side: Director/Project Tree */}
+              <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+                <h3 className="text-lg font-semibold mb-4 text-slate-200">📁 Project Structure</h3>
+                <div className="space-y-2">
+                  {DEMO_DIRECTORS.map((director) => (
+                    <div key={director.id}>
+                      {/* Director Row */}
+                      <div
+                        onClick={() => toggleDirector(director.id)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer transition-all"
+                      >
+                        <span className="text-slate-400">
+                          {expandedDirectors.includes(director.id) ? "📂" : "📁"}
+                        </span>
+                        <span className="text-slate-300 font-medium">{director.name}</span>
+                      </div>
+
+                      {/* Projects under Director */}
+                      {expandedDirectors.includes(director.id) && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {director.projects.map((project) => (
+                            <div
+                              key={project.id}
+                              onClick={() => setSelectedProject(project.id)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                                selectedProject === project.id
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                              }`}
+                            >
+                              <span>📂</span>
+                              <span className="font-medium">{project.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Side: Tech Stack Configuration */}
+              <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+                <h3 className="text-lg font-semibold mb-4 text-slate-200">⚙️ Technology Stack</h3>
+                {selectedProject ? (
+                  <div className="space-y-6">
+                    {DEMO_DIRECTORS.flatMap(d => d.projects).filter(p => p.id === selectedProject).map(project => (
+                      <div key={project.id} className="space-y-6">
+                        {/* Frontend */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-400 mb-2">Frontend</h4>
+                          <div className="space-y-2">
+                            {project.frontendOptions.map(option => {
+                              const isSelected = project.frontend.includes(option);
+                              return (
+                                <div
+                                  key={option}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                                    isSelected
+                                      ? "bg-green-600/20 border border-green-600"
+                                      : "bg-slate-800 border border-slate-700 opacity-50"
+                                  }`}
+                                >
+                                  <span className="text-lg">
+                                    {isSelected ? "✅" : "❌"}
+                                  </span>
+                                  <span className={isSelected ? "text-green-300 font-medium" : "text-slate-500"}>
+                                    {option}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Backend */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-400 mb-2">Backend</h4>
+                          <div className="space-y-2">
+                            {project.backendOptions.map(option => {
+                              const isSelected = project.backend.includes(option);
+                              return (
+                                <div
+                                  key={option}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                                    isSelected
+                                      ? "bg-green-600/20 border border-green-600"
+                                      : "bg-slate-800 border border-slate-700 opacity-50"
+                                  }`}
+                                >
+                                  <span className="text-lg">
+                                    {isSelected ? "✅" : "❌"}
+                                  </span>
+                                  <span className={isSelected ? "text-green-300 font-medium" : "text-slate-500"}>
+                                    {option}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Database */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-400 mb-2">Database</h4>
+                          <div className="space-y-2">
+                            {project.databaseOptions.map(option => {
+                              const isSelected = project.database.includes(option);
+                              return (
+                                <div
+                                  key={option}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                                    isSelected
+                                      ? "bg-green-600/20 border border-green-600"
+                                      : "bg-slate-800 border border-slate-700 opacity-50"
+                                  }`}
+                                >
+                                  <span className="text-lg">
+                                    {isSelected ? "✅" : "❌"}
+                                  </span>
+                                  <span className={isSelected ? "text-green-300 font-medium" : "text-slate-500"}>
+                                    {option}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-slate-500">
+                    <p>Select a project from the tree to view its technology stack</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* OK Button */}
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={handleProjectConfigSubmit}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
+              >
+                OK - Continue to Dashboard
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 text-center mt-4 italic">
+              This configuration is for demo purposes only
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ========================================= */}
       {/* PLATFORM DEMO (Password Protected)       */}
       {/* ========================================= */}
@@ -1162,61 +1724,35 @@ export default function CustomerDemo() {
 
               {/* RIGHT: Dashboard Content */}
               <div className="flex-1">
-                {/* Screen Navigation */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {DEMO_SCREENS.map((screen) => (
-                    <button
-                      key={screen.id}
-                      onClick={() => setActiveScreen(screen.id)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                        activeScreen === screen.id
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                      }`}
-                    >
-                      <span>{screen.icon}</span>
-                      <span>{screen.title}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Screen Content */}
-                {activeScreen && (
-                  <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
-                    {/* Screen Header */}
-                    <div className="bg-slate-800 px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{DEMO_SCREENS.find(s => s.id === activeScreen)?.icon}</span>
-                        <div>
-                          <h3 className="font-bold text-white">{DEMO_SCREENS.find(s => s.id === activeScreen)?.title}</h3>
-                          <p className="text-xs text-slate-400">
-                            {orgName} • {DEMO_ROLES.find(r => r.id === selectedRole)?.title}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
-                        Live Demo
+                {/* Dashboard Container */}
+                <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
+                  {/* Dashboard Header */}
+                  <div className="bg-slate-800 px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{DEMO_ROLES.find(r => r.id === selectedRole)?.icon}</span>
+                      <div>
+                        <h3 className="font-bold text-white">{DEMO_ROLES.find(r => r.id === selectedRole)?.title} Dashboard</h3>
+                        <p className="text-xs text-slate-400">
+                          {orgName} • Single-scroll view
+                        </p>
                       </div>
                     </div>
-
-                    {/* Screen Content - Role-based views */}
-                    <div className="p-6">
-                      {activeScreen === "dashboard" && (
-                        <DashboardScreen
-                          role={selectedRole}
-                          orgName={orgName}
-                          onTicketClick={handleTicketClick}
-                          teamAllocation={TEAM_ALLOCATION}
-                          settings={settings}
-                        />
-                      )}
-                      {activeScreen === "domains" && <DomainsScreen role={selectedRole} orgName={orgName} />}
-                      {activeScreen === "roles" && <RolesScreen role={selectedRole} teamAllocation={TEAM_ALLOCATION} />}
-                      {activeScreen === "adoption" && <AdoptionScreen role={selectedRole} />}
-                      {activeScreen === "reporting" && <ReportingScreen role={selectedRole} />}
+                    <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
+                      Live Demo
                     </div>
                   </div>
-                )}
+
+                  {/* Dashboard Content - Always shows role-based dashboard */}
+                  <div className="p-6">
+                    <DashboardScreen
+                      role={selectedRole}
+                      orgName={orgName}
+                      onTicketClick={handleTicketClick}
+                      teamAllocation={TEAM_ALLOCATION}
+                      settings={settings}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -2018,6 +2554,202 @@ function DashboardScreen({ role, orgName, onTicketClick, teamAllocation, setting
           </div>
         </div>
       )}
+
+      {/* Documentation View */}
+      {role === "documentation" && (
+        <>
+          {/* Architecture Overview */}
+          <div className="bg-slate-700/30 rounded-xl p-6">
+            <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span>🏗️</span> System Architecture
+            </h4>
+            <div className="space-y-4">
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <h5 className="text-sm font-semibold text-blue-400 mb-2">Frontend Layer</h5>
+                <ul className="text-sm text-slate-300 space-y-1 ml-4 list-disc">
+                  <li>Next.js 15 (App Router) - Server/Client components</li>
+                  <li>TypeScript - Type-safe development</li>
+                  <li>Tailwind CSS - Utility-first styling</li>
+                  <li>React Context - State management</li>
+                </ul>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <h5 className="text-sm font-semibold text-green-400 mb-2">Backend Layer</h5>
+                <ul className="text-sm text-slate-300 space-y-1 ml-4 list-disc">
+                  <li>Java Spring Boot 3.2.1 - REST API server</li>
+                  <li>JPA/Hibernate - ORM for database access</li>
+                  <li>Spring Security - JWT authentication</li>
+                  <li>API Gateway - Rate limiting, auth middleware</li>
+                </ul>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <h5 className="text-sm font-semibold text-purple-400 mb-2">Database Layer</h5>
+                <ul className="text-sm text-slate-300 space-y-1 ml-4 list-disc">
+                  <li>PostgreSQL 15 - Relational database</li>
+                  <li>15 tables with QUAD_ prefix</li>
+                  <li>UUID primary keys for distributed systems</li>
+                  <li>Audit trail tables for compliance</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Sample Test Flow */}
+          <div className="bg-slate-700/30 rounded-xl p-6">
+            <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span>🧪</span> Sample Test Flow: Price Filter Feature
+            </h4>
+            <div className="space-y-3">
+              <div className="bg-slate-800/50 rounded-lg p-4 border-l-4 border-blue-500">
+                <p className="text-xs text-blue-400 font-semibold mb-1">STEP 1: UI Interaction</p>
+                <p className="text-sm text-slate-300">Navigate to /products page → Click "Filters" button → Enter min=$50, max=$200 → Click "Apply"</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4 border-l-4 border-green-500">
+                <p className="text-xs text-green-400 font-semibold mb-1">STEP 2: API Call</p>
+                <code className="text-xs text-slate-300 block bg-slate-900 p-2 rounded mt-1">
+                  GET /api/products?minPrice=50&maxPrice=200
+                </code>
+                <p className="text-xs text-slate-400 mt-1">Expected: 200 OK with filtered products array</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4 border-l-4 border-purple-500">
+                <p className="text-xs text-purple-400 font-semibold mb-1">STEP 3: Database Query</p>
+                <code className="text-xs text-slate-300 block bg-slate-900 p-2 rounded mt-1 font-mono whitespace-pre">
+                  {`SELECT * FROM products
+WHERE price >= 50 AND price <= 200
+AND is_active = true
+ORDER BY created_at DESC;`}
+                </code>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4 border-l-4 border-yellow-500">
+                <p className="text-xs text-yellow-400 font-semibold mb-1">STEP 4: UI Verification</p>
+                <p className="text-sm text-slate-300">Verify: All products shown have price between $50-$200 → No products outside range → Loading state shown during fetch</p>
+              </div>
+            </div>
+          </div>
+
+          {/* API Endpoints Reference */}
+          <div className="bg-slate-700/30 rounded-xl p-6">
+            <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span>🔌</span> API Endpoints
+            </h4>
+            <div className="space-y-2">
+              {[
+                { method: "POST", endpoint: "/api/auth/signup", desc: "Create organization + user", auth: "No" },
+                { method: "POST", endpoint: "/api/auth/login", desc: "Email/password authentication", auth: "No" },
+                { method: "GET", endpoint: "/api/users/email/{email}", desc: "User lookup (OAuth linking)", auth: "No" },
+                { method: "GET", endpoint: "/api/domains", desc: "Get user's domains", auth: "JWT" },
+                { method: "POST", endpoint: "/api/domains", desc: "Create new domain", auth: "JWT" },
+                { method: "GET", endpoint: "/api/flows", desc: "Get work flows", auth: "JWT" },
+                { method: "POST", endpoint: "/api/flows", desc: "Create new flow", auth: "JWT" },
+              ].map((api, i) => (
+                <div key={i} className="bg-slate-800/50 rounded-lg p-3 flex items-center gap-3">
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${
+                    api.method === "POST" ? "bg-green-500/20 text-green-400" : "bg-blue-500/20 text-blue-400"
+                  }`}>
+                    {api.method}
+                  </span>
+                  <code className="text-sm text-slate-300 font-mono flex-1">{api.endpoint}</code>
+                  <span className="text-xs text-slate-400">{api.desc}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded ${
+                    api.auth === "No" ? "bg-slate-600 text-slate-400" : "bg-orange-500/20 text-orange-400"
+                  }`}>
+                    {api.auth}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Database Schema & Test Queries */}
+          <div className="bg-slate-700/30 rounded-xl p-6">
+            <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span>🗄️</span> Database Schema & QA Test Queries
+            </h4>
+            <div className="space-y-4">
+              <div>
+                <h5 className="text-sm font-semibold text-slate-300 mb-2">Core Tables</h5>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  {["QUAD_companies", "QUAD_users", "QUAD_domains", "QUAD_circles", "QUAD_flows", "QUAD_roles",
+                    "QUAD_domain_members", "QUAD_circle_members", "QUAD_domain_blueprints"].map(table => (
+                    <div key={table} className="bg-slate-800/50 rounded px-2 py-1 text-slate-300 font-mono">
+                      {table}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h5 className="text-sm font-semibold text-blue-400 mb-2">QA Test Queries (for Test Team)</h5>
+                <div className="space-y-3">
+                  <div className="bg-slate-800/50 rounded-lg p-3">
+                    <p className="text-xs text-green-400 mb-1 font-semibold">Verify User Creation</p>
+                    <code className="text-xs text-slate-300 block bg-slate-900 p-2 rounded font-mono whitespace-pre">
+                      {`SELECT u.email, u.role, c.name as company_name, u.created_at
+FROM QUAD_users u
+JOIN QUAD_companies c ON u.company_id = c.id
+WHERE u.email = 'test@example.com';`}
+                    </code>
+                  </div>
+
+                  <div className="bg-slate-800/50 rounded-lg p-3">
+                    <p className="text-xs text-green-400 mb-1 font-semibold">Check Flow Stage Transitions</p>
+                    <code className="text-xs text-slate-300 block bg-slate-900 p-2 rounded font-mono whitespace-pre">
+                      {`SELECT f.title, f.current_stage, fsh.from_stage, fsh.to_stage, fsh.transitioned_at
+FROM QUAD_flows f
+LEFT JOIN QUAD_flow_stage_history fsh ON f.id = fsh.flow_id
+WHERE f.id = 'flow-uuid-here'
+ORDER BY fsh.transitioned_at DESC;`}
+                    </code>
+                  </div>
+
+                  <div className="bg-slate-800/50 rounded-lg p-3">
+                    <p className="text-xs text-green-400 mb-1 font-semibold">Verify Team Allocation</p>
+                    <code className="text-xs text-slate-300 block bg-slate-900 p-2 rounded font-mono whitespace-pre">
+                      {`SELECT u.email, dm.allocation_percentage, d.name as domain_name
+FROM QUAD_domain_members dm
+JOIN QUAD_users u ON dm.user_id = u.id
+JOIN QUAD_domains d ON dm.domain_id = d.id
+WHERE u.id = 'user-uuid-here';`}
+                    </code>
+                  </div>
+
+                  <div className="bg-slate-800/50 rounded-lg p-3">
+                    <p className="text-xs text-green-400 mb-1 font-semibold">Check Circle Membership</p>
+                    <code className="text-xs text-slate-300 block bg-slate-900 p-2 rounded font-mono whitespace-pre">
+                      {`SELECT c.name as circle_name, c.number, u.email, cm.joined_at
+FROM QUAD_circle_members cm
+JOIN QUAD_circles c ON cm.circle_id = c.id
+JOIN QUAD_users u ON cm.user_id = u.id
+WHERE c.domain_id = 'domain-uuid-here'
+ORDER BY c.number, u.email;`}
+                    </code>
+                  </div>
+
+                  <div className="bg-slate-800/50 rounded-lg p-3">
+                    <p className="text-xs text-green-400 mb-1 font-semibold">Audit OAuth Sign-in</p>
+                    <code className="text-xs text-slate-300 block bg-slate-900 p-2 rounded font-mono whitespace-pre">
+                      {`SELECT email, oauth_provider, oauth_provider_id, last_login_at
+FROM QUAD_users
+WHERE oauth_provider IS NOT NULL
+ORDER BY last_login_at DESC
+LIMIT 10;`}
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Simulated Chat Window - All Roles */}
+      <div>
+        <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+          <span>💬</span> Ask AI Assistant
+          <span className="text-xs text-slate-500">(Try: "budget", "velocity", "tickets", "team")</span>
+        </h4>
+        <SimulatedChatWindow role={role} />
+      </div>
     </div>
   );
 }
