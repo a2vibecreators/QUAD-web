@@ -143,7 +143,7 @@ export const authOptions: NextAuthOptions = {
 
           if (dbUser) {
             token.userId = dbUser.id;
-            token.companyId = dbUser.companyId; // Same as orgId
+            token.orgId = dbUser.orgId;
             token.role = dbUser.role;
             token.fullName = dbUser.fullName;
 
@@ -157,7 +157,7 @@ export const authOptions: NextAuthOptions = {
             token.accessToken = jwt.sign(
               {
                 userId: dbUser.id,
-                companyId: token.companyId,
+                orgId: token.orgId,
                 email: user.email,
                 role: dbUser.role,
               },
@@ -179,7 +179,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.userId as string;
-        session.user.companyId = token.companyId as string;
+        session.user.orgId = token.orgId as string;
         session.user.role = token.role as string;
         session.user.fullName = token.fullName as string;
 

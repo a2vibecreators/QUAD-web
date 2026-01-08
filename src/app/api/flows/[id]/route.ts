@@ -157,7 +157,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify flow belongs to user's organization
-    if (flow.domain?.org_id !== payload.companyId) {
+    if (flow.domain?.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -214,7 +214,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Flow not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -334,7 +334,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Flow not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

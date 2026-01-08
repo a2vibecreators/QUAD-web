@@ -110,7 +110,7 @@ export async function GET(
     }
 
     // Verify domain belongs to org
-    const domain = await findDomainByIdAndOrg(risk.domain_id, payload.companyId);
+    const domain = await findDomainByIdAndOrg(risk.domain_id, payload.orgId);
 
     if (!domain) {
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
@@ -174,7 +174,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
     }
 
-    const domain = await findDomainByIdAndOrg(existingRisk.domain_id, payload.companyId);
+    const domain = await findDomainByIdAndOrg(existingRisk.domain_id, payload.orgId);
 
     if (!domain) {
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
@@ -257,7 +257,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
     }
 
-    const domain = await findDomainByIdAndOrg(existingRisk.domain_id, payload.companyId);
+    const domain = await findDomainByIdAndOrg(existingRisk.domain_id, payload.orgId);
 
     if (!domain) {
       return NextResponse.json({ error: 'Risk not found' }, { status: 404 });

@@ -62,11 +62,11 @@ const HAIKU_PRICING = TOKEN_PRICING['claude-3-5-haiku-20241022'];
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.companyId) {
+    if (!session?.user?.orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const orgId = session.user.companyId;
+    const orgId = session.user.orgId;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'week';
 

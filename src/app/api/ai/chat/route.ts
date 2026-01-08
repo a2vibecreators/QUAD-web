@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
     let codebaseContext: string | undefined;
     let indexTokens = 0;
     try {
-      const codebaseIndex = await getCodebaseIndex(user.companyId, 'quadframework');
+      const codebaseIndex = await getCodebaseIndex(user.orgId, 'quadframework');
       if (codebaseIndex) {
         codebaseContext = formatIndexForAI(codebaseIndex);
         indexTokens = Math.ceil(codebaseContext.length / 4);
@@ -270,7 +270,7 @@ ${compacted.summary ? `## Previous Conversation Summary:\n${compacted.summary}\n
 
     // Step 6: Get AI configuration for this org
     // TODO: Implement via Java backend when endpoints are ready
-    const aiConfig = await getAIConfig(user.companyId);
+    const aiConfig = await getAIConfig(user.orgId);
 
     // Check if org has custom API keys configured (BYOK)
     // Keys are stored as vault references: openai_key_ref, anthropic_key_ref, etc.
@@ -300,7 +300,7 @@ ${compacted.summary ? `## Previous Conversation Summary:\n${compacted.summary}\n
     if (USE_REAL_AI) {
       try {
         // Use real AI provider
-        const aiResponse = await callAI(user.companyId, aiMessages, {
+        const aiResponse = await callAI(user.orgId, aiMessages, {
           activityType: 'general_chat',
         });
 

@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       fullName,
       orgName,          // New: organization name (replaces companyName)
       companyName,      // Legacy: still supported
-      companyId,        // Legacy: join existing company
+      orgId,        // Legacy: join existing company
       inviteToken       // New: accept invitation to join org
     } = body;
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let targetOrgId = companyId;
+    let targetOrgId = orgId;
     let userRole = 'DEVELOPER';
     let isNewOrg = false;
 
@@ -167,8 +167,8 @@ export async function POST(request: NextRequest) {
       isNewOrg = true;
     }
     // FLOW 3: Legacy - join existing company by ID
-    else if (companyId) {
-      targetOrgId = companyId;
+    else if (orgId) {
+      targetOrgId = orgId;
       userRole = 'DEVELOPER';
     }
     else {
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
 
     // Create user in the organization
     const user = await createUser({
-      companyId: targetOrgId,
+      orgId: targetOrgId,
       email,
       password,
       fullName,

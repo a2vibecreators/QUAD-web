@@ -150,7 +150,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify role belongs to user's organization
-    if (role.org_id !== payload.companyId) {
+    if (role.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -193,7 +193,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Role not found' }, { status: 404 });
     }
 
-    if (existing.org_id !== payload.companyId) {
+    if (existing.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -300,7 +300,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Role not found' }, { status: 404 });
     }
 
-    if (existing.org_id !== payload.companyId) {
+    if (existing.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

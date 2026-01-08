@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get organization domains
-    const orgDomains = await findDomainsByOrgId(payload.companyId);
+    const orgDomains = await findDomainsByOrgId(payload.orgId);
     const domainIds = domainId ? [domainId] : orgDomains.map(d => d.id);
 
     // Get completed tickets in period

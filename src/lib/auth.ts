@@ -44,7 +44,7 @@ export type QuadUser = Pick<QUAD_users, 'id' | 'org_id' | 'email' | 'role' | 'fu
  */
 export interface JWTPayload {
   userId: string;
-  companyId: string;
+  orgId: string;
   email: string;
   role: string;
 }
@@ -78,7 +78,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 export function generateToken(user: QuadUser): string {
   const payload: JWTPayload = {
     userId: user.id,
-    companyId: user.org_id,  // org_id maps to company_id column
+    orgId: user.org_id,  // org_id maps to company_id column
     email: user.email,
     role: user.role,
   };
@@ -224,7 +224,7 @@ export async function getUserWithPassword(email: string) {
  * Create a new user
  */
 export async function createUser(data: {
-  companyId: string;  // Keep param name for backwards compatibility
+  orgId: string;  // Keep param name for backwards compatibility
   email: string;
   password: string;
   fullName?: string;
@@ -234,7 +234,7 @@ export async function createUser(data: {
 
   const user = await prisma.qUAD_users.create({
     data: {
-      org_id: data.companyId,  // org_id maps to company_id column
+      org_id: data.orgId,  // org_id maps to company_id column
       email: data.email,
       password_hash: passwordHash,
       full_name: data.fullName,

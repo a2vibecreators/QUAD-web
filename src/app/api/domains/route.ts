@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get domains from Java backend filtered by org
-    const domains = await getDomains(payload.companyId);
+    const domains = await getDomains(payload.orgId);
 
     return NextResponse.json({ domains });
   } catch (error) {
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     // If parent_domain_id provided, verify it exists
     if (parent_domain_id) {
       const parentDomain = await getDomainById(parent_domain_id);
-      if (!parentDomain || parentDomain.companyId !== payload.companyId) {
+      if (!parentDomain || parentDomain.orgId !== payload.orgId) {
         return NextResponse.json(
           { error: 'Parent domain not found' },
           { status: 404 }
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Create domain via Java backend
     const domain = await createDomain({
-      companyId: payload.companyId,
+      orgId: payload.orgId,
       name,
       parentDomainId: parent_domain_id || null,
       domainType: domain_type || 'PROJECT',

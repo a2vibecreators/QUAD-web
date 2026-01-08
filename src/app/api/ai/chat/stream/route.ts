@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     // Get codebase index if available
     let codebaseContext = '';
     try {
-      const codebaseIndex = await getCodebaseIndex(user.companyId, 'quadframework');
+      const codebaseIndex = await getCodebaseIndex(user.orgId, 'quadframework');
       if (codebaseIndex) {
         codebaseContext = formatIndexForAI(codebaseIndex);
       }
@@ -119,7 +119,7 @@ ${compacted.summary ? `\n## Previous Conversation Summary\n${compacted.summary}`
       async start(controller) {
         try {
           // Stream from AI provider
-          for await (const chunk of streamAI(user.companyId, aiMessages, {
+          for await (const chunk of streamAI(user.orgId, aiMessages, {
             activityType: 'general_chat',
           })) {
             // Format as SSE

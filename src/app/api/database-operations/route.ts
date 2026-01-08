@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
     // Verify domain belongs to user's org
     const domain = await findDomainById(domainId);
 
-    if (!domain || domain.org_id !== payload.companyId) {
+    if (!domain || domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
     // Verify domain belongs to user's org
     const domain = await findDomainById(domain_id);
 
-    if (!domain || domain.org_id !== payload.companyId) {
+    if (!domain || domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 

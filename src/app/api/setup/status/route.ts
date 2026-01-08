@@ -21,7 +21,7 @@ export async function GET() {
     }
 
     // Get user's org from session (set by JWT callback from Java backend)
-    const orgId = session.user.companyId;
+    const orgId = session.user.orgId;
 
     if (!orgId) {
       return NextResponse.json(

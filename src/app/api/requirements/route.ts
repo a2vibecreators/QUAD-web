@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     const aiProcessed = searchParams.get('ai_processed');
 
     // Get organization domains
-    const orgDomains = await stubFindManyDomains(payload.companyId);
+    const orgDomains = await stubFindManyDomains(payload.orgId);
     const domainIds = orgDomains.map(d => d.id);
 
     // Build where clause
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
     // Verify domain exists and belongs to user's company
     const domain = await stubFindUniqueDomain(domain_id);
 
-    if (!domain || domain.org_id !== payload.companyId) {
+    if (!domain || domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 

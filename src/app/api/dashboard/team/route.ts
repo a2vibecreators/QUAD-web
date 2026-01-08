@@ -94,14 +94,14 @@ export async function GET(request: NextRequest) {
     const cycleId = searchParams.get('cycle_id'); // Optional: filter by active cycle
 
     // Get all domains in organization
-    const orgDomains = await stubFindDomains(payload.companyId);
+    const orgDomains = await stubFindDomains(payload.orgId);
     const domainIds = domainId ? [domainId] : orgDomains.map(d => d.id);
 
     // Get all tickets with assignments
     const tickets = await stubFindTickets(domainIds, cycleId);
 
     // Get organization members
-    const members = await stubFindOrgMembers(payload.companyId);
+    const members = await stubFindOrgMembers(payload.orgId);
 
     // Calculate workload per member
     const workloadData: TeamMemberWorkload[] = members.map(m => {

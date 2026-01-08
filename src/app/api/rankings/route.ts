@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get rankings for the period
-    const rankings = await findUserRankings(payload.companyId, periodStart, periodEnd);
+    const rankings = await findUserRankings(payload.orgId, periodStart, periodEnd);
 
     // Get user details for rankings
     const userIds = rankings.map(r => r.user_id);
@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
     const userMap = new Map(users.map(u => [u.id, u]));
 
     // Get ranking config
-    const config = await findRankingConfig(payload.companyId);
+    const config = await findRankingConfig(payload.orgId);
 
     const enrichedRankings = rankings.map(r => ({
       ...r,
@@ -236,12 +236,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Get ranking config or use defaults
-    let config = await findRankingConfig(payload.companyId);
+    let config = await findRankingConfig(payload.orgId);
 
     if (!config) {
       // Create default config
       config = await createRankingConfig({
-        org_id: payload.companyId,
+        org_id: payload.orgId,
         weight_delivery: 35,
         weight_quality: 25,
         weight_collaboration: 20,
@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
     const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     // Get all users in org
-    const users = await findUsersByOrgId(payload.companyId);
+    const users = await findUsersByOrgId(payload.orgId);
 
     // Calculate rankings for each user
     const rankings: Array<{
@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
     // Upsert rankings
     for (let i = 0; i < rankings.length; i++) {
       const r = rankings[i];
-      await upsertUserRanking(r.userId, payload.companyId, periodStart, periodEnd, {
+      await upsertUserRanking(r.userId, payload.orgId, periodStart, periodEnd, {
         delivery_score: r.deliveryScore,
         quality_score: r.qualityScore,
         collaboration_score: r.collaborationScore,

@@ -125,7 +125,7 @@ export async function GET(
     }
 
     // Verify belongs to user's organization
-    if (requirement.domain.org_id !== payload.companyId) {
+    if (requirement.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 
@@ -166,7 +166,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 
@@ -240,7 +240,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 

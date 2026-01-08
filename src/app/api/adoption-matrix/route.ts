@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all users with their adoption matrix
-    const users = await findUsersByOrgIdWithMatrix(payload.companyId);
+    const users = await findUsersByOrgIdWithMatrix(payload.orgId);
 
     // Enrich with zone names and safety buffers
     const matrixData = users.map(user => {
@@ -223,7 +223,7 @@ export async function PUT(request: NextRequest) {
     // Verify user exists and is in same company
     const user = await findUserByIdWithMatrix(user_id);
 
-    if (!user || user.org_id !== payload.companyId) {
+    if (!user || user.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 

@@ -42,11 +42,11 @@ async function getIndexMetadata(_orgId: string, _repoName: string): Promise<Inde
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.companyId) {
+    if (!session?.user?.orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const orgId = session.user.companyId;
+    const orgId = session.user.orgId;
     const { searchParams } = new URL(request.url);
     const repoName = searchParams.get('repo') || 'quadframework';
     const format = searchParams.get('format') || 'json'; // json or text
@@ -107,11 +107,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.companyId) {
+    if (!session?.user?.orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const orgId = session.user.companyId;
+    const orgId = session.user.orgId;
     const body = await request.json();
     const { repoName, repoPath, repoUrl } = body;
 

@@ -95,7 +95,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Non-admins can only view their own organization
-    if (payload.role !== 'ADMIN' && payload.companyId !== id) {
+    if (payload.role !== 'ADMIN' && payload.orgId !== id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -133,7 +133,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Only admins can update organizations
-    if (payload.role !== 'ADMIN' && payload.companyId !== id) {
+    if (payload.role !== 'ADMIN' && payload.orgId !== id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

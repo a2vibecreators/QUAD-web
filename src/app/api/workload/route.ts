@@ -181,13 +181,13 @@ export async function GET(request: NextRequest) {
     // If user_id specified, filter by user (must be in same company)
     if (userId) {
       const user = await findUserById(userId);
-      if (!user || user.org_id !== payload.companyId) {
+      if (!user || user.org_id !== payload.orgId) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
       where.user_id = userId;
     } else {
       // Get all users in organization
-      const orgUsers = await findUsersByOrgId(payload.companyId);
+      const orgUsers = await findUsersByOrgId(payload.orgId);
       where.user_id = { in: orgUsers.map(u => u.id) };
     }
 
@@ -282,14 +282,14 @@ export async function POST(request: NextRequest) {
     // Verify user exists and is in same company
     const user = await findUserById(user_id);
 
-    if (!user || user.org_id !== payload.companyId) {
+    if (!user || user.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // If domain_id provided, verify it
     if (domain_id) {
       const domain = await findDomainById(domain_id);
-      if (!domain || domain.org_id !== payload.companyId) {
+      if (!domain || domain.org_id !== payload.orgId) {
         return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
       }
     }

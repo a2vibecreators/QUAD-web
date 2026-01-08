@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get('include_inactive') === 'true';
 
-    const roles = await findRolesByOrg(payload.companyId, includeInactive);
+    const roles = await findRolesByOrg(payload.orgId, includeInactive);
 
     return NextResponse.json({ roles });
   } catch (error) {
@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if role code already exists in this organization
-    const existing = await findRoleByOrgAndCode(payload.companyId, role_code);
+    const existing = await findRoleByOrgAndCode(payload.orgId, role_code);
 
     if (existing) {
       return NextResponse.json(
@@ -302,7 +302,7 @@ export async function POST(request: NextRequest) {
 
     // Create role - inherit defaults from core role if not specified
     const role = await createRole({
-      org_id: payload.companyId,
+      org_id: payload.orgId,
       core_role_id,
       role_code,
       role_name,

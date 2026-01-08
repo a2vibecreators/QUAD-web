@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const kudosCounts = await getKudosLeaderboard(payload.companyId, monthStart);
+      const kudosCounts = await getKudosLeaderboard(payload.orgId, monthStart);
 
       const userIds = kudosCounts.map(k => k.to_user_id);
       const users = await findUsersByIds(userIds);
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
     // Get kudos received or given
     const kudos = await findKudosByUser(
       payload.userId,
-      payload.companyId,
+      payload.orgId,
       view as 'received' | 'given',
       limit
     );
@@ -156,8 +156,8 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get summary stats
-    const totalReceived = await countKudosReceived(payload.userId, payload.companyId);
-    const totalGiven = await countKudosGiven(payload.userId, payload.companyId);
+    const totalReceived = await countKudosReceived(payload.userId, payload.orgId);
+    const totalGiven = await countKudosGiven(payload.userId, payload.orgId);
 
     return NextResponse.json({
       view,
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify recipient exists in org
-    const recipient = await findUserByIdAndOrg(to_user_id, payload.companyId);
+    const recipient = await findUserByIdAndOrg(to_user_id, payload.orgId);
 
     if (!recipient) {
       return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
     const kudos = await createKudos({
       from_user_id: payload.userId,
       to_user_id,
-      org_id: payload.companyId,
+      org_id: payload.orgId,
       kudos_type,
       message,
       ticket_id,

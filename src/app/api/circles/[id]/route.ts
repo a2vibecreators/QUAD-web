@@ -106,7 +106,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify circle belongs to user's organization
-    if (circle.domain.org_id !== payload.companyId) {
+    if (circle.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -148,7 +148,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Circle not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -158,7 +158,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // If changing lead, verify they're in same company
     if (lead_user_id !== undefined && lead_user_id !== null) {
       const leadUser = await stubFindUserById(lead_user_id);
-      if (!leadUser || leadUser.org_id !== payload.companyId) {
+      if (!leadUser || leadUser.org_id !== payload.orgId) {
         return NextResponse.json({ error: 'Lead user not found' }, { status: 404 });
       }
     }
@@ -208,7 +208,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Circle not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

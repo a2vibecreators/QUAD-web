@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     const riskLevel = searchParams.get('risk_level'); // low, medium, high, critical
 
     // Get domains in org
-    const orgDomains = await findDomainsByOrgId(payload.companyId);
+    const orgDomains = await findDomainsByOrgId(payload.orgId);
     const domainIds = domainId ? [domainId] : orgDomains.map(d => d.id);
 
     const risks = await findRiskFactors(domainIds, status, riskLevel);
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate domain belongs to org
-    const domain = await findDomainByIdAndOrg(domain_id, payload.companyId);
+    const domain = await findDomainByIdAndOrg(domain_id, payload.orgId);
 
     if (!domain) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });

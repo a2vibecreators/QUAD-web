@@ -89,13 +89,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    let config = await getAIConfig(payload.companyId);
+    let config = await getAIConfig(payload.orgId);
 
     if (!config) {
       // Return defaults
       config = {
         id: '',
-        org_id: payload.companyId,
+        org_id: payload.orgId,
         primary_provider: 'gemini',
         fallback_provider: null,
         ai_usage_mode: 'conservative',
@@ -237,7 +237,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const config = await upsertAIConfig(payload.companyId, {
+    const config = await upsertAIConfig(payload.orgId, {
       primary_provider,
       fallback_provider,
       ai_usage_mode,

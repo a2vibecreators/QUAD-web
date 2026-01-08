@@ -51,12 +51,12 @@ export async function POST(request: Request) {
       ]
     );
 
-    const companyId = (result.rows[0] as { id: string }).id;
+    const orgId = (result.rows[0] as { id: string }).id;
 
     // TODO: Store access request metadata when QUAD_access_requests table is added
     // For now, log the request details
     console.log('Access request metadata:', {
-      companyId,
+      orgId,
       ssoProvider,
       message,
       requestedAt: new Date().toISOString(),
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     // TODO: Send email notification to QUAD support team
     // TODO: Send confirmation email to user
     console.log('Access request submitted:', {
-      companyId,
+      orgId,
       companyName,
       adminEmail,
       ssoProvider,
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       {
         success: true,
         message: 'Access request submitted successfully',
-        companyId,
+        orgId,
       },
       { status: 201 }
     );

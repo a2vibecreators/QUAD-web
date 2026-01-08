@@ -243,7 +243,7 @@ export async function POST(
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 
-    if (requirement.domain.org_id !== payload.companyId) {
+    if (requirement.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 

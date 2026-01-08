@@ -130,13 +130,14 @@ export async function GET(request: NextRequest) {
     const includeMetrics = searchParams.get('include_metrics') === 'true';
 
     // Get user's org
-    const companyId = await getUserCompanyId(session.user.id);
+    let orgId = await getUserCompanyId(session.user.id);
 
-    if (!companyId) {
+    if (!orgId) {
       return NextResponse.json({ error: 'No organization found' }, { status: 404 });
     }
 
-    const orgId = searchParams.get('org_id') || companyId;
+    // Allow override via query param
+    orgId = searchParams.get('org_id') || orgId;
 
     // Get infrastructure config
     const infraConfig = await getInfraConfig(orgId);

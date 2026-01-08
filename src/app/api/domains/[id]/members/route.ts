@@ -95,7 +95,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Verify domain exists and belongs to user's organization
     const domain = await stubFindDomainById(domainId);
 
-    if (!domain || domain.org_id !== payload.companyId) {
+    if (!domain || domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Verify domain exists and belongs to user's organization
     const domain = await stubFindDomainById(domainId);
 
-    if (!domain || domain.org_id !== payload.companyId) {
+    if (!domain || domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Verify user exists and is in same company
     const user = await stubFindUserById(user_id);
 
-    if (!user || user.org_id !== payload.companyId) {
+    if (!user || user.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -219,7 +219,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Verify domain exists and belongs to user's organization
     const domain = await stubFindDomainById(domainId);
 
-    if (!domain || domain.org_id !== payload.companyId) {
+    if (!domain || domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 

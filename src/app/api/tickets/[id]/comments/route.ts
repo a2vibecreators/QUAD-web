@@ -99,7 +99,7 @@ export async function GET(
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    if (ticket.domain.org_id !== payload.companyId) {
+    if (ticket.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
@@ -155,7 +155,7 @@ export async function POST(
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    if (ticket.domain.org_id !== payload.companyId) {
+    if (ticket.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 

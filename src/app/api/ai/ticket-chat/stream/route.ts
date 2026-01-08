@@ -126,7 +126,7 @@ You are helping with THIS SPECIFIC TICKET only.`;
 export async function POST(request: NextRequest) {
   // Verify authentication via NextAuth session
   const session = await getServerSession(authOptions);
-  if (!session?.user?.companyId || !session?.user?.id) {
+  if (!session?.user?.orgId || !session?.user?.id) {
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const orgId = session.user.companyId;
+    const orgId = session.user.orgId;
     const userId = session.user.id;
 
     // Check if org has credits (shared pool across all users)

@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Check if user is admin
     if (payload.role !== 'ADMIN') {
       // Non-admins can only see their own organization
-      const organization = await getOrgById(payload.companyId);
+      const organization = await getOrgById(payload.orgId);
 
       return NextResponse.json({ companies: organization ? [organization] : [] });
     }

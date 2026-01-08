@@ -175,7 +175,7 @@ export async function GET(
     }
 
     // Verify belongs to user's organization
-    if (ticket.domain.org_id !== payload.companyId) {
+    if (ticket.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
@@ -234,7 +234,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
@@ -331,7 +331,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 

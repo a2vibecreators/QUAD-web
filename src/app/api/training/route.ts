@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     const view = searchParams.get('view') || 'all'; // all, my_progress, required
 
     // Get all training content
-    const content = await findTrainingContent(payload.companyId, {
+    const content = await findTrainingContent(payload.orgId, {
       category,
       contentType,
       difficulty,
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
     }
 
     const content = await createTrainingContent({
-      org_id: payload.companyId,
+      org_id: payload.orgId,
       title,
       description,
       content_type,

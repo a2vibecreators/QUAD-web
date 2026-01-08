@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
     const myTickets = searchParams.get('my_tickets'); // Only user's tickets
 
     // Get organization domains
-    const orgDomains = await stubFindDomainsByOrgId(payload.companyId);
+    const orgDomains = await stubFindDomainsByOrgId(payload.orgId);
     const domainIds = orgDomains.map(d => d.id);
 
     // Build where clause
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     // Verify domain exists and belongs to user's company
     const domain = await stubFindDomainById(domain_id);
 
-    if (!domain || domain.org_id !== payload.companyId) {
+    if (!domain || domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
     let assignmentResult: AssignmentResult | null = null;
     if (!assigned_to) {
       try {
-        assignmentResult = await assignTicket(ticket.id, domain_id, payload.companyId);
+        assignmentResult = await assignTicket(ticket.id, domain_id, payload.orgId);
 
         // Type guard: Only proceed if assignmentResult is not null
         if (assignmentResult) {

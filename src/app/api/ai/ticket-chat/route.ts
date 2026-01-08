@@ -112,7 +112,7 @@ async function getTicketNumber(ticketId: string): Promise<string | null> {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.companyId) {
+    if (!session?.user?.orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find existing conversation for this ticket
-    const conversation = await findConversation(session.user.companyId, 'ticket', ticketId);
+    const conversation = await findConversation(session.user.orgId, 'ticket', ticketId);
 
     if (!conversation) {
       return NextResponse.json({
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.companyId || !session?.user?.id) {
+    if (!session?.user?.orgId || !session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const orgId = session.user.companyId;
+    const orgId = session.user.orgId;
     const userId = session.user.id;
 
     // Check if org has credits (shared pool across all users)

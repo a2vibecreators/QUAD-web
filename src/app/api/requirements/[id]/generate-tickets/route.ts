@@ -448,7 +448,7 @@ export async function POST(
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 
-    if (requirement.domain.org_id !== payload.companyId) {
+    if (requirement.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 
@@ -546,7 +546,7 @@ export async function POST(
 
         // Intelligent assignment for each ticket
         try {
-          const assignment = await assignTicket(ticket.id, requirement.domain_id, payload.companyId);
+          const assignment = await assignTicket(ticket.id, requirement.domain_id, payload.orgId);
           await stubUpdateTicketAssignment(ticket.id, assignment.assigned_to);
           await recordAssignment(ticket.id, assignment);
           (ticket as unknown as Record<string, unknown>).assigned_to = assignment.assigned_to;

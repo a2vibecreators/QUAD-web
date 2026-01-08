@@ -74,10 +74,10 @@ export default function CustomerLanding() {
           <button
             key={slide.id}
             onClick={() => scrollToSlide(i)}
-            className="group flex items-center gap-2"
+            className="group flex items-center justify-end gap-2 relative"
           >
             <span
-              className={`text-xs transition-opacity ${
+              className={`absolute right-6 whitespace-nowrap text-xs transition-opacity ${
                 activeSlide === i
                   ? "opacity-100 text-white"
                   : "opacity-0 group-hover:opacity-100 text-slate-400"
@@ -94,6 +94,13 @@ export default function CustomerLanding() {
             />
           </button>
         ))}
+      </div>
+
+      {/* Keyboard hint */}
+      <div className="fixed bottom-6 right-6 z-50 text-slate-500 text-xs hidden md:flex items-center gap-2">
+        <span className="px-2 py-1 bg-slate-800 rounded">↑</span>
+        <span className="px-2 py-1 bg-slate-800 rounded">↓</span>
+        <span>to navigate</span>
       </div>
 
       {/* Scroll Container */}

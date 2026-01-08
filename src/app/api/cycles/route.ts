@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     const active = searchParams.get('active'); // Get current active Cycle
 
     // Get organization Domains
-    const orgDomains = await findManyDomains({ org_id: payload.companyId });
+    const orgDomains = await findManyDomains({ org_id: payload.orgId });
     const domainIds = orgDomains.map(d => d.id);
 
     // Build where clause
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
     // Verify Domain exists and belongs to user's company
     const domain = await findUniqueDomain(domain_id);
 
-    if (!domain || domain.org_id !== payload.companyId) {
+    if (!domain || domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 

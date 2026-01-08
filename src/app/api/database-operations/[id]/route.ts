@@ -146,7 +146,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Operation not found' }, { status: 404 });
     }
 
-    if (operation.domain.org_id !== payload.companyId) {
+    if (operation.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -187,7 +187,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Operation not found' }, { status: 404 });
     }
 
-    if (operation.domain.org_id !== payload.companyId) {
+    if (operation.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -340,7 +340,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Operation not found' }, { status: 404 });
     }
 
-    if (operation.domain.org_id !== payload.companyId) {
+    if (operation.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

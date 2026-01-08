@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
 
     // Get all domains in organization
-    const orgDomains = await stubFindDomains(payload.companyId);
+    const orgDomains = await stubFindDomains(payload.orgId);
     const domainIds = domainId ? [domainId] : orgDomains.map(d => d.id);
 
     // Fetch completed cycles with tickets

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get users from Java backend filtered by org
-    const users = await getUsers(payload.companyId);
+    const users = await getUsers(payload.orgId);
 
     return NextResponse.json({ users });
   } catch (error) {
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     // Create user via Java backend
     const user = await createUser({
-      companyId: payload.companyId,
+      orgId: payload.orgId,
       email,
       passwordHash: password_hash,
       fullName: full_name,

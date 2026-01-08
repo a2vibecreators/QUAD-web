@@ -21,8 +21,8 @@ export async function GET() {
       return NextResponse.json({ setupComplete: true });
     }
 
-    // Check if user has an organization (companyId is set in JWT callback from Java backend)
-    if (!session.user.companyId) {
+    // Check if user has an organization (orgId is set in JWT callback from Java backend)
+    if (!session.user.orgId) {
       // No org - redirect to onboarding
       return NextResponse.json({
         setupComplete: false,

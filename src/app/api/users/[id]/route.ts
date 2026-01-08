@@ -112,7 +112,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Users can only view users from their own organization
-    if (user.org_id !== payload.companyId) {
+    if (user.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -158,7 +158,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    if (existing.org_id !== payload.companyId) {
+    if (existing.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -218,7 +218,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    if (existing.org_id !== payload.companyId) {
+    if (existing.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

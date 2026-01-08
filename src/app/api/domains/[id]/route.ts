@@ -152,7 +152,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify domain belongs to user's organization
-    if (domain.org_id !== payload.companyId) {
+    if (domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -195,7 +195,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
-    if (existing.org_id !== payload.companyId) {
+    if (existing.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -209,7 +209,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         newPath = `/${name || existing.name}`;
       } else {
         const parentDomain = await stubFindDomainSimple(parent_domain_id);
-        if (parentDomain && parentDomain.org_id === payload.companyId) {
+        if (parentDomain && parentDomain.org_id === payload.orgId) {
           newPath = `${parentDomain.path || ''}/${name || existing.name}`;
         }
       }
@@ -279,7 +279,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
-    if (existing.org_id !== payload.companyId) {
+    if (existing.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -368,7 +368,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
     }
 
-    if (existing.org_id !== payload.companyId) {
+    if (existing.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

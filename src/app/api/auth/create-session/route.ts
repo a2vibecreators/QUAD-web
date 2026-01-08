@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         name: user.fullName,
         picture: undefined,
         userId: user.id,
-        companyId: user.companyId,
+        orgId: user.orgId,
         role: user.role,
         fullName: user.fullName,
         domainId: undefined,

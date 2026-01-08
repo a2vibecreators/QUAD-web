@@ -106,7 +106,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify resource belongs to user's organization
-    if (resource.domain.org_id !== payload.companyId) {
+    if (resource.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -159,7 +159,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Resource not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -237,7 +237,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Resource not found' }, { status: 404 });
     }
 
-    if (existing.domain.org_id !== payload.companyId) {
+    if (existing.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

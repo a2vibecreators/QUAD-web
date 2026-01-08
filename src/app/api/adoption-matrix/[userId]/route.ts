@@ -77,7 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify user is in same organization
-    if (user.org_id !== payload.companyId) {
+    if (user.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

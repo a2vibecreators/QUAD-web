@@ -117,7 +117,7 @@ export async function PUT(
     const { status, progress_percent, quiz_score, certificate_url } = body;
 
     // Verify content exists and belongs to org
-    const content = await findTrainingContentByIdAndOrg(contentId, payload.companyId);
+    const content = await findTrainingContentByIdAndOrg(contentId, payload.orgId);
 
     if (!content) {
       return NextResponse.json({ error: 'Training content not found' }, { status: 404 });
@@ -165,7 +165,7 @@ export async function PUT(
       if (!existingSkill) {
         await createUserSkill({
           user_id: payload.userId,
-          org_id: payload.companyId,
+          org_id: payload.orgId,
           skill_name: content.title,
           skill_category: content.skill_category,
           proficiency_level: content.difficulty === 'beginner' ? 1 :

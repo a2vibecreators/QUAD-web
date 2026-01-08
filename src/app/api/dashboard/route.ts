@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
     const domainId = searchParams.get('domain_id'); // Optional: filter by domain
 
     // Get all domains in organization
-    const orgDomains = await stubFindDomains(payload.companyId);
+    const orgDomains = await stubFindDomains(payload.orgId);
     const domainIds = domainId ? [domainId] : orgDomains.map(d => d.id);
 
     // 1. Tickets by Status (for pie chart)

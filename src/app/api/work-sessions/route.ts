@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
     // Verify user is in same company
     if (userId !== payload.userId) {
       const user = await findUserById(userId);
-      if (!user || user.org_id !== payload.companyId) {
+      if (!user || user.org_id !== payload.orgId) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
     }
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
       }
 
       const user = await findUserById(targetUserId);
-      if (!user || user.org_id !== payload.companyId) {
+      if (!user || user.org_id !== payload.orgId) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
     }

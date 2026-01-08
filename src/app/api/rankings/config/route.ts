@@ -97,13 +97,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    let config = await findRankingConfig(payload.companyId);
+    let config = await findRankingConfig(payload.orgId);
 
     if (!config) {
       // Return defaults
       config = {
         id: '',
-        org_id: payload.companyId,
+        org_id: payload.orgId,
         weight_delivery: 35,
         weight_quality: 25,
         weight_collaboration: 20,
@@ -186,7 +186,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const config = await upsertRankingConfig(payload.companyId, {
+    const config = await upsertRankingConfig(payload.orgId, {
       weight_delivery,
       weight_quality,
       weight_collaboration,

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const organizations = await getOrganizations();
 
     // Filter to user's organization (for now, single org per user)
-    const userOrgs = organizations.filter((o: { id: string }) => o.id === payload.companyId);
+    const userOrgs = organizations.filter((o: { id: string }) => o.id === payload.orgId);
 
     return NextResponse.json({
       organizations: userOrgs,

@@ -79,7 +79,7 @@ export async function GET(
       return NextResponse.json({ error: 'Cycle not found' }, { status: 404 });
     }
 
-    if (cycle.domain.org_id !== payload.companyId) {
+    if (cycle.domain.org_id !== payload.orgId) {
       return NextResponse.json({ error: 'Cycle not found' }, { status: 404 });
     }
 
