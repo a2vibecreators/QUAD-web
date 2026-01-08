@@ -1069,7 +1069,15 @@ export default function CustomerDemo() {
   // Notification panel
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState(DEMO_NOTIFICATIONS);
-  const newNotificationCount = notifications.filter(n => n.isNew).length;
+
+  // Zoom meeting state
+  const [zoomMeeting, setZoomMeeting] = useState<{
+    meetingId: string;
+    joinUrl: string;
+    password: string;
+    status: "idle" | "creating" | "active" | "ended";
+  } | null>(null);
+  const [showZoomWidget, setShowZoomWidget] = useState(false);
 
   // Meeting to Code modal
   const [showMeetingToCode, setShowMeetingToCode] = useState(false);
@@ -1183,6 +1191,63 @@ export default function CustomerDemo() {
 
       setAiConversation(prev => [...prev, { role: "ai", message: aiResponse }]);
     }, 1500);
+  };
+
+  // Handle starting Zoom meeting
+  const handleStartZoomMeeting = async () => {
+    setZoomMeeting({ meetingId: "", joinUrl: "", password: "", status: "creating" });
+    setShowZoomWidget(true);
+
+    try {
+      // Call API to create Zoom meeting
+      const response = await fetch("/api/meetings/create-zoom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: `QUAD Demo - ${orgName}`,
+          autoRecording: "cloud", // Automatically start cloud recording
+          waitingRoom: true, // Enable waiting room for admission control
+          settings: {
+            host_video: true,
+            participant_video: true,
+            join_before_host: false,
+            mute_upon_entry: true,
+            waiting_room: true,
+            auto_recording: "cloud",
+            approval_type: 0, // Manual approval (waiting room)
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.meetingId) {
+        setZoomMeeting({
+          meetingId: data.meetingId,
+          joinUrl: data.joinUrl,
+          password: data.password,
+          status: "active",
+        });
+
+        // Auto-open Zoom app
+        window.open(data.joinUrl, "_blank");
+      } else {
+        throw new Error("Failed to create meeting");
+      }
+    } catch (error) {
+      console.error("Failed to create Zoom meeting:", error);
+      setZoomMeeting(null);
+      setShowZoomWidget(false);
+      alert("Failed to create Zoom meeting. Please check your Zoom API configuration.");
+    }
+  };
+
+  // Handle ending Zoom meeting
+  const handleEndZoomMeeting = () => {
+    if (zoomMeeting) {
+      setZoomMeeting({ ...zoomMeeting, status: "ended" });
+      // In production, call API to end meeting and retrieve recording
+    }
   };
 
   // Mark notifications as read
@@ -2048,24 +2113,10 @@ export default function CustomerDemo() {
             <div className="flex flex-col xl:flex-row gap-6">
               {/* LEFT: Role Selector */}
               <div className="xl:w-64 shrink-0">
-                {/* Notification & Settings */}
-                <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-4 mb-4 space-y-2">
+                {/* Settings */}
+                <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-4 mb-4">
                   <button
-                    onClick={() => { setShowNotifications(!showNotifications); setShowSettings(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">🔔</span>
-                      <span className="font-medium text-sm text-white">Notifications</span>
-                    </div>
-                    {newNotificationCount > 0 && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                        {newNotificationCount}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => { setShowSettings(!showSettings); setShowNotifications(false); }}
+                    onClick={() => setShowSettings(!showSettings)}
                     className="w-full flex items-center justify-between px-3 py-2 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-all"
                   >
                     <div className="flex items-center gap-3">
@@ -2223,6 +2274,160 @@ export default function CustomerDemo() {
           )}
         </div>
       </section>
+
+      {/* Zoom Call Widget - Floating Button */}
+      {unlocked && !zoomMeeting && (
+        <button
+          onClick={handleStartZoomMeeting}
+          className="fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-2xl transition-all"
+        >
+          <span className="text-2xl">📹</span>
+          <span>Start Demo Call</span>
+        </button>
+      )}
+
+      {/* Zoom Meeting Widget */}
+      {showZoomWidget && zoomMeeting && (
+        <div className="fixed bottom-8 right-8 z-50 w-96 bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">📹</span>
+                <div>
+                  <h3 className="font-bold text-white text-lg">QUAD Demo Call</h3>
+                  <p className="text-xs text-blue-100">{orgName}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowZoomWidget(false)}
+                className="text-white hover:text-blue-200 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Meeting Status */}
+          <div className="p-6 space-y-4">
+            {zoomMeeting.status === "creating" && (
+              <div className="text-center py-8">
+                <div className="animate-spin text-4xl mb-4">⏳</div>
+                <p className="text-white font-medium">Creating Zoom meeting...</p>
+                <p className="text-xs text-slate-400 mt-2">Setting up cloud recording & waiting room</p>
+              </div>
+            )}
+
+            {zoomMeeting.status === "active" && (
+              <>
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                    <span className="text-green-400 font-medium text-sm">Meeting Active</span>
+                  </div>
+                  <p className="text-xs text-slate-400">Cloud recording started automatically</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Meeting ID</label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-slate-800 px-3 py-2 rounded text-sm text-white font-mono">
+                        {zoomMeeting.meetingId}
+                      </code>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(zoomMeeting.meetingId)}
+                        className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs transition-colors"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Password</label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-slate-800 px-3 py-2 rounded text-sm text-white font-mono">
+                        {zoomMeeting.password}
+                      </code>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(zoomMeeting.password)}
+                        className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs transition-colors"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Join URL</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={zoomMeeting.joinUrl}
+                        readOnly
+                        className="flex-1 bg-slate-800 px-3 py-2 rounded text-xs text-white font-mono truncate"
+                      />
+                      <button
+                        onClick={() => navigator.clipboard.writeText(zoomMeeting.joinUrl)}
+                        className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs transition-colors"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <span className="text-lg">ℹ️</span>
+                    <div className="flex-1">
+                      <p className="text-xs text-blue-300 font-medium mb-1">Waiting Room Enabled</p>
+                      <p className="text-xs text-slate-400">
+                        Participants will join the waiting room. You can admit them from the Zoom app.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => window.open(zoomMeeting.joinUrl, "_blank")}
+                    className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors text-sm"
+                  >
+                    Open Zoom
+                  </button>
+                  <button
+                    onClick={handleEndZoomMeeting}
+                    className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors text-sm"
+                  >
+                    End Meeting
+                  </button>
+                </div>
+              </>
+            )}
+
+            {zoomMeeting.status === "ended" && (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">✅</div>
+                <p className="text-white font-medium mb-2">Meeting Ended</p>
+                <p className="text-xs text-slate-400 mb-4">
+                  Recording will be available in your Zoom account shortly
+                </p>
+                <button
+                  onClick={() => {
+                    setZoomMeeting(null);
+                    setShowZoomWidget(false);
+                  }}
+                  className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quick Links */}
       <section className="py-12 px-4">
