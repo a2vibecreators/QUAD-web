@@ -154,13 +154,13 @@ export default function CustomerPitch() {
         </section>
 
         {/* Slide 3: Comparison */}
-        <section id="comparison" className="h-screen snap-start flex items-center justify-center px-6">
-          <div className="max-w-6xl w-full">
-            <div className="text-center mb-12">
-              <div className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm mb-4">
+        <section id="comparison" className="h-screen snap-start flex items-center justify-center px-6 overflow-y-auto">
+          <div className="max-w-6xl w-full py-8">
+            <div className="text-center mb-6">
+              <div className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm mb-3">
                 The Difference
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-white">
+              <h2 className="text-3xl md:text-4xl font-bold text-white">
                 Traditional vs QUAD
               </h2>
             </div>
@@ -249,68 +249,40 @@ export default function CustomerPitch() {
             </div>
 
             {/* Context-Aware Timeline */}
-            <div className="mt-12 max-w-4xl mx-auto">
-              <div className="bg-slate-800/30 rounded-xl p-6 border border-slate-700">
-                <h3 className="text-lg font-bold text-white mb-4 text-center">
+            <div className="mt-6 max-w-4xl mx-auto">
+              <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+                <h3 className="text-base font-bold text-white mb-3 text-center">
                   Timeline Varies by Complexity
                 </h3>
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   {[
                     {
                       label: "Small",
                       example: "Bug fix",
-                      files: "1-3 files",
-                      ai: "1 hr",
-                      human: "4-8 hrs",
                       total: "1 day",
                       color: "text-green-400"
                     },
                     {
                       label: "Medium",
                       example: "New feature",
-                      files: "5-10 files",
-                      ai: "2-4 hrs",
-                      human: "1-2 days",
                       total: "2-3 days",
                       color: "text-blue-400"
                     },
                     {
                       label: "Large",
-                      example: "Refactor 30 Java files",
-                      files: "20-50 files",
-                      ai: "4-6 hrs",
-                      human: "2-4 days",
+                      example: "30 Java files",
                       total: "3-5 days",
                       color: "text-purple-400"
                     },
                   ].map((item, i) => (
-                    <div key={i} className="bg-slate-900/50 rounded-lg p-4 border border-slate-600">
-                      <div className="text-center mb-3">
-                        <div className={`text-xl font-bold ${item.color}`}>{item.label}</div>
-                        <div className="text-xs text-slate-500">{item.example}</div>
-                      </div>
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Files:</span>
-                          <span className="text-white">{item.files}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">AI Time:</span>
-                          <span className="text-white">{item.ai}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Human Review:</span>
-                          <span className="text-white">{item.human}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-slate-700 pt-2 font-bold">
-                          <span className="text-slate-300">Total:</span>
-                          <span className={item.color}>{item.total}</span>
-                        </div>
-                      </div>
+                    <div key={i} className="bg-slate-900/50 rounded-lg p-3 border border-slate-600 text-center">
+                      <div className={`text-lg font-bold ${item.color} mb-1`}>{item.label}</div>
+                      <div className="text-xs text-slate-500 mb-2">{item.example}</div>
+                      <div className={`text-sm font-bold ${item.color}`}>{item.total}</div>
                     </div>
                   ))}
                 </div>
-                <p className="text-center text-xs text-slate-500 mt-4">
+                <p className="text-center text-xs text-slate-500 mt-3">
                   💡 Human gates ensure quality - AI suggests, humans decide
                 </p>
               </div>
@@ -318,7 +290,7 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 4: Meeting to Code */}
+        {/* Slide 4: Trigger to Code */}
         <section id="meeting-to-code" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-blue-950/20">
           <div className="max-w-6xl w-full">
             <div className="text-center mb-10">
@@ -326,27 +298,48 @@ export default function CustomerPitch() {
                 The Magic
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-2">
-                Meeting → Code
+                Trigger → Code
               </h2>
               <p className="text-lg text-slate-400">
-                From email to working code in <span className="text-green-400 font-bold">hours</span>, not weeks
+                From <span className="text-green-400 font-bold">any trigger</span> to working code in hours
               </p>
             </div>
 
+            {/* Multiple Trigger Sources */}
+            <div className="mb-8">
+              <h3 className="text-center text-lg text-white mb-4">Start from Anywhere</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+                {[
+                  { icon: "📧", label: "Email", desc: "quad-agents@..." },
+                  { icon: "💬", label: "Messenger", desc: "@quad analyze" },
+                  { icon: "💻", label: "VS Code", desc: "Highlight → Ask" },
+                  { icon: "🖥️", label: "QUAD App", desc: "Load → Analyze" },
+                ].map((trigger, i) => (
+                  <div key={i} className="bg-slate-800/30 rounded-lg p-3 border border-slate-700 text-center">
+                    <div className="text-3xl mb-1">{trigger.icon}</div>
+                    <div className="text-white text-sm font-semibold">{trigger.label}</div>
+                    <div className="text-slate-500 text-xs">{trigger.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Timeline Flow */}
             <div className="relative">
               <div className="hidden md:block absolute top-[60px] left-[10%] right-[10%] h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 rounded-full" />
               <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-0 md:px-[5%]">
                 {[
-                  { time: "9:15 AM", icon: "📧", title: "Email", desc: "PM sends feature request", dotClass: "bg-blue-500 shadow-blue-500/50", badgeClass: "bg-blue-500/20 text-blue-300" },
-                  { time: "9:16 AM", icon: "🎫", title: "Jira Ticket", desc: "Auto-created with user story", dotClass: "bg-purple-500 shadow-purple-500/50", badgeClass: "bg-purple-500/20 text-purple-300" },
-                  { time: "10:30 AM", icon: "💻", title: "Code Generated", desc: "3 files, +147 lines", dotClass: "bg-indigo-500 shadow-indigo-500/50", badgeClass: "bg-indigo-500/20 text-indigo-300" },
-                  { time: "1:15 PM", icon: "✅", title: "PR Ready", desc: "Developer approves", dotClass: "bg-green-500 shadow-green-500/50", badgeClass: "bg-green-500/20 text-green-300" },
+                  { time: "9:15 AM", icon: "🎯", title: "Trigger (Q+U)", desc: "Email/Messenger/App", stage: "Question + Understand", dotClass: "bg-blue-500 shadow-blue-500/50", badgeClass: "bg-blue-500/20 text-blue-300" },
+                  { time: "9:16 AM", icon: "🎫", title: "Jira + Approval (U→A)", desc: "PM approves story", stage: "Understand → Automate", dotClass: "bg-purple-500 shadow-purple-500/50", badgeClass: "bg-purple-500/20 text-purple-300" },
+                  { time: "10:30 AM", icon: "💻", title: "Code Gen (A)", desc: "3 files, +147 lines", stage: "Automate", dotClass: "bg-indigo-500 shadow-indigo-500/50", badgeClass: "bg-indigo-500/20 text-indigo-300" },
+                  { time: "1:15 PM", icon: "🚀", title: "Deploy (D)", desc: "Dev + QA approve", stage: "Deliver", dotClass: "bg-green-500 shadow-green-500/50", badgeClass: "bg-green-500/20 text-green-300" },
                 ].map((step, i) => (
                   <div key={i} className="flex flex-col items-center text-center relative z-10">
                     <div className={`w-5 h-5 rounded-full border-4 border-slate-900 mb-4 shadow-lg ${step.dotClass}`} />
                     <div className="text-4xl mb-2">{step.icon}</div>
                     <h3 className="font-bold text-white text-sm mb-1">{step.title}</h3>
-                    <p className="text-slate-400 text-xs mb-2 max-w-[120px]">{step.desc}</p>
+                    <p className="text-slate-400 text-xs mb-1 max-w-[120px]">{step.desc}</p>
+                    <p className="text-slate-600 text-[10px] mb-2 max-w-[120px]">{step.stage}</p>
                     <div className={`text-xs font-mono px-2 py-1 rounded ${step.badgeClass}`}>
                       {step.time}
                     </div>
@@ -361,6 +354,7 @@ export default function CustomerPitch() {
                 <span className="text-4xl font-bold text-green-400">~4 hours</span>
                 <span className="text-slate-500 ml-3 text-sm">vs 6-9 weeks traditional</span>
               </div>
+              <p className="text-xs text-slate-500 mt-3">💡 Human gates at each stage ensure quality</p>
             </div>
           </div>
         </section>
@@ -383,7 +377,7 @@ export default function CustomerPitch() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
                 { icon: "📧", name: "Email", desc: "Creates tickets from emails" },
-                { icon: "💬", name: "Slack", desc: "Responds to @quad mentions" },
+                { icon: "💬", name: "Messenger", desc: "Responds to @quad mentions" },
                 { icon: "💻", name: "Code", desc: "Generates production code" },
                 { icon: "🔍", name: "Review", desc: "Reviews PRs for issues" },
                 { icon: "🧪", name: "Test", desc: "Writes unit & E2E tests" },
@@ -473,7 +467,7 @@ export default function CustomerPitch() {
                 { name: "QUAD FLUX™", icon: "⚡", tagline: "AI Routing", desc: "Multi-provider smart routing", cardClass: "from-yellow-500/10 to-yellow-600/5 border-yellow-500/20", tagClass: "text-yellow-400" },
                 { name: "QUAD ORBIT™", icon: "🌐", tagline: "Cloud Deploy", desc: "Multi-cloud, zero lock-in", cardClass: "from-cyan-500/10 to-cyan-600/5 border-cyan-500/20", tagClass: "text-cyan-400" },
                 { name: "QUAD GATE™", icon: "🚦", tagline: "Human Gates", desc: "AI suggests, humans decide", cardClass: "from-green-500/10 to-green-600/5 border-green-500/20", tagClass: "text-green-400" },
-                { name: "QUAD SYNC™", icon: "🔗", tagline: "Integrations", desc: "Jira, GitHub, Slack sync", cardClass: "from-orange-500/10 to-orange-600/5 border-orange-500/20", tagClass: "text-orange-400" },
+                { name: "QUAD SYNC™", icon: "🔗", tagline: "Integrations", desc: "Jira, GitHub, Messenger sync", cardClass: "from-orange-500/10 to-orange-600/5 border-orange-500/20", tagClass: "text-orange-400" },
                 { name: "QUAD PULSE™", icon: "📡", tagline: "Monitoring", desc: "Real-time health & metrics", cardClass: "from-pink-500/10 to-pink-600/5 border-pink-500/20", tagClass: "text-pink-400" },
                 { name: "QUAD FORGE™", icon: "🔥", tagline: "Data Generation", desc: "Test data on the fly", cardClass: "from-red-500/10 to-red-600/5 border-red-500/20", tagClass: "text-red-400" },
                 { name: "QUAD SPARK™", icon: "✨", tagline: "Code Generation", desc: "AI-powered code from specs", cardClass: "from-violet-500/10 to-violet-600/5 border-violet-500/20", tagClass: "text-violet-400" },
@@ -588,7 +582,7 @@ export default function CustomerPitch() {
                   <h3 className="text-lg font-bold text-white">Phase 1</h3>
                 </div>
                 <ul className="space-y-2 text-sm">
-                  {["Meeting → Code flow", "7 Role-based dashboards", "Email & Slack agents", "Code generation", "PR review agent", "Allocation tracking", "Jira integration", "GitHub integration", "BYOK support"].map((f, i) => (
+                  {["Trigger → Code flow", "7 Role-based dashboards", "Email & Messenger agents", "Code generation", "PR review agent", "Allocation tracking", "Jira integration", "GitHub integration", "BYOK support"].map((f, i) => (
                     <li key={i} className="flex items-center gap-2 text-slate-300">
                       <span className="text-green-400">✓</span> {f}
                     </li>
