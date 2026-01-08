@@ -8,6 +8,8 @@ const SLIDES = [
   { id: "problem", label: "The Problem" },
   { id: "comparison", label: "Comparison" },
   { id: "meeting-to-code", label: "Meeting → Code" },
+  { id: "circles", label: "4 Circles" },
+  { id: "processing-modes", label: "Processing Modes" },
   { id: "ai-agents", label: "AI Agents" },
   { id: "dashboards", label: "Dashboards" },
   { id: "proprietary", label: "Technology" },
