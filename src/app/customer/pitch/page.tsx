@@ -15,6 +15,7 @@ const SLIDES = [
   { id: "roi", label: "ROI" },
   { id: "features", label: "Features" },
   { id: "founding-partner", label: "Partnership" },
+  { id: "roadmap", label: "Roadmap" },
   { id: "contact", label: "Contact" },
 ];
 
@@ -935,7 +936,126 @@ export default function CustomerPitch() {
           </div>
         </section>
 
-        {/* Slide 12: Contact */}
+        {/* Slide 12: QUAD Roadmap */}
+        <section id="roadmap" className="h-screen snap-start flex items-center justify-center px-6 bg-gradient-to-b from-slate-900 to-indigo-950/20">
+          <div className="max-w-5xl w-full">
+            <div className="text-center mb-8">
+              <div className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm mb-4">
+                Our Vision
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                QUAD Roadmap
+              </h2>
+              <p className="text-lg text-slate-400">
+                What we deliver in Year 1, and where we&apos;re exploring next
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Year 1: What Your Investment Delivers */}
+              <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 rounded-xl p-6 border border-green-500/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="text-2xl">✅</div>
+                  <h3 className="text-xl font-bold text-white">Year 1: Foundation</h3>
+                </div>
+
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <p className="text-sm text-green-400 font-semibold mb-2">Q1-Q2: Build & Deploy</p>
+                    <ul className="text-sm text-slate-300 space-y-1">
+                      <li>• 14 AI Agents operational</li>
+                      <li>• Role-based dashboards (7+ roles)</li>
+                      <li>• Jira, GitHub, Slack integration</li>
+                      <li>• Self-hosted in your cloud</li>
+                      <li>• Training & onboarding</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-green-400 font-semibold mb-2">Q3-Q4: Enhanced Autonomy</p>
+                    <ul className="text-sm text-slate-300 space-y-1">
+                      <li>• Semi-autonomous ticket creation</li>
+                      <li>• AI-suggested code changes</li>
+                      <li>• Smart prioritization</li>
+                      <li>• Human approval required</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-green-500/30">
+                  <p className="text-xs text-slate-400">
+                    <strong className="text-white">Guaranteed delivery:</strong> Your $500K investment funds this entire roadmap
+                  </p>
+                </div>
+              </div>
+
+              {/* Q² AI Exploration (Year 2-3) */}
+              <div className="bg-gradient-to-br from-purple-900/30 to-indigo-900/20 rounded-xl p-6 border border-purple-500/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="text-2xl">🔬</div>
+                  <h3 className="text-xl font-bold text-white">Q² AI Exploration</h3>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-sm text-purple-400 font-semibold mb-2">Year 2-3: Research & Readiness</p>
+                  <ul className="text-sm text-slate-300 space-y-2">
+                    <li>• Exploring Q² AI (QUAD Quantum AI)</li>
+                    <li>• Quantum computing readiness layer</li>
+                    <li>• Autonomous decision framework</li>
+                    <li>• Risk mitigation protocols</li>
+                  </ul>
+                </div>
+
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20 mb-4">
+                  <p className="text-xs text-purple-400 font-semibold mb-2">⚠️ Why Explore Autonomous AI?</p>
+                  <p className="text-xs text-slate-400">
+                    Full autonomy is powerful but risky. We don&apos;t rush. We prepare responsibly.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-400 font-semibold">Our Responsible AI Framework:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1 text-xs text-slate-300">
+                      <span>📚</span>
+                      <span>Learn</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-slate-300">
+                      <span>🔬</span>
+                      <span>Explore</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-slate-300">
+                      <span>⚖️</span>
+                      <span>Evaluate</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-slate-300">
+                      <span>🛡️</span>
+                      <span>Mitigate</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-purple-500/30">
+                  <p className="text-xs text-slate-400">
+                    <strong className="text-white">When ready:</strong> We&apos;ll integrate when technology, market, and safety align
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 text-center">
+              <Link
+                href="/customer/demo"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all text-lg"
+              >
+                See QUAD in Action
+                <span>→</span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Slide 13: Contact */}
         <section id="contact" className="h-screen snap-start flex items-center justify-center px-6">
           <div className="max-w-3xl w-full text-center">
             <div className="inline-block px-4 py-2 bg-green-500/20 text-green-300 rounded-full text-sm mb-6">
