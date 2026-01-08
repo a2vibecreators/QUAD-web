@@ -986,7 +986,7 @@ export default function CustomerPitch() {
 
                 <div className="pt-4 border-t border-green-500/30">
                   <p className="text-xs text-slate-400">
-                    <strong className="text-white">Guaranteed delivery:</strong> Your $500K investment funds this entire roadmap
+                    Your investment funds this customized roadmap
                   </p>
                 </div>
               </div>
