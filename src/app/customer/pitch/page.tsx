@@ -367,7 +367,7 @@ export default function CustomerPitch() {
                 AI-Powered
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                10 Specialized AI Agents
+                12 Specialized AI Agents
               </h2>
               <p className="text-xl text-slate-400">
                 Each agent masters one job. Together, they transform your SDLC.
@@ -376,16 +376,18 @@ export default function CustomerPitch() {
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
-                { icon: "📧", name: "Email", desc: "Creates tickets from emails" },
-                { icon: "💬", name: "Messenger", desc: "Responds to @quad mentions" },
-                { icon: "💻", name: "Code", desc: "Generates production code" },
-                { icon: "🔍", name: "Review", desc: "Reviews PRs for issues" },
-                { icon: "🧪", name: "Test", desc: "Writes unit & E2E tests" },
-                { icon: "🚀", name: "Deploy", desc: "Handles CI/CD pipelines" },
-                { icon: "💰", name: "Cost", desc: "Optimizes cloud spend" },
-                { icon: "📚", name: "Training", desc: "Matches skills to courses" },
-                { icon: "🎯", name: "Priority", desc: "Learns PM patterns" },
-                { icon: "📊", name: "Analytics", desc: "Tracks performance" },
+                { icon: "📧", name: "Email", desc: "Creates tickets from emails", type: "Server" },
+                { icon: "💬", name: "Messenger", desc: "Responds to @quad mentions", type: "Server" },
+                { icon: "💻", name: "Code", desc: "Generates production code", type: "Server" },
+                { icon: "🔍", name: "Review", desc: "Reviews PRs for issues", type: "Server" },
+                { icon: "🧪", name: "Test", desc: "Writes unit & E2E tests", type: "Server" },
+                { icon: "🚀", name: "Deploy", desc: "Handles CI/CD pipelines", type: "Server" },
+                { icon: "💰", name: "Cost", desc: "Optimizes cloud spend", type: "Server" },
+                { icon: "📚", name: "Training", desc: "Matches skills to courses", type: "Server" },
+                { icon: "🎯", name: "Priority", desc: "Learns PM patterns", type: "Server" },
+                { icon: "📊", name: "Analytics", desc: "Tracks performance", type: "Server" },
+                { icon: "📄", name: "Document", desc: "Generates & updates docs", type: "Server" },
+                { icon: "📅", name: "Meeting", desc: "Schedules & takes notes", type: "Server" },
               ].map((agent, i) => (
                 <div
                   key={i}
@@ -393,7 +395,10 @@ export default function CustomerPitch() {
                 >
                   <div className="text-3xl mb-2">{agent.icon}</div>
                   <h3 className="font-bold text-white text-sm mb-1">{agent.name}</h3>
-                  <p className="text-slate-500 text-xs">{agent.desc}</p>
+                  <p className="text-slate-500 text-xs mb-2">{agent.desc}</p>
+                  <div className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full inline-block">
+                    QUAD {agent.type} Agent
+                  </div>
                 </div>
               ))}
             </div>
