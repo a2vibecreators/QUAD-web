@@ -475,6 +475,395 @@ const DEMO_NOTIFICATIONS = [
   },
 ];
 
+// Role-specific notifications
+const ROLE_NOTIFICATIONS: Record<string, typeof DEMO_NOTIFICATIONS> = {
+  senior_director: [
+    {
+      id: 1,
+      type: "budget",
+      icon: "💰",
+      title: "Budget variance detected",
+      subtitle: "Project Mobile over budget by 12%",
+      time: "5 min ago",
+      isNew: true,
+      severity: "yellow",
+    },
+    {
+      id: 2,
+      type: "velocity",
+      icon: "📊",
+      title: "Team velocity improved",
+      subtitle: "Team Zeta: 48 pts/sprint (+15%)",
+      time: "1 hour ago",
+      isNew: false,
+    },
+    {
+      id: 3,
+      type: "allocation",
+      icon: "⚠️",
+      title: "Over-allocation detected",
+      subtitle: "2 team members need attention",
+      time: "2 hours ago",
+      isNew: false,
+      severity: "red",
+    },
+    {
+      id: 4,
+      type: "milestone",
+      icon: "🎯",
+      title: "Customer Portal milestone reached",
+      subtitle: "Sprint 12 completed ahead of schedule",
+      time: "3 hours ago",
+      isNew: false,
+    },
+    {
+      id: 5,
+      type: "director_update",
+      icon: "👔",
+      title: "Director requested budget review",
+      subtitle: "Rajesh Patel - Digital division Q1 review",
+      time: "1 day ago",
+      isNew: false,
+    },
+  ],
+  director: [
+    {
+      id: 1,
+      type: "allocation",
+      icon: "⚠️",
+      title: "Over-allocation detected",
+      subtitle: "David Kim: 130% allocated",
+      time: "Just now",
+      isNew: true,
+      severity: "red",
+    },
+    {
+      id: 2,
+      type: "project_health",
+      icon: "📈",
+      title: "Customer Portal health: 85%",
+      subtitle: "Velocity improving, 3 blockers resolved",
+      time: "30 min ago",
+      isNew: true,
+    },
+    {
+      id: 3,
+      type: "team_leave",
+      icon: "🏥",
+      title: "Ravi took emergency leave",
+      subtitle: "Outlook Agent auto-reassigned 3 tasks",
+      time: "1 hour ago",
+      isNew: false,
+    },
+    {
+      id: 4,
+      type: "sprint_complete",
+      icon: "✅",
+      title: "Sprint 12 completed",
+      subtitle: "42 points delivered, 8% above target",
+      time: "2 hours ago",
+      isNew: false,
+    },
+    {
+      id: 5,
+      type: "hiring",
+      icon: "👥",
+      title: "New developer onboarding",
+      subtitle: "Priya Sharma starts Monday",
+      time: "1 day ago",
+      isNew: false,
+    },
+  ],
+  tech_lead: [
+    {
+      id: 1,
+      type: "sprint_health",
+      icon: "📊",
+      title: "Sprint burndown: On track",
+      subtitle: "18 points remaining, 3 days left",
+      time: "Just now",
+      isNew: true,
+    },
+    {
+      id: 2,
+      type: "blocker",
+      icon: "🚫",
+      title: "Blocker detected: API dependency",
+      subtitle: "QUAD-1240 blocked by backend team",
+      time: "15 min ago",
+      isNew: true,
+      severity: "red",
+    },
+    {
+      id: 3,
+      type: "code_review",
+      icon: "👀",
+      title: "3 PRs awaiting review",
+      subtitle: "Priya, David, Sneha need approval",
+      time: "30 min ago",
+      isNew: true,
+    },
+    {
+      id: 4,
+      type: "allocation",
+      icon: "⚠️",
+      title: "David Kim over-allocated",
+      subtitle: "30% over capacity, needs reassignment",
+      time: "1 hour ago",
+      isNew: false,
+      severity: "yellow",
+    },
+    {
+      id: 5,
+      type: "retrospective",
+      icon: "🔄",
+      title: "Sprint 12 retrospective ready",
+      subtitle: "12 action items identified",
+      time: "3 hours ago",
+      isNew: false,
+    },
+  ],
+  qa: [
+    {
+      id: 1,
+      type: "test_failure",
+      icon: "❌",
+      title: "Test failure: Checkout flow",
+      subtitle: "5 tests failing in QUAD-1235",
+      time: "Just now",
+      isNew: true,
+      severity: "red",
+    },
+    {
+      id: 2,
+      type: "coverage",
+      icon: "📊",
+      title: "Code coverage improved",
+      subtitle: "Customer Portal: 87% (+5%)",
+      time: "20 min ago",
+      isNew: true,
+    },
+    {
+      id: 3,
+      type: "bug_report",
+      icon: "🐛",
+      title: "New bug reported",
+      subtitle: "Price filter not persisting after refresh",
+      time: "45 min ago",
+      isNew: true,
+    },
+    {
+      id: 4,
+      type: "test_complete",
+      icon: "✅",
+      title: "Regression suite passed",
+      subtitle: "347 tests passed in 8 minutes",
+      time: "1 hour ago",
+      isNew: false,
+    },
+    {
+      id: 5,
+      type: "automation",
+      icon: "🤖",
+      title: "E2E tests automated",
+      subtitle: "QUAD AI generated 23 new tests",
+      time: "2 hours ago",
+      isNew: false,
+    },
+  ],
+  developer: [
+    {
+      id: 1,
+      type: "task_assigned",
+      icon: "🎫",
+      title: "New task assigned: QUAD-1240",
+      subtitle: "Implement price filter feature",
+      time: "2 min ago",
+      isNew: true,
+    },
+    {
+      id: 2,
+      type: "code_generated",
+      icon: "🤖",
+      title: "QUAD AI generated code",
+      subtitle: "QUAD-1234: 147 lines added, 4 hours saved",
+      time: "10 min ago",
+      isNew: true,
+    },
+    {
+      id: 3,
+      type: "pr_approved",
+      icon: "✅",
+      title: "TL approved PR #892",
+      subtitle: "Merged to main branch",
+      time: "30 min ago",
+      isNew: true,
+    },
+    {
+      id: 4,
+      type: "review_request",
+      icon: "👀",
+      title: "Code review requested",
+      subtitle: "Sneha needs review on QUAD-1238",
+      time: "1 hour ago",
+      isNew: false,
+    },
+    {
+      id: 5,
+      type: "build_status",
+      icon: "🔨",
+      title: "Build passed",
+      subtitle: "Feature/price-filter deployed to DEV",
+      time: "2 hours ago",
+      isNew: false,
+    },
+  ],
+  prod_support: [
+    {
+      id: 1,
+      type: "incident",
+      icon: "🚨",
+      title: "P1 incident: API latency spike",
+      subtitle: "Payment service response time: 3.2s",
+      time: "Just now",
+      isNew: true,
+      severity: "red",
+    },
+    {
+      id: 2,
+      type: "alert",
+      icon: "⚠️",
+      title: "Memory usage warning",
+      subtitle: "Web server: 85% memory utilization",
+      time: "5 min ago",
+      isNew: true,
+      severity: "yellow",
+    },
+    {
+      id: 3,
+      type: "resolution",
+      icon: "✅",
+      title: "Incident resolved: Database timeout",
+      subtitle: "Auto-scaled read replicas",
+      time: "15 min ago",
+      isNew: true,
+    },
+    {
+      id: 4,
+      type: "health_check",
+      icon: "💚",
+      title: "All systems operational",
+      subtitle: "99.98% uptime this month",
+      time: "1 hour ago",
+      isNew: false,
+    },
+    {
+      id: 5,
+      type: "deployment",
+      icon: "🚀",
+      title: "Production deployment successful",
+      subtitle: "Release v2.4.0 deployed",
+      time: "3 hours ago",
+      isNew: false,
+    },
+  ],
+  infrastructure: [
+    {
+      id: 1,
+      type: "deployment",
+      icon: "🚀",
+      title: "Deployment to production",
+      subtitle: "Release v2.4.0 in progress (3/5 pods)",
+      time: "Just now",
+      isNew: true,
+    },
+    {
+      id: 2,
+      type: "resource",
+      icon: "💾",
+      title: "Disk usage warning",
+      subtitle: "Database volume: 82% full",
+      time: "10 min ago",
+      isNew: true,
+      severity: "yellow",
+    },
+    {
+      id: 3,
+      type: "scaling",
+      icon: "📈",
+      title: "Auto-scaling triggered",
+      subtitle: "Web tier scaled to 8 instances",
+      time: "25 min ago",
+      isNew: true,
+    },
+    {
+      id: 4,
+      type: "backup",
+      icon: "💿",
+      title: "Backup completed",
+      subtitle: "Production database backed up (2.4 GB)",
+      time: "1 hour ago",
+      isNew: false,
+    },
+    {
+      id: 5,
+      type: "security",
+      icon: "🔒",
+      title: "Security scan completed",
+      subtitle: "0 critical, 2 medium vulnerabilities",
+      time: "3 hours ago",
+      isNew: false,
+    },
+  ],
+  documentation: [
+    {
+      id: 1,
+      type: "doc_update",
+      icon: "📝",
+      title: "API documentation updated",
+      subtitle: "Payment endpoints v2.4.0",
+      time: "15 min ago",
+      isNew: true,
+    },
+    {
+      id: 2,
+      type: "test_flow",
+      icon: "🧪",
+      title: "New test flow documented",
+      subtitle: "E2E checkout flow with screenshots",
+      time: "1 hour ago",
+      isNew: true,
+    },
+    {
+      id: 3,
+      type: "architecture",
+      icon: "🏗️",
+      title: "Architecture diagram updated",
+      subtitle: "Added new microservice: Notifications",
+      time: "2 hours ago",
+      isNew: false,
+    },
+    {
+      id: 4,
+      type: "runbook",
+      icon: "📖",
+      title: "Runbook created",
+      subtitle: "Incident response: Database failover",
+      time: "1 day ago",
+      isNew: false,
+    },
+    {
+      id: 5,
+      type: "review",
+      icon: "👀",
+      title: "Documentation review needed",
+      subtitle: "3 pages pending TL approval",
+      time: "2 days ago",
+      isNew: false,
+    },
+  ],
+};
+
 // Meeting to Code flow data
 const MEETING_TO_CODE_FLOW = {
   email: {
@@ -1654,11 +2043,11 @@ export default function CustomerDemo() {
             </div>
           )}
 
-          {/* Demo Content (when unlocked) - 2 Column Layout */}
+          {/* Demo Content (when unlocked) - 3 Column Layout */}
           {unlocked && (
-            <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex flex-col xl:flex-row gap-6">
               {/* LEFT: Role Selector */}
-              <div className="lg:w-64 shrink-0">
+              <div className="xl:w-64 shrink-0">
                 {/* Notification & Settings */}
                 <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-4 mb-4 space-y-2">
                   <button
@@ -1722,8 +2111,8 @@ export default function CustomerDemo() {
                 </div>
               </div>
 
-              {/* RIGHT: Dashboard Content */}
-              <div className="flex-1">
+              {/* MIDDLE: Dashboard Content */}
+              <div className="flex-1 min-w-0">
                 {/* Dashboard Container */}
                 <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
                   {/* Dashboard Header */}
@@ -1751,6 +2140,82 @@ export default function CustomerDemo() {
                       teamAllocation={TEAM_ALLOCATION}
                       settings={settings}
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT: Notifications Panel */}
+              <div className="xl:w-80 shrink-0">
+                <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden sticky top-4">
+                  {/* Notifications Header */}
+                  <div className="bg-slate-800 px-4 py-3 border-b border-slate-700">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🔔</span>
+                        <h3 className="font-bold text-white text-sm">Notifications</h3>
+                      </div>
+                      {ROLE_NOTIFICATIONS[selectedRole]?.filter(n => n.isNew).length > 0 && (
+                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                          {ROLE_NOTIFICATIONS[selectedRole]?.filter(n => n.isNew).length}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Notifications List */}
+                  <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
+                    {ROLE_NOTIFICATIONS[selectedRole]?.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 border-b border-slate-700 hover:bg-slate-700/30 transition-all cursor-pointer ${
+                          notification.isNew ? "bg-blue-900/10" : ""
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl shrink-0">{notification.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-medium text-white text-sm leading-tight">
+                                {notification.title}
+                              </h4>
+                              {notification.isNew && (
+                                <span className="shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1"></span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                              {notification.subtitle}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-slate-500">{notification.time}</span>
+                              {notification.severity && (
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-full ${
+                                    notification.severity === "red"
+                                      ? "bg-red-500/20 text-red-300"
+                                      : notification.severity === "yellow"
+                                      ? "bg-yellow-500/20 text-yellow-300"
+                                      : "bg-blue-500/20 text-blue-300"
+                                  }`}
+                                >
+                                  {notification.severity === "red"
+                                    ? "Critical"
+                                    : notification.severity === "yellow"
+                                    ? "Warning"
+                                    : "Info"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* View All Footer */}
+                  <div className="bg-slate-800 px-4 py-3 border-t border-slate-700">
+                    <button className="w-full text-center text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                      View All Notifications →
+                    </button>
                   </div>
                 </div>
               </div>
