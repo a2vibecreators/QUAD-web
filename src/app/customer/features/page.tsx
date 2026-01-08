@@ -351,6 +351,96 @@ const FEATURE_CATEGORIES = [
         status: "coming",
         phase: 2,
       },
+      {
+        name: "Velocity Analytics",
+        description: "Track team performance metrics",
+        status: "coming",
+        phase: 2,
+      },
+      {
+        name: "Retrospective Insights",
+        description: "AI summarizes sprint learnings",
+        status: "coming",
+        phase: 2,
+      },
+      {
+        name: "Blocker Detection",
+        description: "AI identifies stuck tickets",
+        status: "coming",
+        phase: 2,
+      },
+      {
+        name: "Manager Edit Layer",
+        description: "Manager adds context to AI summary",
+        status: "coming",
+        phase: 2,
+      },
+      {
+        name: "Certification Recommendations",
+        description: "AI suggests certifications based on skills",
+        status: "coming",
+        phase: 2,
+      },
+      {
+        name: "Training Cost Optimization",
+        description: "Optimize team training investments",
+        status: "coming",
+        phase: 2,
+      },
+      {
+        name: "Collaboration Metrics",
+        description: "Who worked with whom analytics",
+        status: "coming",
+        phase: 2,
+      },
+      {
+        name: "Productivity Insights",
+        description: "AI-driven productivity analytics",
+        status: "coming",
+        phase: 2,
+      },
+      {
+        name: "Autonomous Architecture Review",
+        description: "AI autonomously reviews architecture",
+        status: "coming",
+        phase: 3,
+      },
+      {
+        name: "HIPAA Compliance",
+        description: "Healthcare-ready compliance",
+        status: "coming",
+        phase: 3,
+      },
+      {
+        name: "SOC 2 Type II",
+        description: "Enterprise security certification",
+        status: "coming",
+        phase: 3,
+      },
+      {
+        name: "On-Premise Deployment",
+        description: "Full self-hosted option",
+        status: "coming",
+        phase: 3,
+      },
+      {
+        name: "SAML SSO Integration",
+        description: "Enterprise identity integration",
+        status: "coming",
+        phase: 3,
+      },
+      {
+        name: "Advanced Security Scanning",
+        description: "Comprehensive vulnerability detection",
+        status: "coming",
+        phase: 3,
+      },
+      {
+        name: "Compliance Dashboard",
+        description: "Real-time compliance monitoring",
+        status: "coming",
+        phase: 3,
+      },
     ],
   },
   {
@@ -937,7 +1027,7 @@ export default function CustomerFeatures() {
           </div>
           <h1 className="text-4xl font-bold mb-4">150+ Features Across 3 Phases</h1>
           <p className="text-slate-400 max-w-3xl mx-auto">
-            The complete QUAD innovation stack: {totalFeatures} features across {FEATURE_CATEGORIES.length} categories.{" "}
+            The QUAD innovation stack: {totalFeatures} features across {FEATURE_CATEGORIES.length} categories.{" "}
             <span className="text-green-400">{liveFeatures} live</span>,{" "}
             <span className="text-yellow-400">{totalFeatures - liveFeatures} coming soon</span>.
           </p>
