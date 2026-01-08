@@ -22,6 +22,26 @@ export default function CustomerPitch() {
   const [activeSlide, setActiveSlide] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Restore scroll position from URL hash (e.g., when clicking back from ROI page)
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // Remove # symbol
+    if (hash) {
+      const slideIndex = SLIDES.findIndex((slide) => slide.id === hash);
+      if (slideIndex !== -1) {
+        setTimeout(() => {
+          const container = containerRef.current;
+          if (container) {
+            container.scrollTo({
+              top: slideIndex * container.clientHeight,
+              behavior: "auto", // Instant scroll, no animation
+            });
+            setActiveSlide(slideIndex);
+          }
+        }, 0); // Execute after DOM render
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -441,20 +461,20 @@ export default function CustomerPitch() {
 
             <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
               {[
-                { icon: "📧", name: "Email", desc: "Creates tickets from emails", type: "Server" },
-                { icon: "💬", name: "Messenger", desc: "Responds to @quad mentions", type: "Server" },
-                { icon: "💻", name: "Code", desc: "Generates production code", type: "Server" },
-                { icon: "🔍", name: "Review", desc: "Reviews PRs for issues", type: "Server" },
-                { icon: "🧪", name: "Test", desc: "Writes unit & E2E tests", type: "Server" },
-                { icon: "🚀", name: "Deploy", desc: "Handles CI/CD pipelines", type: "Server" },
-                { icon: "💰", name: "Cost", desc: "Optimizes cloud spend", type: "Server" },
-                { icon: "📚", name: "Training", desc: "Matches skills to courses", type: "Server" },
-                { icon: "🎯", name: "Priority", desc: "Learns PM patterns", type: "Server" },
-                { icon: "📊", name: "Analytics", desc: "Tracks performance", type: "Server" },
-                { icon: "📄", name: "Document", desc: "Generates & updates docs", type: "Server" },
-                { icon: "📅", name: "Meeting", desc: "Schedules & takes notes", type: "Server" },
-                { icon: "🔧", name: "Infrastructure", desc: "Monitors performance & health", type: "Server" },
-                { icon: "🌍", name: "Production", desc: "Manages releases & rollouts", type: "Server" },
+                { icon: "📧", name: "Email", desc: "Creates tickets from emails", types: ["Server"] },
+                { icon: "💬", name: "Messenger", desc: "Responds to @quad mentions", types: ["Server"] },
+                { icon: "💻", name: "Code", desc: "Generates production code", types: ["Server", "Local"] },
+                { icon: "🔍", name: "Review", desc: "Reviews PRs for issues", types: ["Server", "Local"] },
+                { icon: "🧪", name: "Test", desc: "Writes unit & E2E tests", types: ["Server", "Local"] },
+                { icon: "🚀", name: "Deploy", desc: "Handles CI/CD pipelines", types: ["Server", "Local"] },
+                { icon: "💰", name: "Cost", desc: "Optimizes cloud spend", types: ["Server"] },
+                { icon: "📚", name: "Training", desc: "Matches skills to courses", types: ["Server"] },
+                { icon: "🎯", name: "Priority", desc: "Learns PM patterns", types: ["Server"] },
+                { icon: "📊", name: "Analytics", desc: "Tracks performance", types: ["Server"] },
+                { icon: "📄", name: "Document", desc: "Generates & updates docs", types: ["Server"] },
+                { icon: "📅", name: "Meeting", desc: "Schedules & takes notes", types: ["Server"] },
+                { icon: "🔧", name: "Infrastructure", desc: "Monitors performance & health", types: ["Server"] },
+                { icon: "🌍", name: "Production", desc: "Manages releases & rollouts", types: ["Server"] },
               ].map((agent, i) => (
                 <div
                   key={i}
@@ -463,8 +483,19 @@ export default function CustomerPitch() {
                   <div className="text-3xl mb-2">{agent.icon}</div>
                   <h3 className="font-bold text-white text-sm mb-1">{agent.name}</h3>
                   <p className="text-slate-500 text-xs mb-2">{agent.desc}</p>
-                  <div className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full inline-block">
-                    QUAD {agent.type} Agent
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {agent.types.map((t, idx) => (
+                      <div
+                        key={idx}
+                        className={`text-xs px-2 py-1 rounded-full inline-block ${
+                          t === "Server"
+                            ? "bg-purple-500/30 text-purple-300"
+                            : "bg-green-500/30 text-green-300"
+                        }`}
+                      >
+                        {t}
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -483,7 +514,7 @@ export default function CustomerPitch() {
                 Every Role, Their Dashboard
               </h2>
               <p className="text-xl text-slate-400">
-                7 specialized views. Each person sees what matters to them.
+                Specialized views for every role. Each person sees what matters to them.
               </p>
             </div>
 
@@ -529,22 +560,24 @@ export default function CustomerPitch() {
                 The QUAD Advantage
               </h2>
               <p className="text-xl text-slate-400">
-                Ten proprietary systems that power your development
+                Twelve proprietary systems that power your development
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               {[
                 { name: "QUAD FLOW™", icon: "🔄", tagline: "Core Workflow", desc: "Q → U → A → D methodology", cardClass: "from-blue-500/10 to-blue-600/5 border-blue-500/20", tagClass: "text-blue-400" },
-                { name: "QUAD FLUX™", icon: "⚡", tagline: "AI Routing", desc: "Multi-provider smart routing", cardClass: "from-yellow-500/10 to-yellow-600/5 border-yellow-500/20", tagClass: "text-yellow-400" },
+                { name: "QUAD FLUX™", icon: "⚡", tagline: "AI Routing", desc: "Multi-provider routing + batch/realtime", cardClass: "from-yellow-500/10 to-yellow-600/5 border-yellow-500/20", tagClass: "text-yellow-400" },
                 { name: "QUAD ORBIT™", icon: "🌐", tagline: "Cloud Deploy", desc: "Multi-cloud, zero lock-in", cardClass: "from-cyan-500/10 to-cyan-600/5 border-cyan-500/20", tagClass: "text-cyan-400" },
                 { name: "QUAD GATE™", icon: "🚦", tagline: "Human Gates", desc: "AI suggests, humans decide", cardClass: "from-green-500/10 to-green-600/5 border-green-500/20", tagClass: "text-green-400" },
                 { name: "QUAD SYNC™", icon: "🔗", tagline: "Integrations", desc: "Jira, GitHub, Messenger sync", cardClass: "from-orange-500/10 to-orange-600/5 border-orange-500/20", tagClass: "text-orange-400" },
-                { name: "QUAD PULSE™", icon: "📡", tagline: "Monitoring", desc: "Real-time health & metrics", cardClass: "from-pink-500/10 to-pink-600/5 border-pink-500/20", tagClass: "text-pink-400" },
+                { name: "QUAD MONITOR™", icon: "📡", tagline: "Real-time Monitoring", desc: "System health & performance tracking", cardClass: "from-pink-500/10 to-pink-600/5 border-pink-500/20", tagClass: "text-pink-400" },
                 { name: "QUAD FORGE™", icon: "🔥", tagline: "Data Generation", desc: "Test data on the fly", cardClass: "from-red-500/10 to-red-600/5 border-red-500/20", tagClass: "text-red-400" },
                 { name: "QUAD SPARK™", icon: "✨", tagline: "Code Generation", desc: "AI-powered code from specs", cardClass: "from-violet-500/10 to-violet-600/5 border-violet-500/20", tagClass: "text-violet-400" },
                 { name: "QUAD MIRROR™", icon: "🪞", tagline: "Environment Clone", desc: "Prod to dev with masked PII", cardClass: "from-teal-500/10 to-teal-600/5 border-teal-500/20", tagClass: "text-teal-400" },
                 { name: "QUAD LENS™", icon: "🔍", tagline: "Right-Sized Solutions", desc: "Simplest effective architecture", cardClass: "from-amber-500/10 to-amber-600/5 border-amber-500/20", tagClass: "text-amber-400" },
+                { name: "QUAD ATLAS™", icon: "🗺️", tagline: "Knowledge Platform", desc: "Docs, code search, chatbot, context", cardClass: "from-indigo-500/10 to-indigo-600/5 border-indigo-500/20", tagClass: "text-indigo-400" },
+                { name: "QUAD BEACON™", icon: "🔔", tagline: "Alert Broadcasting", desc: "Calls, SMS, notifications", cardClass: "from-rose-500/10 to-rose-600/5 border-rose-500/20", tagClass: "text-rose-400" },
               ].map((tech, i) => (
                 <div key={i} className={`bg-gradient-to-br ${tech.cardClass} rounded-xl p-4 border transition-all`}>
                   <div className="flex items-center gap-2 mb-2">
@@ -620,15 +653,6 @@ export default function CustomerPitch() {
               ))}
             </div>
 
-            <div className="text-center">
-              <Link
-                href="/customer/roi"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-all"
-              >
-                View Full ROI Calculator
-                <span>→</span>
-              </Link>
-            </div>
           </div>
         </section>
 
@@ -640,7 +664,7 @@ export default function CustomerPitch() {
                 Platform Capabilities
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                41+ Features Across 3 Phases
+                150+ Features Across 3 Phases
               </h2>
               <p className="text-xl text-slate-400">
                 Built for enterprise scale. Deployed incrementally.
@@ -691,15 +715,6 @@ export default function CustomerPitch() {
               </div>
             </div>
 
-            <div className="text-center">
-              <Link
-                href="/customer/features"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-all"
-              >
-                View All 41 Features
-                <span>→</span>
-              </Link>
-            </div>
           </div>
         </section>
 
@@ -713,12 +728,9 @@ export default function CustomerPitch() {
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 Founding Customer Program
               </h2>
-              <p className="text-xl text-slate-400">
-                Limited to <span className="text-amber-400 font-bold">3 enterprise partners</span> in 2026
-              </p>
             </div>
 
-            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-8 border border-amber-500/30 mb-8">
+            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-8 border border-amber-500/30">
               <h3 className="text-2xl font-bold text-white mb-6 text-center">What Founding Customers Get</h3>
               <div className="grid md:grid-cols-2 gap-6">
                 {[
@@ -738,26 +750,6 @@ export default function CustomerPitch() {
               </div>
             </div>
 
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
-              <h3 className="font-bold text-white mb-4 text-center">Phase 1: Proof of Value (4 Weeks)</h3>
-              <div className="grid md:grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl mb-2">1️⃣</div>
-                  <div className="text-white font-semibold">Select 1 Team</div>
-                  <div className="text-slate-500 text-sm">5-10 developers</div>
-                </div>
-                <div>
-                  <div className="text-2xl mb-2">2️⃣</div>
-                  <div className="text-white font-semibold">Define Success</div>
-                  <div className="text-slate-500 text-sm">Measurable metrics upfront</div>
-                </div>
-                <div>
-                  <div className="text-2xl mb-2">3️⃣</div>
-                  <div className="text-white font-semibold">Prove ROI</div>
-                  <div className="text-slate-500 text-sm">Hit targets → Enterprise rollout</div>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -771,7 +763,7 @@ export default function CustomerPitch() {
               Become a Founding Customer
             </h2>
             <p className="text-xl text-slate-400 mb-8">
-              Only 3 spots available. Let&apos;s discuss if QUAD is right for your team.
+              Let&apos;s discuss how QUAD can transform your development process.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
