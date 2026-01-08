@@ -991,17 +991,17 @@ export default function CustomerPitch() {
                 </div>
               </div>
 
-              {/* Q² AI Exploration (Year 2-3) */}
+              {/* QUAD SQUARE™ Exploration (Year 2-3) */}
               <div className="bg-gradient-to-br from-purple-900/30 to-indigo-900/20 rounded-xl p-6 border border-purple-500/30">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="text-2xl">🔬</div>
-                  <h3 className="text-xl font-bold text-white">Q² AI Exploration</h3>
+                  <h3 className="text-xl font-bold text-white">QUAD SQUARE™</h3>
                 </div>
 
                 <div className="mb-4">
                   <p className="text-sm text-purple-400 font-semibold mb-2">Year 2-3: Research & Readiness</p>
                   <ul className="text-sm text-slate-300 space-y-2">
-                    <li>• Exploring Q² AI (QUAD Quantum AI)</li>
+                    <li>• Exploring QUAD SQUARE™ (QUAD Quantum AI)</li>
                     <li>• Quantum computing readiness layer</li>
                     <li>• Autonomous decision framework</li>
                     <li>• Risk mitigation protocols</li>
