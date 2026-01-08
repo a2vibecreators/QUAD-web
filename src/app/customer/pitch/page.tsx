@@ -221,26 +221,98 @@ export default function CustomerPitch() {
               {/* QUAD */}
               <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 border border-blue-500/30 ring-2 ring-blue-500/20">
                 <h3 className="text-lg font-bold text-blue-400 mb-4">QUAD Platform</h3>
-                <p className="text-xs text-slate-500 mb-3">(AI-first methodology)</p>
+                <p className="text-xs text-slate-500 mb-3">(AI-first with Human Gates)</p>
                 <div className="space-y-3">
                   {[
-                    { phase: "Q - Question", time: "10 min" },
-                    { phase: "U - Understand", time: "30 min" },
-                    { phase: "A - Automate", time: "2-4 hrs" },
-                    { phase: "D - Deliver", time: "1-2 hrs" },
+                    { phase: "AI Generation (Q-U-A)", time: "2-4 hrs", icon: "🤖" },
+                    { phase: "Human Review Gate", time: "1-2 days", icon: "👥" },
+                    { phase: "QA & Testing", time: "1 day", icon: "🧪" },
+                    { phase: "Deploy (D)", time: "1-2 hrs", icon: "🚀" },
                   ].map((item, i) => (
-                    <div key={i} className="flex justify-between text-sm">
-                      <span className="text-slate-300">{item.phase}</span>
+                    <div key={i} className="flex justify-between text-sm items-center">
+                      <span className="text-slate-300 flex items-center gap-2">
+                        <span className="text-xs">{item.icon}</span>
+                        {item.phase}
+                      </span>
                       <span className="text-blue-400">{item.time}</span>
                     </div>
                   ))}
                   <div className="border-t border-blue-500/20 pt-3 mt-3">
                     <div className="flex justify-between font-bold">
                       <span className="text-white">Total</span>
-                      <span className="text-green-400">Same Day</span>
+                      <span className="text-green-400">3-5 days</span>
                     </div>
+                    <p className="text-xs text-slate-500 mt-2">10-18x faster than traditional</p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Context-Aware Timeline */}
+            <div className="mt-12 max-w-4xl mx-auto">
+              <div className="bg-slate-800/30 rounded-xl p-6 border border-slate-700">
+                <h3 className="text-lg font-bold text-white mb-4 text-center">
+                  Timeline Varies by Complexity
+                </h3>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      label: "Small",
+                      example: "Bug fix",
+                      files: "1-3 files",
+                      ai: "1 hr",
+                      human: "4-8 hrs",
+                      total: "1 day",
+                      color: "text-green-400"
+                    },
+                    {
+                      label: "Medium",
+                      example: "New feature",
+                      files: "5-10 files",
+                      ai: "2-4 hrs",
+                      human: "1-2 days",
+                      total: "2-3 days",
+                      color: "text-blue-400"
+                    },
+                    {
+                      label: "Large",
+                      example: "Refactor 30 Java files",
+                      files: "20-50 files",
+                      ai: "4-6 hrs",
+                      human: "2-4 days",
+                      total: "3-5 days",
+                      color: "text-purple-400"
+                    },
+                  ].map((item, i) => (
+                    <div key={i} className="bg-slate-900/50 rounded-lg p-4 border border-slate-600">
+                      <div className="text-center mb-3">
+                        <div className={`text-xl font-bold ${item.color}`}>{item.label}</div>
+                        <div className="text-xs text-slate-500">{item.example}</div>
+                      </div>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Files:</span>
+                          <span className="text-white">{item.files}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">AI Time:</span>
+                          <span className="text-white">{item.ai}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Human Review:</span>
+                          <span className="text-white">{item.human}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-slate-700 pt-2 font-bold">
+                          <span className="text-slate-300">Total:</span>
+                          <span className={item.color}>{item.total}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center text-xs text-slate-500 mt-4">
+                  💡 Human gates ensure quality - AI suggests, humans decide
+                </p>
               </div>
             </div>
           </div>
