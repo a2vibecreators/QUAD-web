@@ -32,9 +32,14 @@ export default function ConditionalFooter() {
             <span className="text-xl font-black gradient-text">QUAD</span>
             <span className="text-xs text-slate-600">Circle of Functions</span>
           </div>
-          <p className="text-sm text-slate-600">
-            © 2025-2026 QUADFRAMEWORK LLC | First Published: December 2025
-          </p>
+          <div className="flex flex-col items-center md:items-end gap-1">
+            <p className="text-xs text-blue-400 font-medium">
+              Patent Pending (U.S. Application No. 63/956,810)
+            </p>
+            <p className="text-sm text-slate-600">
+              © 2025-2026 QUADFRAMEWORK LLC | First Published: December 2025
+            </p>
+          </div>
         </div>
       </div>
     </footer>
