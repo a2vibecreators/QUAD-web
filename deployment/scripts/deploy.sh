@@ -130,6 +130,9 @@ deploy_web() {
         -e GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}" \
         -e GITHUB_CLIENT_ID="${GITHUB_CLIENT_ID:-}" \
         -e GITHUB_CLIENT_SECRET="${GITHUB_CLIENT_SECRET:-}" \
+        -e ZOOM_ACCOUNT_ID="${ZOOM_ACCOUNT_ID:-}" \
+        -e ZOOM_CLIENT_ID="${ZOOM_CLIENT_ID:-}" \
+        -e ZOOM_CLIENT_SECRET="${ZOOM_CLIENT_SECRET:-}" \
         quad-web:${ENV}
 
     print_status "Container started: $CONTAINER"

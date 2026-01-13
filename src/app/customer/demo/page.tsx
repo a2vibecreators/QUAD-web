@@ -369,8 +369,8 @@ function SimulatedChatWindow({ role }: { role: string }) {
 // DEMO DATA
 // ============================================================================
 
-// Demo password
-const DEMO_PASSWORD = "Ashrith";
+// Demo passwords (all valid)
+const DEMO_PASSWORDS = ["Ashrith", "ashrith", "mm"];
 
 // Demo roles (left sidebar)
 const DEMO_ROLES = [
@@ -1068,7 +1068,6 @@ export default function CustomerDemo() {
 
   // Notification panel
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState(DEMO_NOTIFICATIONS);
 
   // Zoom meeting state
   const [zoomMeeting, setZoomMeeting] = useState<{
@@ -1101,7 +1100,7 @@ export default function CustomerDemo() {
   };
 
   const handlePasswordSubmit = () => {
-    if (password.toLowerCase() === DEMO_PASSWORD.toLowerCase()) {
+    if (DEMO_PASSWORDS.some(p => p.toLowerCase() === password.toLowerCase())) {
       // Password correct - now ask for org name
       setShowPasswordModal(false);
       setShowOrgNameModal(true);
@@ -1250,17 +1249,6 @@ export default function CustomerDemo() {
     }
   };
 
-  // Mark notifications as read
-  const markNotificationsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isNew: false })));
-  };
-
-  // Handle Meeting to Code demo
-  const handleMeetingToCodeClick = () => {
-    setShowNotifications(false);
-    setShowMeetingToCode(true);
-    setMeetingToCodeStage("email");
-  };
 
   const advanceMeetingToCodeStage = () => {
     if (meetingToCodeStage === "email") setMeetingToCodeStage("jira");
@@ -1689,70 +1677,6 @@ export default function CustomerDemo() {
         </div>
       )}
 
-      {/* =====================================================
-          NOTIFICATION PANEL
-          ===================================================== */}
-      {showNotifications && (
-        <div className="fixed top-20 right-4 w-96 bg-slate-900 rounded-xl border border-slate-700 shadow-2xl z-50 overflow-hidden">
-          <div className="bg-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700">
-            <h3 className="font-bold text-white">Notifications</h3>
-            <button
-              onClick={() => { markNotificationsRead(); setShowNotifications(false); }}
-              className="text-slate-400 hover:text-white text-sm"
-            >
-              Mark all read
-            </button>
-          </div>
-          <div className="max-h-96 overflow-y-auto">
-            {notifications
-              .filter(notif => {
-                // Filter based on settings
-                if (notif.type === "meeting_to_code" && !settings.meetingIntelligence) return false;
-                if (notif.type === "allocation" && !settings.allocationAlerts) return false;
-                if (notif.type === "reassign" && !settings.autoReassignment) return false;
-                return true;
-              })
-              .map((notif) => (
-              <div
-                key={notif.id}
-                onClick={() => notif.type === "meeting_to_code" && settings.meetingIntelligence && handleMeetingToCodeClick()}
-                className={`px-4 py-3 border-b border-slate-700/50 hover:bg-slate-800/50 transition-all cursor-pointer ${
-                  notif.isNew ? "bg-blue-500/5" : ""
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">{notif.icon}</span>
-                  <div className="flex-1">
-                    <p className={`font-medium text-sm ${
-                      notif.severity === "red" ? "text-red-400" :
-                      notif.severity === "yellow" ? "text-yellow-400" :
-                      "text-white"
-                    }`}>
-                      {notif.title}
-                    </p>
-                    <p className="text-xs text-slate-400">{notif.subtitle}</p>
-                    <p className="text-xs text-slate-500 mt-1">{notif.time}</p>
-                  </div>
-                  {notif.isNew && (
-                    <span className="w-2 h-2 bg-blue-500 rounded-full" />
-                  )}
-                </div>
-              </div>
-            ))}
-            {notifications.filter(n => {
-              if (n.type === "meeting_to_code" && !settings.meetingIntelligence) return false;
-              if (n.type === "allocation" && !settings.allocationAlerts) return false;
-              if (n.type === "reassign" && !settings.autoReassignment) return false;
-              return true;
-            }).length === 0 && (
-              <div className="px-4 py-8 text-center text-slate-500 text-sm">
-                <p>No notifications</p>
-                <p className="text-xs mt-1">Some notifications are hidden by Settings</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* =====================================================
           SETTINGS PANEL
@@ -2177,8 +2101,10 @@ export default function CustomerDemo() {
                         </p>
                       </div>
                     </div>
-                    <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
-                      Live Demo
+                    <div className="flex items-center gap-3">
+                      <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
+                        Live Demo
+                      </div>
                     </div>
                   </div>
 
@@ -2195,96 +2121,80 @@ export default function CustomerDemo() {
                 </div>
               </div>
 
-              {/* RIGHT: Notifications Panel */}
-              <div className="xl:w-80 shrink-0">
-                <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden sticky top-4">
-                  {/* Notifications Header */}
-                  <div className="bg-slate-800 px-4 py-3 border-b border-slate-700">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">🔔</span>
-                        <h3 className="font-bold text-white text-sm">Notifications</h3>
-                      </div>
-                      {ROLE_NOTIFICATIONS[selectedRole]?.filter(n => n.isNew).length > 0 && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                          {ROLE_NOTIFICATIONS[selectedRole]?.filter(n => n.isNew).length}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+            </div>
+          )}
 
-                  {/* Notifications List */}
-                  <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
-                    {ROLE_NOTIFICATIONS[selectedRole]?.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`p-4 border-b border-slate-700 hover:bg-slate-700/30 transition-all cursor-pointer ${
-                          notification.isNew ? "bg-blue-900/10" : ""
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <span className="text-2xl shrink-0">{notification.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-medium text-white text-sm leading-tight">
-                                {notification.title}
-                              </h4>
-                              {notification.isNew && (
-                                <span className="shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1"></span>
-                              )}
-                            </div>
-                            <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                              {notification.subtitle}
-                            </p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <span className="text-xs text-slate-500">{notification.time}</span>
-                              {notification.severity && (
-                                <span
-                                  className={`text-xs px-2 py-0.5 rounded-full ${
-                                    notification.severity === "red"
-                                      ? "bg-red-500/20 text-red-300"
-                                      : notification.severity === "yellow"
-                                      ? "bg-yellow-500/20 text-yellow-300"
-                                      : "bg-blue-500/20 text-blue-300"
-                                  }`}
-                                >
-                                  {notification.severity === "red"
-                                    ? "Critical"
+          {/* Notification Popup Modal */}
+          {showNotifications && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowNotifications(false)}>
+              <div className="bg-slate-900 rounded-2xl border border-slate-700 w-[500px] max-h-[600px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                {/* Notifications Header */}
+                <div className="bg-slate-800 px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🔔</span>
+                    <h3 className="font-bold text-white">Notifications</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowNotifications(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Notifications List */}
+                <div className="max-h-[500px] overflow-y-auto">
+                  {ROLE_NOTIFICATIONS[selectedRole]?.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`p-4 border-b border-slate-700 hover:bg-slate-700/30 transition-all cursor-pointer ${
+                        notification.isNew ? "bg-blue-900/10" : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl shrink-0">{notification.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-medium text-white text-sm leading-tight">
+                              {notification.title}
+                            </h4>
+                            {notification.isNew && (
+                              <span className="shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1"></span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {notification.subtitle}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs text-slate-500">{notification.time}</span>
+                            {notification.severity && (
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full ${
+                                  notification.severity === "red"
+                                    ? "bg-red-500/20 text-red-300"
                                     : notification.severity === "yellow"
-                                    ? "Warning"
-                                    : "Info"}
-                                </span>
-                              )}
-                            </div>
+                                    ? "bg-yellow-500/20 text-yellow-300"
+                                    : "bg-blue-500/20 text-blue-300"
+                                }`}
+                              >
+                                {notification.severity === "red"
+                                  ? "Critical"
+                                  : notification.severity === "yellow"
+                                  ? "Warning"
+                                  : "Info"}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* View All Footer */}
-                  <div className="bg-slate-800 px-4 py-3 border-t border-slate-700">
-                    <button className="w-full text-center text-sm text-blue-400 hover:text-blue-300 transition-colors">
-                      View All Notifications →
-                    </button>
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           )}
         </div>
       </section>
-
-      {/* Zoom Call Widget - Floating Button */}
-      {unlocked && !zoomMeeting && (
-        <button
-          onClick={handleStartZoomMeeting}
-          className="fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-2xl transition-all"
-        >
-          <span className="text-2xl">📹</span>
-          <span>Start Demo Call</span>
-        </button>
-      )}
 
       {/* Zoom Meeting Widget */}
       {showZoomWidget && zoomMeeting && (

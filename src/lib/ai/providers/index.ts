@@ -9,17 +9,20 @@
 
 import { claudeProvider } from './claude';
 import { openaiProvider } from './openai';
+import { geminiProvider } from './gemini';
 import { AIMessage, AIConfig, AIResponse, AIStreamChunk, AIProvider } from './types';
 // NOTE: Prisma removed - using stubs until Java backend ready
 
 export * from './types';
 export { claudeProvider } from './claude';
 export { openaiProvider } from './openai';
+export { geminiProvider } from './gemini';
 
 // Provider registry
 const providers: Record<string, AIProvider> = {
   claude: claudeProvider,
   openai: openaiProvider,
+  gemini: geminiProvider,
 };
 
 /**
@@ -40,6 +43,9 @@ async function getApiKey(
   }
   if (provider === 'openai') {
     return process.env.OPENAI_API_KEY || null;
+  }
+  if (provider === 'gemini') {
+    return process.env.GEMINI_API_KEY || null;
   }
 
   return null;
@@ -78,7 +84,7 @@ export async function callAI(
   } = {}
 ): Promise<AIResponse> {
   // 1. Determine provider and model from activity routing or options
-  let providerName = options.provider || 'claude';
+  let providerName = options.provider || 'gemini';  // Default to Gemini (cheapest)
   let model = options.model;
   let maxTokens = options.maxTokens || 4096;
   let temperature = options.temperature ?? 0.7;
@@ -135,7 +141,7 @@ export async function* streamAI(
   } = {}
 ): AsyncGenerator<AIStreamChunk> {
   // 1. Determine provider and model
-  let providerName = options.provider || 'claude';
+  let providerName = options.provider || 'gemini';  // Default to Gemini (cheapest)
   let model = options.model;
   let maxTokens = options.maxTokens || 4096;
   let temperature = options.temperature ?? 0.7;

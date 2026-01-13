@@ -61,12 +61,17 @@ export const OPENAI_MODELS = {
   'gpt-3.5': 'gpt-3.5-turbo',
 } as const;
 
+export const GEMINI_MODELS = {
+  'gemini-1.5-flash': 'gemini-1.5-flash',
+  'gemini-1.5-pro': 'gemini-1.5-pro',
+} as const;
+
 // Default models per provider
-// Note: claude-3-5-haiku is used as default (available on all tiers)
-// Upgrade to claude-3-5-sonnet for orgs with higher tier API access
+// Note: Gemini Flash is used as default (cheapest, fastest)
 export const DEFAULT_MODELS = {
   claude: 'claude-3-5-haiku-20241022',
   openai: 'gpt-4o-mini',
+  gemini: 'gemini-1.5-flash',
 } as const;
 
 // Pricing per million tokens (for cost tracking)
@@ -80,4 +85,6 @@ export const TOKEN_PRICING = {
   'gpt-4o': { input: 5, output: 15 },
   'gpt-4o-mini': { input: 0.15, output: 0.6 },
   'gpt-3.5-turbo': { input: 0.5, output: 1.5 },
+  'gemini-1.5-flash': { input: 0.075, output: 0.30 },  // Cheapest!
+  'gemini-1.5-pro': { input: 1.25, output: 5 },
 } as const;

@@ -4,8 +4,10 @@ import { MethodologyProvider } from "@/context/MethodologyContext";
 import { SearchProvider } from "@/components/SearchProvider";
 import SessionProvider from "@/components/SessionProvider";
 import { DomainProvider } from "@/contexts/DomainContext";
+import { ZoomProvider } from "@/context/ZoomContext";
 import ConditionalNav from "@/components/ConditionalNav";
 import ConditionalFooter from "@/components/ConditionalFooter";
+import ZoomHeader from "@/components/ZoomHeader";
 
 export const metadata: Metadata = {
   title: "QUAD Framework - Circle of Functions",
@@ -33,8 +35,12 @@ export default function RootLayout({
         <DomainProvider>
         <SearchProvider>
         <MethodologyProvider>
+        <ZoomProvider>
           {/* Conditional Navigation - Hidden for MassMutual pages */}
           <ConditionalNav />
+
+          {/* Zoom Call Header - Visible on all pages */}
+          <ZoomHeader />
 
           {/* Main content with padding for fixed nav */}
           <main className="pt-16">
@@ -43,6 +49,7 @@ export default function RootLayout({
 
           {/* Conditional Footer - Hidden for MassMutual pages */}
           <ConditionalFooter />
+        </ZoomProvider>
         </MethodologyProvider>
         </SearchProvider>
         </DomainProvider>
