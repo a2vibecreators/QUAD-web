@@ -24,7 +24,7 @@ QUAD_HOOK="$QUAD_DIR/quad-context-hook.py"
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 API_URL="${QUAD_API_URL:-https://api.quadframe.work}"
 DOWNLOAD_BASE="https://downloads.quadframe.work"
-GITHUB_REPO="https://github.com/a2Vibes/QUAD.git"
+GITHUB_REPO="git@github.com:a2Vibes/QUAD.git"
 
 # Check Python
 echo "→ Checking Python..."
@@ -70,7 +70,7 @@ fi
 # Install quad-cli
 echo "→ Installing Python dependencies..."
 cd "$QUAD_CLI_DIR/quad-cli"
-pip3 install -e . --quiet 2>/dev/null || pip3 install -e .
+pip3 install --user -e . --quiet 2>/dev/null || pip3 install --user -e . --break-system-packages 2>/dev/null || pip3 install --user -e .
 
 # Find Python bin directory and add to PATH
 PYTHON_BIN=$(python3 -m site --user-base)/bin
