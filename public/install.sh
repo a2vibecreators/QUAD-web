@@ -72,14 +72,39 @@ echo "→ Installing Python dependencies..."
 cd "$QUAD_CLI_DIR/quad-cli"
 pip3 install -e . --quiet 2>/dev/null || pip3 install -e .
 
+# Find Python bin directory and add to PATH
+PYTHON_BIN=$(python3 -m site --user-base)/bin
+echo "→ Configuring PATH..."
+
+# Detect shell profile
+if [ -n "$ZSH_VERSION" ] || [ -f "$HOME/.zshrc" ]; then
+    SHELL_PROFILE="$HOME/.zshrc"
+elif [ -f "$HOME/.bashrc" ]; then
+    SHELL_PROFILE="$HOME/.bashrc"
+elif [ -f "$HOME/.bash_profile" ]; then
+    SHELL_PROFILE="$HOME/.bash_profile"
+else
+    SHELL_PROFILE="$HOME/.profile"
+fi
+
+# Add to PATH if not already there
+if ! grep -q "QUAD CLI PATH" "$SHELL_PROFILE" 2>/dev/null; then
+    echo "" >> "$SHELL_PROFILE"
+    echo "# QUAD CLI PATH" >> "$SHELL_PROFILE"
+    echo "export PATH=\"$PYTHON_BIN:\$PATH\"" >> "$SHELL_PROFILE"
+    echo "  ✓ Added $PYTHON_BIN to PATH in $SHELL_PROFILE"
+else
+    echo "  ✓ PATH already configured"
+fi
+
+# Export for current session
+export PATH="$PYTHON_BIN:$PATH"
+
 # Verify installation
 if command -v quad &> /dev/null; then
-    echo "  ✓ quad-cli installed"
+    echo "  ✓ quad-cli installed and working"
 else
-    # Add to PATH hint
-    echo "  ⚠ quad command not in PATH"
-    echo "  Add to your shell profile:"
-    echo "    export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo "  ⚠ quad not found. Run: source $SHELL_PROFILE"
 fi
 
 # Download hook script (standalone version)
